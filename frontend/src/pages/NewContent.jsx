@@ -408,6 +408,117 @@ function Spinner() {
   )
 }
 
+// ─── AI Template Generator Modal ─────────────────────────────────────────────
+function GenerateTemplateModal({ contentType, onGenerated, onClose }) {
+  const [name, setName]         = useState('')
+  const [desc, setDesc]         = useState('')
+  const [bgColor, setBgColor]   = useState('#08316F')
+  const [accent, setAccent]     = useState('#C8A96E')
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState(null)
+
+  const templateType = ['carousel'].includes(contentType) ? 'carousel'
+    : ['image_post'].includes(contentType) ? 'image' : 'video'
+
+  const generate = async () => {
+    if (!name.trim() || !desc.trim()) { setError('Name and description are required.'); return }
+    setLoading(true); setError(null)
+    try {
+      const res = await fetch('/api/generate-template', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), description: desc.trim(), type: templateType, bg_color: bgColor, accent_color: accent }),
+      })
+      if (!res.ok) {
+        const msg = await res.text()
+        throw new Error(msg.includes('ANTHROPIC_API_KEY') ? 'ANTHROPIC_API_KEY not set in .env' : `Failed: ${res.status}`)
+      }
+      const tpl = await res.json()
+      onGenerated(tpl)
+    } catch (e) {
+      setError(e.message)
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: 'var(--cs-surface)', border: '1px solid var(--cs-border)',
+        borderRadius: 14, width: 480, maxWidth: '94vw', padding: 28,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.18)', animation: 'fadein 0.15s ease',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div>
+            <h3 style={{ color: 'var(--cs-text)', fontSize: 16, fontWeight: 700, margin: 0 }}>✨ Generate Template with AI</h3>
+            <p style={{ color: 'var(--cs-text-muted)', fontSize: 12, margin: '4px 0 0' }}>Claude will generate a branded HTML template for Puppeteer</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 22 }}>×</button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <label style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>TEMPLATE NAME</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Dark Luxury" style={{
+              width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: 7,
+              border: '1px solid var(--cs-border)', background: 'var(--cs-input-bg)',
+              color: 'var(--cs-text)', fontSize: 13, outline: 'none', fontFamily: 'inherit',
+            }} />
+          </div>
+
+          <div>
+            <label style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>VISUAL STYLE DESCRIPTION</label>
+            <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} placeholder="e.g. Minimalist dark background with gold geometric lines, serif headlines, subtle grain texture, premium investment feel" style={{
+              width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: 7,
+              border: '1px solid var(--cs-border)', background: 'var(--cs-input-bg)',
+              color: 'var(--cs-text)', fontSize: 13, lineHeight: 1.6, resize: 'vertical', outline: 'none', fontFamily: 'inherit',
+            }} />
+          </div>
+
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>BACKGROUND COLOR</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 7, border: '1px solid var(--cs-border)', background: 'var(--cs-input-bg)' }}>
+                <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} style={{ width: 28, height: 28, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }} />
+                <span style={{ color: 'var(--cs-text-sub)', fontSize: 12, fontFamily: 'monospace' }}>{bgColor}</span>
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>ACCENT COLOR</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 7, border: '1px solid var(--cs-border)', background: 'var(--cs-input-bg)' }}>
+                <input type="color" value={accent} onChange={e => setAccent(e.target.value)} style={{ width: 28, height: 28, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }} />
+                <span style={{ color: 'var(--cs-text-sub)', fontSize: 12, fontFamily: 'monospace' }}>{accent}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(0,182,255,0.05)', border: '1px solid rgba(0,182,255,0.15)', borderRadius: 7, padding: '8px 12px' }}>
+            <span style={{ color: 'var(--cs-text-muted)', fontSize: 11 }}>Type: <strong style={{ color: '#00B6FF' }}>{templateType}</strong> · Claude Opus will generate the full HTML template (~10–20s)</span>
+          </div>
+
+          {error && <div style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, padding: '8px 12px', color: '#dc2626', fontSize: 12 }}>{error}</div>}
+
+          <button onClick={generate} disabled={loading} style={{
+            padding: '12px', borderRadius: 8, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+            background: loading ? 'var(--cs-hover)' : 'linear-gradient(135deg,#08316F,#00B6FF)',
+            color: loading ? 'var(--cs-text-muted)' : '#fff', fontSize: 14, fontWeight: 700,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}>
+            {loading ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 14 14" style={{ animation: 'spin 0.8s linear infinite' }}>
+                  <circle cx="7" cy="7" r="5.5" fill="none" stroke="var(--cs-border)" strokeWidth="1.5" />
+                  <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" fill="none" stroke="#00B6FF" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+                Generating…
+              </>
+            ) : '✨ Generate Template'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function NewContent() {
   useTheme()
@@ -434,10 +545,16 @@ export default function NewContent() {
   const [briefTemplates, setBriefTemplates] = useState(loadSavedTemplates)
   const [showTplMenu, setShowTplMenu]       = useState(false)
   const tplMenuRef = useRef()
+  // AI template generator
+  const [showGenTpl, setShowGenTpl]         = useState(false)
+  const [customTemplates, setCustomTemplates] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cs-custom-templates') || '[]') } catch { return [] }
+  })
 
   // Derived
   const typeDef    = CONTENT_TYPES.find(t => t.id === form.contentType) || CONTENT_TYPES[0]
-  const templates  = TEMPLATE_GROUPS[typeDef.templateGroup] || TEMPLATE_GROUPS.video
+  const baseTemplates = TEMPLATE_GROUPS[typeDef.templateGroup] || TEMPLATE_GROUPS.video
+  const templates  = [...baseTemplates, ...customTemplates.filter(t => t.templateGroup === typeDef.templateGroup || t.type === typeDef.templateGroup)]
   const platforms  = ALL_PLATFORMS.filter(p => typeDef.platforms.includes(p.id))
   const stepLabels = ['Brief', 'Format & Style', 'Review']
 
@@ -568,9 +685,32 @@ export default function NewContent() {
     setError(null); setStep(s => s + 1)
   }
 
+  const handleTemplateGenerated = (tpl) => {
+    const newTpl = {
+      id: tpl.id,
+      label: tpl.name,
+      gradient: tpl.gradient,
+      accent: tpl.accent,
+      templateGroup: typeDef.templateGroup,
+      type: tpl.type,
+    }
+    const updated = [newTpl, ...customTemplates.filter(t => t.id !== tpl.id)]
+    setCustomTemplates(updated)
+    localStorage.setItem('cs-custom-templates', JSON.stringify(updated))
+    set('template', tpl.id)
+    setShowGenTpl(false)
+  }
+
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', maxWidth: 1080, animation: 'fadein 0.2s ease' }}>
+      {showGenTpl && (
+        <GenerateTemplateModal
+          contentType={form.contentType}
+          onGenerated={handleTemplateGenerated}
+          onClose={() => setShowGenTpl(false)}
+        />
+      )}
 
       {/* ── Left: Form ── */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -711,13 +851,21 @@ export default function NewContent() {
             )}
 
             {/* Templates — not shown for text_only */}
-            {typeDef.showTemplate && templates.length > 0 && (
+            {typeDef.showTemplate && (
               <Section title="Template" hint={`Templates designed for ${typeDef.label}`}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 10, marginBottom: 12 }}>
                   {templates.map(t => (
                     <TemplateCard key={t.id} tpl={t} active={form.template === t.id} onClick={() => set('template', t.id)} />
                   ))}
                 </div>
+                <button onClick={() => setShowGenTpl(true)} style={{
+                  width: '100%', padding: '9px', borderRadius: 7, cursor: 'pointer',
+                  border: '1px dashed rgba(0,182,255,0.4)', background: 'rgba(0,182,255,0.04)',
+                  color: '#00B6FF', fontSize: 12, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}>
+                  ✨ Generate new template with AI
+                </button>
               </Section>
             )}
 

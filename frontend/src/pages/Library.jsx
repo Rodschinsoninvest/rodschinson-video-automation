@@ -206,37 +206,122 @@ function ModalHeader({ item, onClose }) {
   )
 }
 
-function ModalActions({ item, onStatusChange, onRegenerate, onClose }) {
-  const nextStatus = STATUS_FLOW[STATUS_FLOW.indexOf(item.status) + 1]
+const SLOTS = ['morning', 'noon', 'afternoon', 'evening']
+const PLATFORM_COLORS = { linkedin: '#0077B5', youtube: '#FF0000', instagram: '#E1306C', tiktok: '#00b4b4', facebook: '#1877F2', twitter: '#1DA1F2' }
+
+function ScheduleInline({ item, onScheduled, onClose }) {
+  const today = new Date().toISOString().slice(0, 10)
+  const [date, setDate]       = useState(today)
+  const [slot, setSlot]       = useState('morning')
+  const [platform, setPlatform] = useState(item.platforms?.[0] || 'linkedin')
+  const [saving, setSaving]   = useState(false)
+  const [err, setErr]         = useState(null)
+  const platforms = item.platforms?.length ? item.platforms : ['linkedin']
+
+  const submit = async () => {
+    setSaving(true); setErr(null)
+    try {
+      const res = await fetch('/api/schedule', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: item.job_id, date, slot, platform }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      onScheduled()
+    } catch (e) {
+      setErr('Schedule failed — API offline')
+      setSaving(false)
+    }
+  }
+
   return (
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ color: 'var(--cs-text-muted)', fontSize: 12 }}>{fmtDate(item.created_at)}</span>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button onClick={onRegenerate} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 12 }}>↻ Regenerate</button>
-        {nextStatus && (
-          <button onClick={() => { onStatusChange(item.job_id, nextStatus); onClose() }} style={{
-            padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: 'none',
-            background: STATUS_META[nextStatus]?.bg || 'var(--cs-hover)',
-            color: STATUS_META[nextStatus]?.color, fontSize: 12, fontWeight: 600,
-          }}>→ {nextStatus}</button>
-        )}
-        {item.status === 'Scheduled' && (
-          <button onClick={async () => {
-            try {
-              const res = await fetch(`/api/publish/${item.job_id}`, { method: 'POST' })
-              if (res.ok) { onStatusChange(item.job_id, 'Published'); onClose() }
-              else alert('Publish failed — check Ayrshare API key in .env')
-            } catch { alert('Publish endpoint unreachable') }
-          }} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: 'none', background: 'linear-gradient(135deg,#08316F,#00B6FF)', color: '#fff', fontSize: 12, fontWeight: 600 }}>
-            Publish Now
-          </button>
-        )}
+    <div style={{ background: 'var(--cs-surface2)', border: '1px solid rgba(109,40,217,0.2)', borderRadius: 8, padding: 14, marginBottom: 12 }}>
+      <div style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>Schedule Post</div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+        <input type="date" value={date} min={today} onChange={e => setDate(e.target.value)} style={{
+          padding: '6px 10px', borderRadius: 6, border: '1px solid var(--cs-border)',
+          background: 'var(--cs-surface)', color: 'var(--cs-text)', fontSize: 12, flex: 1, minWidth: 130,
+        }} />
+        <select value={slot} onChange={e => setSlot(e.target.value)} style={{
+          padding: '6px 10px', borderRadius: 6, border: '1px solid var(--cs-border)',
+          background: 'var(--cs-surface)', color: 'var(--cs-text)', fontSize: 12, flex: 1,
+        }}>
+          {SLOTS.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+        </select>
+      </div>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+        {platforms.map(p => (
+          <button key={p} onClick={() => setPlatform(p)} style={{
+            padding: '4px 10px', borderRadius: 4, fontSize: 11, cursor: 'pointer', fontWeight: 600,
+            border: `1px solid ${platform === p ? (PLATFORM_COLORS[p] || '#999') : 'var(--cs-border)'}`,
+            background: platform === p ? `${PLATFORM_COLORS[p] || '#999'}18` : 'transparent',
+            color: platform === p ? (PLATFORM_COLORS[p] || '#999') : 'var(--cs-text-muted)',
+          }}>{p.charAt(0).toUpperCase() + p.slice(1)}</button>
+        ))}
+      </div>
+      {err && <div style={{ color: '#f87171', fontSize: 11, marginBottom: 8 }}>{err}</div>}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <button onClick={submit} disabled={saving} style={{
+          flex: 1, padding: '7px', borderRadius: 6, border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
+          background: 'linear-gradient(135deg,#6d28d9,#8b5cf6)', color: '#fff', fontSize: 12, fontWeight: 600,
+        }}>{saving ? 'Scheduling…' : 'Confirm Schedule'}</button>
+        <button onClick={onClose} style={{
+          padding: '7px 10px', borderRadius: 6, border: '1px solid var(--cs-border)',
+          background: 'transparent', color: 'var(--cs-text-muted)', fontSize: 12, cursor: 'pointer',
+        }}>Cancel</button>
       </div>
     </div>
   )
 }
 
-function PreviewModal({ item, onClose, onStatusChange, onRegenerate }) {
+function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose }) {
+  const nextStatus = STATUS_FLOW[STATUS_FLOW.indexOf(item.status) + 1]
+  const [showSchedule, setShowSchedule] = useState(false)
+
+  return (
+    <div>
+      {showSchedule && (
+        <ScheduleInline
+          item={item}
+          onScheduled={() => { onStatusChange(item.job_id, 'Scheduled'); setShowSchedule(false); onClose() }}
+          onClose={() => setShowSchedule(false)}
+        />
+      )}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ color: 'var(--cs-text-muted)', fontSize: 12 }}>{fmtDate(item.created_at)}</span>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button onClick={onRegenerate} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 12 }}>↻ Regenerate</button>
+          <button onClick={onDelete} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 12 }}>🗑 Delete</button>
+          {!showSchedule && item.status !== 'Scheduled' && item.status !== 'Published' && (
+            <button onClick={() => setShowSchedule(true)} style={{
+              padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: 'none',
+              background: 'rgba(109,40,217,0.1)', color: '#6d28d9', fontSize: 12, fontWeight: 600,
+            }}>📅 Schedule</button>
+          )}
+          {nextStatus && nextStatus !== 'Scheduled' && (
+            <button onClick={() => { onStatusChange(item.job_id, nextStatus); onClose() }} style={{
+              padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: 'none',
+              background: STATUS_META[nextStatus]?.bg || 'var(--cs-hover)',
+              color: STATUS_META[nextStatus]?.color, fontSize: 12, fontWeight: 600,
+            }}>→ {nextStatus}</button>
+          )}
+          {item.status === 'Scheduled' && (
+            <button onClick={async () => {
+              try {
+                const res = await fetch(`/api/publish/${item.job_id}`, { method: 'POST' })
+                if (res.ok) { onStatusChange(item.job_id, 'Published'); onClose() }
+                else alert('Publish failed — check Ayrshare API key in .env')
+              } catch { alert('Publish endpoint unreachable') }
+            }} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: 'none', background: 'linear-gradient(135deg,#08316F,#00B6FF)', color: '#fff', fontSize: 12, fontWeight: 600 }}>
+              Publish Now
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete }) {
   const gradient = TEMPLATE_GRADIENTS[item.template] || 'linear-gradient(135deg,#08316F,#0d1a30)'
   const type     = TYPE_META[item.content_type] || { icon: '📄', label: item.content_type }
   const isVideo  = VIDEO_TYPES.has(item.content_type)
@@ -321,7 +406,7 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate }) {
             </div>
           )}
 
-          <ModalActions item={item} onStatusChange={onStatusChange} onRegenerate={onRegenerate} onClose={onClose} />
+          <ModalActions item={item} onStatusChange={onStatusChange} onRegenerate={onRegenerate} onDelete={onDelete} onClose={onClose} />
         </div>
       </div>
     </div>
@@ -330,7 +415,7 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate }) {
 
 // ─── Content Card ─────────────────────────────────────────────────────────────
 
-function ContentCard({ item, onStatusChange, onRegenerate }) {
+function ContentCard({ item, onStatusChange, onRegenerate, onDelete }) {
   const [preview, setPreview] = useState(false)
   const gradient    = TEMPLATE_GRADIENTS[item.template] || 'linear-gradient(135deg,#08316F,#0d1a30)'
   const type        = TYPE_META[item.content_type] || { icon: '📄', label: item.content_type }
@@ -346,6 +431,7 @@ function ContentCard({ item, onStatusChange, onRegenerate }) {
           onClose={() => setPreview(false)}
           onStatusChange={onStatusChange}
           onRegenerate={() => { setPreview(false); onRegenerate(item) }}
+          onDelete={() => { setPreview(false); onDelete(item.job_id) }}
         />
       )}
       <div
@@ -388,13 +474,17 @@ function ContentCard({ item, onStatusChange, onRegenerate }) {
         <div style={{ display: 'flex', gap: 4, padding: '8px 10px', borderTop: '1px solid var(--cs-border-sub)', flexWrap: 'wrap' }}>
           <ActionBtn label="Preview" onClick={() => setPreview(true)} color="#0284c7" />
           <ActionBtn label="↻" onClick={() => onRegenerate(item)} color="#b45309" />
-          {nextStatus && (
+          {nextStatus && nextStatus !== 'Scheduled' && (
             <ActionBtn
-              label={nextStatus === 'Scheduled' ? 'Schedule' : `→ ${nextStatus}`}
+              label={`→ ${nextStatus}`}
               onClick={() => onStatusChange(item.job_id, nextStatus)}
               color={STATUS_META[nextStatus]?.color}
             />
           )}
+          {item.status !== 'Scheduled' && item.status !== 'Published' && (
+            <ActionBtn label="📅" onClick={() => setPreview(true)} color="#6d28d9" />
+          )}
+          <ActionBtn label="🗑" onClick={() => onDelete(item.job_id)} color="#ef4444" />
         </div>
       </div>
     </>
@@ -524,6 +614,14 @@ export default function Library() {
     } catch { load() }
   }, [load])
 
+  const handleDelete = useCallback(async (jobId) => {
+    if (!window.confirm('Delete this content? This cannot be undone.')) return
+    setItems(prev => prev.filter(i => i.job_id !== jobId))
+    try {
+      await fetch(`/api/library/${jobId}`, { method: 'DELETE' })
+    } catch { load() }
+  }, [load])
+
   // Navigate to New Content with pre-filled brief for regeneration
   const handleRegenerate = useCallback((item) => {
     // Store the item in sessionStorage so NewContent can pick it up
@@ -634,6 +732,7 @@ export default function Library() {
               item={item}
               onStatusChange={handleStatusChange}
               onRegenerate={handleRegenerate}
+              onDelete={handleDelete}
             />
           ))}
         </div>

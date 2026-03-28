@@ -4,6 +4,7 @@ Rodschinson Content Studio — FastAPI Backend
 import asyncio
 import json
 import os
+import re
 import smtplib
 import sys
 import uuid
@@ -499,6 +500,15 @@ class StatusUpdate(BaseModel):
     status: str
 
 
+@app.delete("/api/library/{job_id}", status_code=204)
+async def delete_library_entry(job_id: str):
+    entries = await _library_load()
+    updated = [e for e in entries if e.get("job_id") != job_id]
+    if len(updated) == len(entries):
+        raise HTTPException(404, "Library entry not found")
+    await _library_save(updated)
+
+
 @app.patch("/api/library/{job_id}/status")
 async def update_library_status(job_id: str, body: StatusUpdate):
     if body.status not in VALID_STATUSES:
@@ -703,6 +713,115 @@ async def delete_template(tpl_id: str):
     if len(updated) == len(templates):
         raise HTTPException(404, "Template not found")
     await _templates_save(updated)
+
+
+# ── AI Template Generator ──────────────────────────────────────────────────────
+
+class TemplateGenRequest(BaseModel):
+    name: str
+    description: str
+    type: str = "video"   # video | carousel | image
+    bg_color: str = "#08316F"
+    accent_color: str = "#C8A96E"
+
+
+@app.post("/api/generate-template", status_code=201)
+async def generate_template(body: TemplateGenRequest):
+    """
+    Use Claude to generate a new Puppeteer HTML template.
+    Saves to puppeteer/templates/{slug}.html and returns the template metadata.
+    Requires ANTHROPIC_API_KEY in .env.
+    """
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(503, "ANTHROPIC_API_KEY not configured in .env")
+
+    slug = re.sub(r"[^a-z0-9]+", "_", body.name.lower().strip()).strip("_")
+    if not slug:
+        raise HTTPException(422, "Invalid template name")
+
+    dest = PUPPET / "templates" / f"{slug}.html"
+
+    # Resolve dimensions from type
+    if body.type == "carousel":
+        width, height = 1080, 1080
+        scene_hint = "Create 5 slide scenes (title, point 1-3, CTA). Each slide is full-screen."
+    elif body.type == "image":
+        width, height = 1080, 1080
+        scene_hint = "Create a single branded image scene with headline, stat, and logo."
+    else:  # video
+        width, height = 1920, 1080
+        scene_hint = "Create 4 scenes: title card, 2 content slides, and an outro."
+
+    prompt = f"""You are an expert Puppeteer HTML template developer for Rodschinson Content Studio.
+
+Generate a complete, self-contained HTML file for a branded content template with these specs:
+
+Name: {body.name}
+Description: {body.description}
+Type: {body.type}
+Background color: {body.bg_color}
+Accent color: {body.accent_color}
+Canvas size: {width}x{height}px
+
+REQUIREMENTS:
+1. The HTML must work as a standalone Puppeteer screenshot target (no external scripts).
+2. Use Google Fonts via @import (Cormorant Garamond + Space Grotesk preferred, or choose appropriate fonts).
+3. CSS custom properties in :root for colors: --bg, --accent, --text, --serif, --sans.
+4. html/body: fixed {width}px x {height}px, overflow hidden.
+5. Scenes use class "scene" and "scene active" pattern — Puppeteer activates them via JS.
+6. Each scene is position:absolute inset:0.
+7. Brand watermark at bottom: small text "RODSCHINSON" in accent color.
+8. CSS animations for text/elements entering (opacity + translateX/Y transitions).
+9. A JS function window.activateScene(n) that adds "active" class to scene n, removes from others.
+10. {scene_hint}
+11. The template must be visually stunning, professional, and match the description.
+12. Use the brand colors as the dominant palette.
+13. Include subtle geometric shapes or patterns as background decoration (SVG or CSS).
+
+OUTPUT: Return ONLY the complete HTML file content, no explanation, no markdown code blocks."""
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        res = await client.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-opus-4-6",
+                "max_tokens": 8000,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+        )
+
+    if res.status_code != 200:
+        log.error("Anthropic API error: %s %s", res.status_code, res.text[:300])
+        raise HTTPException(502, f"Claude API returned {res.status_code}")
+
+    result = res.json()
+    html_content = result["content"][0]["text"].strip()
+
+    # Strip markdown code fences if Claude wrapped it
+    if html_content.startswith("```"):
+        html_content = re.sub(r"^```[a-z]*\n?", "", html_content)
+        html_content = re.sub(r"\n?```$", "", html_content.strip())
+
+    dest.write_text(html_content, encoding="utf-8")
+    log.info("Template generated: %s → %s", body.name, dest)
+
+    # Derive a gradient from the colors for the frontend card
+    gradient = f"linear-gradient(135deg,{body.bg_color},{body.accent_color}33)"
+
+    return {
+        "id": slug,
+        "name": body.name,
+        "type": body.type,
+        "gradient": gradient,
+        "accent": body.accent_color,
+        "path": str(dest),
+    }
 
 
 # ── Analytics ──────────────────────────────────────────────────────────────────
