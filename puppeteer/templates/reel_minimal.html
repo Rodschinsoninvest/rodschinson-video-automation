@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080, height=1920">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:1080px;height:1920px;overflow:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;
+  background:#F5F5F0;color:#0a0a0a;}
+#scene-container{width:1080px;height:1920px;position:relative;}
+
+.scene{
+  width:1080px;height:1920px;position:relative;
+  display:flex;flex-direction:column;overflow:hidden;
+  background:#F5F5F0;
+}
+
+/* top accent */
+.top-bar{position:absolute;top:0;left:0;right:0;height:5px;background:#08316F;z-index:10;}
+.header{
+  position:absolute;top:5px;left:0;right:0;height:90px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 70px;border-bottom:1px solid rgba(0,0,0,0.1);
+  background:#F5F5F0;z-index:10;
+}
+.hdr-brand{font-size:20px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:#08316F;}
+.hdr-dot{width:8px;height:8px;border-radius:50%;background:#C8A96E;}
+
+.footer{
+  position:absolute;bottom:0;left:0;right:0;height:88px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 70px;border-top:1px solid rgba(0,0,0,0.1);
+  background:#F5F5F0;z-index:10;
+}
+.ftr-l{font-size:19px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(0,0,0,0.4);}
+.ftr-r{font-size:19px;color:#08316F;font-weight:600;}
+
+/* ══ TITLE CARD ══ */
+.scene-title{justify-content:center;align-items:flex-start;}
+.tc-wrap{padding:100px 80px;display:flex;flex-direction:column;gap:0;}
+.tc-tag{
+  display:inline-block;font-size:20px;font-weight:700;letter-spacing:0.22em;
+  text-transform:uppercase;color:#C8A96E;margin-bottom:60px;
+  padding-bottom:20px;border-bottom:2px solid #C8A96E;
+}
+.tc-headline{font-size:112px;font-weight:900;line-height:1.0;color:#08316F;margin-bottom:55px;letter-spacing:-0.02em;}
+.tc-rule{width:80px;height:4px;background:#08316F;margin-bottom:55px;}
+.tc-sub{font-size:44px;font-weight:400;line-height:1.4;color:rgba(0,0,0,0.6);}
+
+/* ══ BIG NUMBER ══ */
+.scene-number{justify-content:center;align-items:center;}
+.bn-eyebrow{
+  font-size:26px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;
+  color:rgba(0,0,0,0.45);text-align:center;padding:0 80px;margin-bottom:60px;
+}
+.bn-box{
+  display:flex;flex-direction:column;align-items:center;padding:0 60px;
+  border-left:6px solid #08316F;margin-left:80px;align-self:flex-start;
+}
+.bn-num{font-size:260px;font-weight:900;line-height:0.88;color:#08316F;letter-spacing:-0.04em;}
+.bn-unit{font-size:64px;font-weight:700;color:#C8A96E;margin-top:16px;}
+.bn-rule{width:80px;height:4px;background:#08316F;margin:60px 0 0 80px;align-self:flex-start;}
+.bn-ctx{
+  font-size:36px;font-weight:400;color:rgba(0,0,0,0.6);
+  line-height:1.45;padding:40px 80px;align-self:stretch;max-height:240px;
+}
+
+/* ══ BULLETS ══ */
+.scene-bullets{justify-content:flex-start;}
+.tb-wrap{margin-top:100px;padding:0 80px;flex:1;display:flex;flex-direction:column;}
+.tb-title{font-size:70px;font-weight:900;line-height:1.05;color:#08316F;margin-bottom:30px;}
+.tb-rule{width:80px;height:4px;background:#C8A96E;margin-bottom:55px;}
+.tb-item{
+  display:flex;align-items:flex-start;gap:30px;margin-bottom:50px;
+  opacity:0;transform:translateY(15px);transition:opacity 0.35s,transform 0.35s;
+}
+.tb-item.visible{opacity:1;transform:none;}
+.tb-num{
+  font-size:24px;font-weight:900;color:#F5F5F0;background:#08316F;
+  min-width:46px;height:46px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:6px;
+}
+.tb-text{font-size:40px;font-weight:500;line-height:1.4;color:rgba(0,0,0,0.8);}
+
+/* ══ BAR CHART ══ */
+.scene-chart{justify-content:flex-start;}
+.bc-wrap{margin-top:100px;padding:0 80px;flex:1;display:flex;flex-direction:column;}
+.bc-title{font-size:60px;font-weight:900;line-height:1.05;color:#08316F;margin-bottom:25px;}
+.bc-rule{width:80px;height:4px;background:#C8A96E;margin-bottom:50px;}
+.bc-bars{flex:1;display:flex;flex-direction:column;justify-content:space-evenly;}
+.bc-row{display:flex;flex-direction:column;gap:10px;}
+.bc-meta{display:flex;justify-content:space-between;}
+.bc-lbl{font-size:30px;font-weight:600;color:rgba(0,0,0,0.75);}
+.bc-vl{font-size:34px;font-weight:900;color:#08316F;}
+.bc-track{height:22px;background:rgba(0,0,0,0.08);border-radius:11px;overflow:hidden;}
+.bc-fill{height:100%;border-radius:11px;background:linear-gradient(90deg,#08316F,#00B6FF);width:0%;transition:width 0.9s cubic-bezier(.4,0,.2,1);}
+.bc-fill.anim{width:var(--w);}
+.bc-src{font-size:22px;color:rgba(0,0,0,0.35);margin-top:16px;text-align:right;}
+
+/* ══ CTA ══ */
+.scene-cta{justify-content:center;align-items:flex-start;}
+.cta-wrap{padding:80px 80px;display:flex;flex-direction:column;gap:55px;}
+.cta-tag{font-size:22px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#C8A96E;}
+.cta-headline{font-size:90px;font-weight:900;line-height:1.0;color:#08316F;}
+.cta-rule{width:80px;height:4px;background:#08316F;}
+.cta-btn{
+  align-self:flex-start;padding:36px 80px;background:#08316F;color:#fff;
+  font-size:32px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;border-radius:6px;
+}
+.cta-url{font-size:28px;color:rgba(0,0,0,0.4);letter-spacing:0.06em;}
+</style>
+</head>
+<body>
+<div id="scene-container"></div>
+<script>
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmt(s){return esc(s).replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');}
+function fitText(el,minPx){
+  if(!el||!el.parentElement)return;
+  let size=parseFloat(getComputedStyle(el).fontSize),iter=0;
+  while(iter++<80&&el.scrollHeight>el.parentElement.clientHeight+8&&size>minPx){size-=2;el.style.fontSize=size+'px';}
+}
+
+const B='RODSCHINSON';const U='rodschinson.com';
+const HDR=`<div class="top-bar"></div><div class="header"><span class="hdr-brand">${B}</span><div class="hdr-dot"></div></div>`;
+const FTR=`<div class="footer"><span class="ftr-l">${B} Investment</span><span class="ftr-r">${U}</span></div>`;
+
+window.loadScene=function(data){
+  const c=document.getElementById('scene-container');
+  const v=data.visuel||{};const tv=data.type_visuel||'title_card';let html='';
+
+  if(tv==='title_card'){
+    html=`<div class="scene scene-title">${HDR}${FTR}
+      <div class="tc-wrap">
+        ${v.eyebrow?`<div class="tc-tag">${esc(v.eyebrow)}</div>`:''}
+        <div class="tc-headline" id="_hl">${fmt(v.titre_principal||v.titre||'')}</div>
+        <div class="tc-rule"></div>
+        <div class="tc-sub" id="_sub">${fmt(v.sous_titre||v.subtitle||'')}</div>
+      </div></div>`;
+
+  }else if(tv==='big_number'){
+    html=`<div class="scene scene-number">${HDR}${FTR}
+      <div class="bn-eyebrow" id="_ey">${fmt(v.eyebrow||v.label||v.titre||'')}</div>
+      <div class="bn-box">
+        <div class="bn-num">${esc(v.valeur||'0')}</div>
+        <div class="bn-unit">${esc(v.unite||'%')}</div>
+      </div>
+      <div class="bn-rule"></div>
+      <div class="bn-ctx" id="_ctx">${fmt(v.contexte||v.subtitle||'')}</div></div>`;
+
+  }else if(tv==='text_bullets'){
+    const items=v.items||v.elements||v.points||[];
+    const rows=items.map((it,i)=>`<div class="tb-item" data-i="${i}"><div class="tb-num">${String(i+1).padStart(2,'0')}</div><div class="tb-text">${fmt(String(it))}</div></div>`).join('');
+    html=`<div class="scene scene-bullets">${HDR}${FTR}
+      <div class="tb-wrap">
+        <div class="tb-title" id="_tit">${fmt(v.titre||v.titre_principal||'')}</div>
+        <div class="tb-rule"></div>${rows}
+      </div></div>`;
+
+  }else if(tv==='bar_chart'){
+    const series=v.series||[];const maxV=Math.max(...series.map(s=>s.valeur),1);const unite=v.unite||'%';
+    const bars=series.map(s=>{
+      const pct=((s.valeur/maxV)*100).toFixed(1);
+      return `<div class="bc-row"><div class="bc-meta"><span class="bc-lbl">${esc(s.label)}</span><span class="bc-vl">${s.valeur}${unite}</span></div><div class="bc-track"><div class="bc-fill" style="--w:${pct}%"></div></div></div>`;
+    }).join('');
+    html=`<div class="scene scene-chart">${HDR}${FTR}
+      <div class="bc-wrap">
+        <div class="bc-title" id="_tit">${fmt(v.titre||v.titre_principal||'')}</div>
+        <div class="bc-rule"></div>
+        <div class="bc-bars">${bars}</div>
+        ${v.source?`<div class="bc-src">${esc(v.source)}</div>`:''}
+      </div></div>`;
+
+  }else{
+    const isStep=tv==='process_steps';
+    const items=isStep?(v.etapes||v.items||[]):(v.items||v.elements||[]);
+    if(isStep&&items.length){
+      const rows=items.map((it,i)=>`<div class="tb-item" data-i="${i}"><div class="tb-num">${String(i+1).padStart(2,'0')}</div><div class="tb-text">${fmt(String(it))}</div></div>`).join('');
+      html=`<div class="scene scene-bullets">${HDR}${FTR}<div class="tb-wrap"><div class="tb-title" id="_tit">${fmt(v.titre||v.titre_principal||'')}</div><div class="tb-rule"></div>${rows}</div></div>`;
+    }else{
+      html=`<div class="scene scene-cta">${HDR}${FTR}
+        <div class="cta-wrap">
+          <div class="cta-tag">${esc(v.eyebrow||B)}</div>
+          <div class="cta-headline" id="_hl">${fmt(v.headline||v.titre_principal||v.titre||'')}</div>
+          <div class="cta-rule"></div>
+          <div class="cta-btn">${esc(v.cta_text||v.cta||'Consultation Gratuite')}</div>
+          <div class="cta-url">${esc(v.url||v.site||U)}</div>
+        </div></div>`;
+    }
+  }
+
+  c.innerHTML=html;
+  setTimeout(()=>{
+    fitText(document.getElementById('_hl'),38);
+    fitText(document.getElementById('_sub'),22);
+    fitText(document.getElementById('_tit'),28);
+    fitText(document.getElementById('_ctx'),20);
+    fitText(document.getElementById('_ey'),18);
+  },60);
+  return true;
+};
+
+window.animateScene=function(){
+  const s=document.querySelector('.scene');if(!s)return;
+  requestAnimationFrame(()=>{
+    s.classList.add('active');
+    document.querySelectorAll('.tb-item').forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),100+i*120));
+    setTimeout(()=>document.querySelectorAll('.bc-fill').forEach(el=>el.classList.add('anim')),200);
+  });
+};
+window.isAnimationComplete=function(d){return new Promise(r=>setTimeout(r,d||600));};
+</script>
+</body>
+</html>

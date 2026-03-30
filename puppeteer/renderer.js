@@ -50,10 +50,18 @@ const QUALITY_PORTRAIT = {
 
 // ── TEMPLATE MAP ─────────────────────────────────────────────────────────────
 const TEMPLATES = {
+  // Landscape 16:9 — video
   rodschinson_premium: 'rodschinson_premium.html',
   news_reel:           'news_reel.html',
   tech_data:           'tech_data.html',
   corporate_minimal:   'corporate_minimal.html',
+  cre:                 'cre.html',
+  // Portrait 9:16 — reel / story (purpose-built vertical templates)
+  reel_premium:        'reel_premium.html',
+  reel_data:           'reel_data.html',
+  reel_bold:           'reel_bold.html',
+  reel_minimal:        'reel_minimal.html',
+  reel_gradient:       'reel_gradient.html',
 };
 
 // ── PARSE ARGS ───────────────────────────────────────────────────────────────

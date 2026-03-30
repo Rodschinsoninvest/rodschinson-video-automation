@@ -260,6 +260,67 @@ TEMPLATE_HINTS = {
             "cta_screen":   '{"eyebrow": "Rodschinson Investment", "headline": "Investissez avec ceux qui connaissent le marché", "cta_text": "Consultation Privée — 30 min", "url": "rodschinson.com"}',
         },
     },
+    # ── VERTICAL / REEL / STORY templates ─────────────────────────────────────
+    "reel_premium": {
+        "style": "Dark navy #08316F + gold #C8A96E + sky blue. Institutional, bold, branded. 9:16 vertical.",
+        "tone": "Professional, hook-first. Each scene = one strong visual message. Strong headline, clean data.",
+        "supported_types": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"],
+        "schemas": {
+            "title_card":  '{"titre_principal": "Le Cap Rate : Ce que votre banquier ne vous dit pas", "sous_titre": "Analyse marchés EMEA 2025", "eyebrow": "Rodschinson Investment"}',
+            "big_number":  '{"valeur": "5,75", "unite": "%", "eyebrow": "Cap Rate bureaux Dubai prime", "contexte": "Source : JLL Research Q1 2025"}',
+            "text_bullets":'{"titre": "3 erreurs fatales", "items": ["Confondre revenu brut et NOI", "Ignorer la vacance locative", "Comparer des marchés incomparables"]}',
+            "bar_chart":   '{"titre": "Rendements prime 2025", "series": [{"label": "Paris", "valeur": 3.75}, {"label": "Dubai", "valeur": 5.75}, {"label": "Casablanca", "valeur": 7.5}], "unite": "%", "source": "CBRE / JLL 2025"}',
+            "cta_screen":  '{"eyebrow": "Rodschinson Investment", "headline": "Votre prochain actif CRE vous attend", "cta_text": "Consultation Gratuite — 30 min", "url": "rodschinson.com"}',
+        },
+    },
+    "reel_data": {
+        "style": "Very dark #080E1A + electric cyan #00E5C8. Data terminal aesthetic. 9:16 vertical.",
+        "tone": "Stat-driven, Bloomberg terminal feel. One key number or data insight per scene.",
+        "supported_types": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"],
+        "schemas": {
+            "title_card":  '{"titre_principal": "CRE Europe 2025 : les chiffres que personne ne montre", "sous_titre": "Analyse données CBRE / JLL", "eyebrow": "DATA INSIGHTS"}',
+            "big_number":  '{"valeur": "−18", "unite": "%", "eyebrow": "Volumes transactions CRE Europe Q1 2025", "contexte": "vs Q1 2024 — Source : JLL"}',
+            "text_bullets":'{"titre": "Signaux à surveiller", "items": ["Taux BCE : pivot attendu T3 2025", "Bureaux prime : pénurie offre Paris/Dubai", "Logistique : rendements sous pression"]}',
+            "bar_chart":   '{"titre": "Rendements par segment 2025", "series": [{"label": "Logistique", "valeur": 4.75}, {"label": "Bureaux A", "valeur": 5.1}, {"label": "Retail prime", "valeur": 5.8}], "unite": "%", "source": "CBRE 2025"}',
+            "cta_screen":  '{"eyebrow": "Rodschinson Investment", "headline": "Accédez à notre data room propriétaire", "cta_text": "rodschinson.com", "url": "rodschinson.com"}',
+        },
+    },
+    "reel_bold": {
+        "style": "Pure black #0a0a0a + red #FF4444. High energy, viral, breaking impact. 9:16 vertical.",
+        "tone": "Urgent, provocateur. Short punchy phrases. Use BREAKING / FLASH / ATTENTION framing. Maximum impact.",
+        "supported_types": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"],
+        "schemas": {
+            "title_card":  '{"titre_principal": "L\'immobilier commercial va exploser en 2025", "sous_titre": "Ce que les experts n\'osent pas dire", "eyebrow": "BREAKING"}',
+            "big_number":  '{"valeur": "−40", "unite": "%", "eyebrow": "Effondrement des bureaux en Europe", "contexte": "Taux de vacance moyen 2025 — Source JLL"}',
+            "text_bullets":'{"titre": "3 signaux d\'alarme", "items": ["Les banques coupent le crédit CRE", "Dubai absorbe les capitaux européens", "Le logistique : seul refuge solide"]}',
+            "bar_chart":   '{"titre": "Qui gagne, qui perd — 2025", "series": [{"label": "Logistique", "valeur": 4.75}, {"label": "Bureaux", "valeur": 2.1}, {"label": "Retail", "valeur": 1.8}], "unite": "%", "source": "JLL 2025"}',
+            "cta_screen":  '{"eyebrow": "Rodschinson Investment", "headline": "Agissez avant les autres", "cta_text": "Consultation Gratuite — 30 min", "url": "rodschinson.com"}',
+        },
+    },
+    "reel_minimal": {
+        "style": "White #F5F5F0 background, dark navy text #08316F, gold accent. Clean editorial. 9:16 vertical.",
+        "tone": "Thought leadership, editorial, clean. Clear and confident. Professional LinkedIn style.",
+        "supported_types": ["title_card", "big_number", "text_bullets", "process_steps", "cta_screen"],
+        "schemas": {
+            "title_card":   '{"titre_principal": "Pourquoi le CRE reste la meilleure couverture contre l\'inflation", "sous_titre": "Perspective 2025 — Rodschinson Investment", "eyebrow": "ANALYSE"}',
+            "big_number":   '{"valeur": "8,5", "unite": "%", "eyebrow": "Rendement logistique Maroc 2025", "contexte": "vs 3,75 % à Paris — Source : CBRE"}',
+            "text_bullets": '{"titre": "3 vérités que les investisseurs ignorent", "items": ["Le cap rate ne mesure pas le risque réel", "La liquidité compte plus que le rendement en crise", "Les HNWI sur-allouent le résidentiel par habitude"]}',
+            "process_steps":'{"titre": "Notre processus", "etapes": ["Sourcing off-market exclusif", "Due diligence 360°", "Structuration fiscale optimisée", "Asset management actif", "Exit au bon moment"]}',
+            "cta_screen":   '{"eyebrow": "Rodschinson Investment", "headline": "Investissez avec ceux qui connaissent le marché", "cta_text": "Consultation Privée — 30 min", "url": "rodschinson.com"}',
+        },
+    },
+    "reel_gradient": {
+        "style": "Purple-to-blue gradient #1a0a2e → #08316F + purple #a855f7 + gold. Modern social-native. 9:16 vertical.",
+        "tone": "Premium, aspirational, modern. Instagram-native feel. Luxury investment positioning.",
+        "supported_types": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"],
+        "schemas": {
+            "title_card":  '{"titre_principal": "L\'investissement qui change tout", "sous_titre": "Immobilier commercial EMEA — Opportunités 2025", "eyebrow": "Rodschinson Investment"}',
+            "big_number":  '{"valeur": "2,8", "unite": "Mds €", "eyebrow": "Deal flow géré depuis 2015", "contexte": "Brussels · Dubai · Casablanca"}',
+            "text_bullets":'{"titre": "Ce qui nous distingue", "items": ["Accès off-market exclusif EMEA", "Expertise fiscale transfrontalière", "Network family offices & PE"]}',
+            "bar_chart":   '{"titre": "Allocation optimale 2025", "series": [{"label": "Logistique", "valeur": 40}, {"label": "Bureaux prime", "valeur": 30}, {"label": "Résidentiel", "valeur": 20}, {"label": "Retail", "valeur": 10}], "unite": "%", "source": "Rodschinson Investment Research"}',
+            "cta_screen":  '{"eyebrow": "Rodschinson Investment", "headline": "Rejoignez notre réseau exclusif d\'investisseurs", "cta_text": "Consultation Gratuite", "url": "rodschinson.com"}',
+        },
+    },
 }
 
 # ─── SYSTEM PROMPT ───────────────────────────────────────────────────────────

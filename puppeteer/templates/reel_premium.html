@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080, height=1920">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 1080px; height: 1920px;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  background: #08316F;
+  color: #fff;
+}
+
+/* ── SCENE CONTAINER ── */
+#scene-container { width: 1080px; height: 1920px; position: relative; }
+
+/* ── SHARED BACKGROUND ── */
+.scene {
+  width: 1080px; height: 1920px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(165deg, #0a3d8a 0%, #08316F 45%, #041d45 100%);
+}
+.scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 80% 15%, rgba(0,182,255,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 10% 85%, rgba(200,169,110,0.10) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* ── BRAND STRIP (top) ── */
+.brand-strip {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, #00B6FF 0%, #C8A96E 60%, transparent 100%);
+  z-index: 10;
+}
+.brand-bar {
+  position: absolute;
+  top: 6px; left: 0; right: 0;
+  height: 90px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 60px;
+  z-index: 10;
+}
+.brand-name {
+  font-size: 22px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: rgba(255,255,255,0.85);
+}
+.brand-tag {
+  font-size: 18px; font-weight: 500; letter-spacing: 0.12em;
+  color: #C8A96E; text-transform: uppercase;
+}
+
+/* ── FOOTER ── */
+.scene-footer {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 90px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 60px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  background: rgba(4,29,69,0.8);
+  z-index: 10;
+}
+.footer-brand { font-size: 20px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.7); }
+.footer-url   { font-size: 20px; color: #C8A96E; font-weight: 500; }
+
+/* ══════════════════════════════════════════════
+   TITLE CARD
+══════════════════════════════════════════════ */
+.scene-title { justify-content: center; align-items: center; text-align: center; }
+.tc-eyebrow {
+  font-size: 24px; font-weight: 600; letter-spacing: 0.22em;
+  text-transform: uppercase; color: #C8A96E; margin-bottom: 40px;
+}
+.tc-content { padding: 0 80px; display: flex; flex-direction: column; align-items: center; }
+.tc-headline {
+  font-size: 110px; font-weight: 800; line-height: 1.05;
+  color: #fff; text-align: center; margin-bottom: 50px;
+}
+.tc-rule {
+  width: 120px; height: 4px;
+  background: linear-gradient(90deg, #C8A96E, #00B6FF);
+  border-radius: 2px; margin: 0 auto 50px;
+}
+.tc-sub {
+  font-size: 42px; font-weight: 400; line-height: 1.35;
+  color: rgba(255,255,255,0.75); text-align: center;
+}
+
+/* ══════════════════════════════════════════════
+   BIG NUMBER
+══════════════════════════════════════════════ */
+.scene-number { justify-content: center; align-items: center; text-align: center; }
+.bn-eyebrow {
+  font-size: 28px; font-weight: 600; letter-spacing: 0.18em;
+  text-transform: uppercase; color: rgba(255,255,255,0.6);
+  margin-bottom: 50px; padding: 0 80px; text-align: center;
+}
+.bn-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 60px;
+}
+.bn-value {
+  font-size: 260px; font-weight: 900; line-height: 0.9;
+  color: #C8A96E; letter-spacing: -0.04em;
+}
+.bn-unit {
+  font-size: 72px; font-weight: 700; color: #00B6FF;
+  letter-spacing: 0.06em; margin-top: 10px;
+}
+.bn-rule {
+  width: 100px; height: 3px; background: linear-gradient(90deg, #C8A96E, #00B6FF);
+  margin: 60px auto;
+}
+.bn-context {
+  font-size: 36px; font-weight: 400; color: rgba(255,255,255,0.7);
+  text-align: center; line-height: 1.4; padding: 0 80px;
+  max-height: 200px;
+}
+
+/* ══════════════════════════════════════════════
+   TEXT BULLETS
+══════════════════════════════════════════════ */
+.scene-bullets { justify-content: flex-start; }
+.tb-inner {
+  margin-top: 100px; padding: 0 70px; flex: 1;
+  display: flex; flex-direction: column;
+}
+.tb-title {
+  font-size: 72px; font-weight: 800; line-height: 1.1;
+  color: #fff; margin-bottom: 50px;
+}
+.tb-rule { width: 80px; height: 4px; background: #C8A96E; margin-bottom: 60px; }
+.tb-item {
+  display: flex; align-items: flex-start; gap: 30px;
+  margin-bottom: 44px;
+  opacity: 0; transform: translateX(-30px);
+  transition: opacity 0.4s, transform 0.4s;
+}
+.tb-item.visible { opacity: 1; transform: none; }
+.tb-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #C8A96E; margin-top: 16px; flex-shrink: 0;
+}
+.tb-text { font-size: 40px; font-weight: 500; line-height: 1.35; color: rgba(255,255,255,0.88); }
+
+/* ══════════════════════════════════════════════
+   BAR CHART (horizontal)
+══════════════════════════════════════════════ */
+.scene-chart { justify-content: flex-start; }
+.bc-inner { margin-top: 100px; padding: 0 70px; flex: 1; display: flex; flex-direction: column; }
+.bc-title {
+  font-size: 60px; font-weight: 800; line-height: 1.1; color: #fff; margin-bottom: 20px;
+}
+.bc-rule { width: 80px; height: 4px; background: #C8A96E; margin-bottom: 50px; }
+.bc-bars { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; gap: 30px; }
+.bc-row { display: flex; flex-direction: column; gap: 10px; }
+.bc-label-row { display: flex; justify-content: space-between; align-items: baseline; }
+.bc-label { font-size: 32px; font-weight: 600; color: rgba(255,255,255,0.85); }
+.bc-val-label { font-size: 36px; font-weight: 800; color: #C8A96E; }
+.bc-track { height: 24px; background: rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; }
+.bc-fill {
+  height: 100%; border-radius: 12px;
+  background: linear-gradient(90deg, #08316F, #00B6FF);
+  width: 0%; transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+.bc-fill.anim { width: var(--w); }
+.bc-source { font-size: 24px; color: rgba(255,255,255,0.4); margin-top: 20px; text-align: right; }
+
+/* ══════════════════════════════════════════════
+   CTA
+══════════════════════════════════════════════ */
+.scene-cta { justify-content: center; align-items: center; text-align: center; }
+.cta-inner { padding: 0 80px; display: flex; flex-direction: column; align-items: center; gap: 50px; }
+.cta-eyebrow {
+  font-size: 24px; font-weight: 600; letter-spacing: 0.22em;
+  text-transform: uppercase; color: #C8A96E;
+}
+.cta-headline {
+  font-size: 90px; font-weight: 800; line-height: 1.1;
+  color: #fff; text-align: center;
+}
+.cta-rule { width: 120px; height: 4px; background: linear-gradient(90deg, #C8A96E, #00B6FF); }
+.cta-btn {
+  padding: 36px 80px; background: #C8A96E; color: #08316F;
+  font-size: 34px; font-weight: 800; letter-spacing: 0.08em;
+  border-radius: 8px; text-transform: uppercase;
+}
+.cta-url { font-size: 30px; color: rgba(255,255,255,0.55); letter-spacing: 0.06em; }
+</style>
+</head>
+<body>
+<div id="scene-container"></div>
+<script>
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(s){ return esc(s).replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); }
+function fitText(el, minPx){
+  if(!el||!el.parentElement) return;
+  let size = parseFloat(getComputedStyle(el).fontSize), iter=0;
+  while(iter++<80 && el.scrollHeight > el.parentElement.clientHeight+8 && size>minPx){
+    size-=2; el.style.fontSize=size+'px';
+  }
+}
+
+const BRAND    = 'RODSCHINSON';
+const BRAND_LO = 'rodschinson.com';
+
+const FOOTER = `<div class="scene-footer"><span class="footer-brand">${BRAND}</span><span class="footer-url">${BRAND_LO}</span></div>`;
+const BAR    = `<div class="brand-strip"></div><div class="brand-bar"><span class="brand-name">${BRAND}</span><span class="brand-tag">Investment</span></div>`;
+
+window.loadScene = function(data){
+  const c  = document.getElementById('scene-container');
+  const v  = data.visuel || {};
+  const tv = data.type_visuel || 'title_card';
+  let html = '';
+
+  if(tv === 'title_card'){
+    html = `<div class="scene scene-title">
+      ${BAR}${FOOTER}
+      <div class="tc-content">
+        ${v.eyebrow ? `<div class="tc-eyebrow">${esc(v.eyebrow)}</div>` : ''}
+        <div class="tc-headline" id="_hl">${fmt(v.titre_principal||v.titre||'')}</div>
+        <div class="tc-rule"></div>
+        <div class="tc-sub" id="_sub">${fmt(v.sous_titre||v.subtitle||'')}</div>
+      </div>
+    </div>`;
+
+  } else if(tv === 'big_number'){
+    html = `<div class="scene scene-number">
+      ${BAR}${FOOTER}
+      <div class="bn-eyebrow" id="_ey">${fmt(v.eyebrow||v.label||v.titre||'')}</div>
+      <div class="bn-wrap">
+        <div class="bn-value">${esc(v.valeur||'0')}</div>
+        <div class="bn-unit">${esc(v.unite||'%')}</div>
+        <div class="bn-rule"></div>
+        <div class="bn-context" id="_ctx">${fmt(v.contexte||v.subtitle||'')}</div>
+      </div>
+    </div>`;
+
+  } else if(tv === 'text_bullets'){
+    const items = (v.items||v.elements||v.points||[]);
+    const rows  = items.map((it,i)=>`<div class="tb-item" data-i="${i}"><div class="tb-dot"></div><div class="tb-text">${fmt(String(it))}</div></div>`).join('');
+    html = `<div class="scene scene-bullets">
+      ${BAR}${FOOTER}
+      <div class="tb-inner">
+        <div class="tb-title" id="_tit">${fmt(v.titre||v.titre_principal||'')}</div>
+        <div class="tb-rule"></div>
+        ${rows}
+      </div>
+    </div>`;
+
+  } else if(tv === 'bar_chart'){
+    const series  = v.series || [];
+    const maxVal  = Math.max(...series.map(s=>s.valeur),1);
+    const unite   = v.unite||'%';
+    const bars = series.map(s=>{
+      const pct = ((s.valeur/maxVal)*100).toFixed(1);
+      return `<div class="bc-row">
+        <div class="bc-label-row">
+          <span class="bc-label">${esc(s.label)}</span>
+          <span class="bc-val-label">${s.valeur}${unite}</span>
+        </div>
+        <div class="bc-track"><div class="bc-fill" style="--w:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+    html = `<div class="scene scene-chart">
+      ${BAR}${FOOTER}
+      <div class="bc-inner">
+        <div class="bc-title" id="_tit">${fmt(v.titre||v.titre_principal||'')}</div>
+        <div class="bc-rule"></div>
+        <div class="bc-bars">${bars}</div>
+        ${v.source ? `<div class="bc-source">${esc(v.source)}</div>` : ''}
+      </div>
+    </div>`;
+
+  } else if(tv === 'cta_screen'){
+    html = `<div class="scene scene-cta">
+      ${BAR}${FOOTER}
+      <div class="cta-inner">
+        <div class="cta-eyebrow">${esc(v.eyebrow||BRAND)}</div>
+        <div class="cta-headline" id="_hl">${fmt(v.headline||v.titre_principal||v.titre||'')}</div>
+        <div class="cta-rule"></div>
+        <div class="cta-btn">${esc(v.cta_text||v.cta||'Consultation Gratuite')}</div>
+        <div class="cta-url">${esc(v.url||v.site||BRAND_LO)}</div>
+      </div>
+    </div>`;
+
+  } else {
+    /* process_steps → render as bullets */
+    const items = (v.etapes||v.items||v.elements||[]);
+    const rows  = items.map((it,i)=>`<div class="tb-item" data-i="${i}"><div class="tb-dot"></div><div class="tb-text">${fmt(String(it))}</div></div>`).join('');
+    html = `<div class="scene scene-bullets">
+      ${BAR}${FOOTER}
+      <div class="tb-inner">
+        <div class="tb-title" id="_tit">${fmt(v.titre||v.titre_principal||'')}</div>
+        <div class="tb-rule"></div>
+        ${rows}
+      </div>
+    </div>`;
+  }
+
+  c.innerHTML = html;
+
+  setTimeout(()=>{
+    fitText(document.getElementById('_hl'),  40);
+    fitText(document.getElementById('_sub'), 24);
+    fitText(document.getElementById('_tit'), 30);
+    fitText(document.getElementById('_ctx'), 22);
+    fitText(document.getElementById('_ey'),  20);
+  }, 60);
+
+  return true;
+};
+
+window.animateScene = function(){
+  const scene = document.querySelector('.scene');
+  if(!scene) return;
+  requestAnimationFrame(()=>{
+    scene.classList.add('active');
+    /* bullets stagger */
+    document.querySelectorAll('.tb-item').forEach((el,i)=>{
+      setTimeout(()=>el.classList.add('visible'), 100+i*120);
+    });
+    /* bars grow */
+    setTimeout(()=>{
+      document.querySelectorAll('.bc-fill').forEach(el=>el.classList.add('anim'));
+    }, 200);
+  });
+};
+
+window.isAnimationComplete = function(d){ return new Promise(r=>setTimeout(r, d||600)); };
+</script>
+</body>
+</html>
