@@ -240,9 +240,9 @@ def assemble(script_path: str, with_subtitles: bool = False,
             sid = s["id"]
             nom = s.get("nom", f"scene_{sid}")
             pattern = f"scene_{sid:02d}_{nom}"
-            matches = list(OUTPUT_SCENES.glob(f"{pattern}*.mp4"))
+            matches = list(OUTPUT_SCENES.rglob(f"{pattern}*.mp4"))
             if matches:
-                scene_files.append(sorted(matches)[-1])  # plus récent
+                scene_files.append(sorted(matches, key=lambda p: p.stat().st_mtime)[-1])  # plus récent
             else:
                 print(f"  ⚠️  Scène {sid} ({nom}) MP4 introuvable — ignorée")
 

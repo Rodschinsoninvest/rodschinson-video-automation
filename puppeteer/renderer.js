@@ -29,7 +29,9 @@ const os   = require('os');
 
 // ── PATHS ────────────────────────────────────────────────────────────────────
 const ROOT       = path.resolve(__dirname, '..');
-const SCENES_OUT = path.join(ROOT, 'output', 'scenes');
+// Each run gets its own timestamped subfolder so outputs are never overwritten
+const RUN_ID     = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+const SCENES_OUT = path.join(ROOT, 'output', 'scenes', RUN_ID);
 const TMPL_DIR   = path.join(__dirname, 'templates');
 
 // ── QUALITY PRESETS ──────────────────────────────────────────────────────────
@@ -88,19 +90,27 @@ function normalizeScene(scene) {
     case 'big_number': {
       let valeur = v.valeur || v.nombre || v.value || v.number || '0';
       let unite  = v.unite  || v.unit   || v.unité || '%';
-      // Handle "3.8%" format from Claude
-      if (v.chiffre_principal) {
-        const raw = String(v.chiffre_principal);
-        valeur = raw.replace(/[%€KMB+\s]/g, '').trim();
-        unite  = raw.includes('%') ? '%' : raw.includes('€') ? '€' : raw.includes('M') ? 'M' : '';
+      // Handle "3.8%" or "2,8 Mds €" raw string formats from Claude
+      const rawSource = v.chiffre_principal || v.titre_principal;
+      if (rawSource) {
+        const raw = String(rawSource);
+        // Extract numeric part: digits, commas, dots
+        const numMatch = raw.match(/[\d.,]+/);
+        valeur = numMatch ? numMatch[0] : raw.replace(/[%€KMBkmbMds+\s]/gi, '').trim();
+        if (raw.includes('%'))        unite = '%';
+        else if (raw.includes('Mds')) unite = 'Mds €';
+        else if (raw.includes('M'))   unite = 'M€';
+        else if (raw.includes('€'))   unite = '€';
+        else if (raw.includes('K'))   unite = 'K€';
+        else                          unite = v.unite || v.unit || '';
       }
       return {
         ...scene,
         visuel: {
-          eyebrow:  v.eyebrow  || v.label || v.titre || '',
+          eyebrow:  v.eyebrow  || v.label || v.titre || v.sous_titre || '',
           valeur,
           unite,
-          contexte: v.contexte || v.chiffre_secondaire || v.subtitle || '',
+          contexte: v.contexte || v.chiffre_secondaire || v.sous_titre || v.subtitle || '',
           formule:  v.formule  || v.formula || v.calcul || '',
           ...v,
           valeur, unite,
@@ -116,10 +126,26 @@ function normalizeScene(scene) {
           valeur: parseFloat(b.valeur || b.value || b.taux || 0),
         }));
       }
+      // AI often outputs v.elements as flat strings: "Logistique : 4,75%"
+      if (!series.length && Array.isArray(v.elements) && v.elements.length) {
+        series = v.elements.map(e => {
+          const s = String(e);
+          // Split on " : " or " — " or " - "
+          const sep = s.includes(' : ') ? ' : ' : s.includes(' — ') ? ' — ' : s.includes(' - ') ? ' - ' : null;
+          if (sep) {
+            const parts = s.split(sep);
+            const numStr = parts[1].replace(',', '.').replace('%','').trim();
+            return { label: parts[0].trim(), valeur: parseFloat(numStr) || 0 };
+          }
+          // No separator — use whole string as label, parse any number found
+          const numMatch = s.match(/[\d.,]+/);
+          return { label: s.replace(/[\d.,]+\s*%?/,'').trim() || s, valeur: parseFloat(numMatch?.[0].replace(',','.')) || 0 };
+        });
+      }
       return {
         ...scene,
         visuel: {
-          titre:  v.titre  || v.title || '',
+          titre:  v.titre  || v.titre_principal || v.title || '',
           source: v.source || v.sources || 'Source : CBRE / JLL — Rodschinson Investment',
           unite:  v.unite  || '%',
           series,
@@ -129,12 +155,12 @@ function normalizeScene(scene) {
     }
 
     case 'process_steps': {
-      let etapes = v.etapes || v.steps || v.items || v.points || [];
+      let etapes = v.etapes || v.steps || v.items || v.points || v.elements || [];
       etapes = etapes.map(e => typeof e === 'string' ? e : (e.texte || e.text || e.label || ''));
       return {
         ...scene,
         visuel: {
-          titre:  v.titre || v.title || '',
+          titre:  v.titre || v.titre_principal || v.title || '',
           etapes,
           active: v.active !== undefined ? v.active : (v.current || 0),
           ...v, etapes,
@@ -143,12 +169,12 @@ function normalizeScene(scene) {
     }
 
     case 'text_bullets': {
-      let items = v.items || v.points || v.bullets || v.liste || [];
+      let items = v.items || v.points || v.bullets || v.liste || v.elements || [];
       items = items.map(i => typeof i === 'string' ? i : (i.texte || i.text || i.label || ''));
       return {
         ...scene,
         visuel: {
-          titre: v.titre || v.title || '',
+          titre: v.titre || v.titre_principal || v.title || '',
           items,
           ...v, items,
         }
@@ -160,7 +186,8 @@ function normalizeScene(scene) {
         ...scene,
         visuel: {
           eyebrow:  v.eyebrow  || 'Rodschinson Investment',
-          headline: v.headline || v.titre || v.title || '',
+          headline: v.headline || v.titre_principal || v.titre || v.title || '',
+          body:     v.body     || v.sous_titre      || v.subtitle || (Array.isArray(v.elements) ? v.elements.join(' · ') : '') || '',
           cta_text: v.cta_text || v.bouton || v.cta || 'Consultation Gratuite — 30 min',
           url:      v.url      || v.site   || 'rodschinson.com',
           ...v,
@@ -391,7 +418,7 @@ async function main() {
 
   console.log('\n' + '─'.repeat(62));
   console.log(`  ✅ ${ok.length} scène(s) OK  |  ❌ ${err.length} erreur(s)`);
-  console.log(`  📁 ${SCENES_OUT}\n`);
+  console.log(`  📁 ${SCENES_OUT}  [run: ${RUN_ID}]\n`);
 
   if (ok.length > 0) {
     console.log(`  Étape suivante :`);
