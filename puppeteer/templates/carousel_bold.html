@@ -113,7 +113,7 @@ html, body {
   transition: width 0.7s cubic-bezier(0.16,1,0.3,1) 0.3s;
 }
 .slide-title .subheadline {
-  font-size: 18px; font-weight: 400; color: rgba(255,255,255,0.55);
+  font-size: 22px; font-weight: 400; color: rgba(255,255,255,0.55);
   line-height: 1.7; max-width: 700px;
   opacity: 0; transition: opacity 0.5s ease 0.45s;
 }
@@ -157,19 +157,19 @@ html, body {
   text-transform: uppercase; color: rgba(0,182,255,0.65);
 }
 .slide-content .headline {
-  font-family: var(--serif); font-size: 62px; font-weight: 700;
-  color: var(--white); line-height: 1.06; letter-spacing: -0.005em;
+  font-family: var(--serif); font-size: 68px; font-weight: 700;
+  color: var(--white); line-height: 1.05; letter-spacing: -0.005em;
   opacity: 0; transform: translateY(14px);
   transition: all 0.65s cubic-bezier(0.16,1,0.3,1) 0.08s;
 }
 
 .slide-content .c-mid {
   /* body text — grows to fill space */
-  flex: 1; display: flex; align-items: center; padding: 20px 0;
+  flex: 1; display: flex; align-items: flex-start; padding: 28px 0 0;
 }
 .slide-content .body {
-  font-size: 19px; font-weight: 400; color: rgba(255,255,255,0.65);
-  line-height: 1.78; max-width: 900px;
+  font-size: 26px; font-weight: 400; color: rgba(255,255,255,0.65);
+  line-height: 1.68; max-width: 900px; width: 100%;
   opacity: 0; transition: opacity 0.5s ease 0.2s;
 }
 
@@ -198,12 +198,12 @@ html, body {
   padding: 18px 22px; display: flex; align-items: center; flex: 1;
 }
 .slide-content .stat-desc {
-  font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.6);
+  font-size: 17px; font-weight: 500; color: rgba(255,255,255,0.6);
   line-height: 1.55;
 }
 .slide-content .stat-simple {
   padding: 18px 24px; flex: 1; display: flex; align-items: center;
-  font-size: 14px; font-weight: 600; color: var(--sky);
+  font-size: 17px; font-weight: 600; color: var(--sky);
   border-left: 3px solid var(--sky);
 }
 
@@ -246,8 +246,8 @@ html, body {
   transition: width 0.7s ease 0.25s;
 }
 .slide-cta .cta-body {
-  font-size: 17px; color: rgba(255,255,255,0.58);
-  line-height: 1.7; max-width: 620px;
+  font-size: 22px; color: rgba(255,255,255,0.58);
+  line-height: 1.7; max-width: 640px;
   opacity: 0; transition: opacity 0.5s ease 0.32s;
 }
 .slide-cta .cta-bot {
@@ -367,6 +367,22 @@ function parseStatBlock(stat) {
   </div>`;
 }
 
+/* Shrink text until it fits its container, down to minPx */
+function fitText(el, minPx) {
+  if (!el) return;
+  const parent = el.parentElement;
+  let size = parseFloat(window.getComputedStyle(el).fontSize);
+  while (el.scrollHeight > parent.clientHeight + 4 && size > minPx) {
+    size -= 1;
+    el.style.fontSize = size + 'px';
+  }
+  // also check width overflow
+  while (el.scrollWidth > parent.clientWidth + 4 && size > minPx) {
+    size -= 1;
+    el.style.fontSize = size + 'px';
+  }
+}
+
 window.loadScene = function(slideData) {
   const c     = document.getElementById('scene-container');
   const idx   = slideData.index || 1;
@@ -430,6 +446,24 @@ window.loadScene = function(slideData) {
   }
 
   c.innerHTML = html;
+
+  // Auto-fit text to available space
+  // Small timeout lets the browser lay out the flexbox before we measure
+  setTimeout(() => {
+    const scene = document.getElementById('scene');
+    if (!scene) return;
+    if (type === 'title') {
+      fitText(scene.querySelector('.headline'),    42);
+      fitText(scene.querySelector('.subheadline'), 14);
+    } else if (type === 'content') {
+      fitText(scene.querySelector('.headline'), 32);
+      fitText(scene.querySelector('.body'),     14);
+    } else if (type === 'cta') {
+      fitText(scene.querySelector('.cta-headline'), 36);
+      fitText(scene.querySelector('.cta-body'),     14);
+    }
+  }, 60);
+
   return true;
 };
 
