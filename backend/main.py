@@ -1101,6 +1101,52 @@ def _metricool_blog_id(brand: str = "rodschinson") -> str:
 async def _metricool_headers() -> dict:
     return {"X-Mc-Auth": _metricool_token(), "Content-Type": "application/json"}
 
+# Platform key → Metricool v2 field name for per-platform data
+_MC_PLATFORM_FIELD = {
+    "linkedin":  "linkedinData",
+    "instagram": "instagramData",
+    "facebook":  "facebookData",
+    "tiktok":    "tiktokData",
+    "youtube":   "youtubeData",
+    "twitter":   "twitterData",
+    "bluesky":   "blueskyData",
+}
+
+def _metricool_payload(caption: str, platforms: list[str], pub_dt: str,
+                       media_url: str | None = None) -> dict:
+    """Build a valid Metricool v2 ScheduledPost payload.
+
+    v2 rules:
+    - No 'caption' or 'networks' at root — text goes inside each platform's data object.
+    - linkedinData  → {"text": ...}
+    - instagramData → {"text": ..., "type": "POST"}
+    - facebookData  → {"text": ...}
+    - tiktokData    → {"text": ...}
+    - youtubeData   → {"title": ..., "description": ...}
+    - twitterData   → {"text": ...}
+    - publicationDate → {"dateTime": "YYYY-MM-DDTHH:MM:SS", "timezone": "UTC"}
+    - media (optional) → [{"url": "..."}]
+    """
+    payload: dict = {
+        "publicationDate": {"dateTime": pub_dt, "timezone": "UTC"},
+    }
+    supported = set(_MC_PLATFORM_FIELD.keys())
+    for platform in platforms:
+        field = _MC_PLATFORM_FIELD.get(platform)
+        if not field:
+            continue
+        if platform == "youtube":
+            payload[field] = {"title": caption[:100], "description": caption}
+        elif platform == "instagram":
+            payload[field] = {"text": caption, "type": "POST"}
+        else:
+            payload[field] = {"text": caption}
+
+    if media_url:
+        payload["media"] = [{"url": media_url}]
+
+    return payload
+
 
 @app.post("/api/publish/{job_id}")
 async def publish_content(job_id: str):
@@ -1133,25 +1179,17 @@ async def publish_content(job_id: str):
     # Caption: prefer generated text post, otherwise use title
     caption = (entry.get("output_text") or entry.get("title", ""))[:2200]
 
-    # Networks payload: Metricool uses keys matching our platform IDs
-    supported = {"linkedin", "instagram", "facebook", "tiktok", "youtube", "twitter"}
-    networks  = {p: {} for p in platforms if p in supported}
-
     # Publish 2 minutes from now so Metricool has time to process
     from datetime import datetime, timezone, timedelta
     pub_dt = (datetime.now(timezone.utc) + timedelta(minutes=2)).strftime("%Y-%m-%dT%H:%M:%S")
 
-    payload: dict = {
-        "caption": caption,
-        "networks": networks,
-        "publicationDate": {"dateTime": pub_dt, "timezone": "UTC"},
-    }
+    payload = _metricool_payload(
+        caption=caption,
+        platforms=platforms,
+        pub_dt=pub_dt,
+        media_url=entry.get("public_media_url"),
+    )
 
-    # Attach media if a public URL is stored on the entry
-    if entry.get("public_media_url"):
-        payload["media"] = [{"url": entry["public_media_url"]}]
-
-    # blogId and userId go as query params, NOT in the body (v2 API requirement)
     async with httpx.AsyncClient(timeout=30) as client:
         res = await client.post(
             f"{_METRICOOL_BASE}/v2/scheduler/posts",
@@ -1250,17 +1288,16 @@ async def publish_schedule_entry(entry_id: str):
         pub_dt_obj = datetime.now(timezone.utc)
     pub_dt = pub_dt_obj.strftime("%Y-%m-%dT%H:%M:%S")
 
-    caption = (lib_entry.get("output_text") or lib_entry.get("title", "") if lib_entry else entry.get("title", ""))[:2200]
+    caption  = (lib_entry.get("output_text") or lib_entry.get("title", "") if lib_entry else entry.get("title", ""))[:2200]
     platform = entry.get("platform", "linkedin")
-    supported = {"linkedin", "instagram", "facebook", "tiktok", "youtube", "twitter"}
-    networks  = {platform: {}} if platform in supported else {}
+    media_url = lib_entry.get("public_media_url") if lib_entry else None
 
-    payload: dict = {
-        "caption": caption, "networks": networks,
-        "publicationDate": {"dateTime": pub_dt, "timezone": "UTC"},
-    }
-    if lib_entry and lib_entry.get("public_media_url"):
-        payload["media"] = [{"url": lib_entry["public_media_url"]}]
+    payload = _metricool_payload(
+        caption=caption,
+        platforms=[platform],
+        pub_dt=pub_dt,
+        media_url=media_url,
+    )
 
     async with httpx.AsyncClient(timeout=30) as client:
         res = await client.post(
