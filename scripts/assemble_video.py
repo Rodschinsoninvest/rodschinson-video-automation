@@ -21,7 +21,6 @@ RÉSULTAT :
 """
 
 import os
-import sys
 import json
 import argparse
 import subprocess
@@ -68,7 +67,7 @@ def run_ffmpeg(cmd: list, label: str = "") -> bool:
 
 # ─── ÉTAPE 1 : CONCAT DES SCÈNES ─────────────────────────────────────────────
 
-def concat_scenes(scene_files: list, output: Path) -> bool:
+def concat_scenes(scene_files: list, output: Path, width: int = 1920, height: int = 1080) -> bool:
     if not scene_files:
         print("  ❌ Aucune scène MP4 trouvée")
         return False
@@ -77,8 +76,8 @@ def concat_scenes(scene_files: list, output: Path) -> bool:
     for sf in scene_files:
         inputs += ["-i", str(sf)]
     scale = "".join(
-        f"[{i}:v]scale=1920:1080:force_original_aspect_ratio=decrease,"
-        f"pad=1920:1080:(ow-iw)/2:(oh-ih)/2[v{i}];"
+        f"[{i}:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
+        f"crop={width}:{height}[v{i}];"
         for i in range(n)
     )
     concat = "".join(f"[v{i}]" for i in range(n))
@@ -212,7 +211,7 @@ def pick_music_track(genre: str = "corporate") -> Path | None:
     return mp3s[0] if mp3s else None
 
 
-def assemble(script_path: str, with_subtitles: bool = True,
+def assemble(script_path: str, with_subtitles: bool = False,
              music_only: bool = False, music_genre: str = "corporate") -> dict:
     """Pipeline d'assemblage complet."""
 
@@ -223,6 +222,8 @@ def assemble(script_path: str, with_subtitles: bool = True,
     scenes = script["scenes"]
     slug   = meta.get("id", "video").replace(" ", "_")
     fmt    = meta.get("format", "youtube")
+    width  = meta.get("largeur", meta.get("width",  1920))
+    height = meta.get("hauteur", meta.get("height", 1080))
 
     print(f"\n{'═'*55}")
     print(f"  🎬  ASSEMBLAGE — {meta.get('titre','')[:45]}")
@@ -254,7 +255,7 @@ def assemble(script_path: str, with_subtitles: bool = True,
 
         # ── Étape 1 : Concat scènes ────────────────────────────────────
         concat_out = tmp_dir / "concat.mp4"
-        if not concat_scenes(scene_files, concat_out):
+        if not concat_scenes(scene_files, concat_out, width=width, height=height):
             return {}
 
         # ── Étape 2 : Chercher l'audio ──────────────────────────────────
