@@ -158,7 +158,11 @@ function PostDetailModal({ entry, onClose, onRemove, onPublished }) {
     }
     setPublishing(true); setPubError('')
     try {
-      const res = await fetch(`/api/schedule/${entry.id}/publish`, { method: 'POST' })
+      const res = await fetch(`/api/schedule/${entry.id}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry),
+      })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         setPubError(err.detail || `Error ${res.status}`)

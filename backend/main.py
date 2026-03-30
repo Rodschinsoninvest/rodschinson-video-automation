@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 import base64
 import hashlib
 import secrets
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Query
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
@@ -1257,12 +1257,25 @@ async def create_schedule_entry(body: ScheduleCreate):
 
 
 @app.post("/api/schedule/{entry_id}/publish")
-async def publish_schedule_entry(entry_id: str):
-    """Send a scheduled entry to Metricool at its stored scheduled_time."""
+async def publish_schedule_entry(entry_id: str, request: Request):
+    """Send a scheduled entry to Metricool.
+    If the entry isn't in the local schedule file (e.g. Railway stateless deploy),
+    the caller can pass the full entry object in the request body as fallback.
+    """
     entries = await _schedule_load()
     entry   = next((e for e in entries if e.get("id") == entry_id), None)
+
+    # Fallback: use body data if entry not in DB (stateless deploy / Railway)
     if not entry:
-        raise HTTPException(404, "Schedule entry not found")
+        try:
+            body = await request.json()
+            if body and isinstance(body, dict):
+                entry = {**body, "id": entry_id}
+        except Exception:
+            pass
+
+    if not entry:
+        raise HTTPException(404, f"Schedule entry '{entry_id}' not found")
 
     job_id  = entry.get("job_id", "")
     brand   = "rodschinson"
@@ -1307,16 +1320,19 @@ async def publish_schedule_entry(entry_id: str):
             json=payload,
         )
 
+    in_db = any(e.get("id") == entry_id for e in entries)
+
     if res.status_code not in (200, 201):
-        # Mark as failed
-        entry["publish_status"] = "failed"
-        entry["publish_error"]  = res.text[:300]
-        await _schedule_save(entries)
+        if in_db:
+            entry["publish_status"] = "failed"
+            entry["publish_error"]  = res.text[:300]
+            await _schedule_save(entries)
         raise HTTPException(502, f"Metricool returned {res.status_code}: {res.text[:300]}")
 
-    entry["publish_status"] = "sent"
-    entry["published_at"]   = _now()
-    await _schedule_save(entries)
+    if in_db:
+        entry["publish_status"] = "sent"
+        entry["published_at"]   = _now()
+        await _schedule_save(entries)
     if lib_entry:
         lib_entry["status"] = "Published"; lib_entry["updated_at"] = _now()
         await _library_save(lib)
