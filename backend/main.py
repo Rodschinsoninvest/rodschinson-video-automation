@@ -217,58 +217,88 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
             output_file = str(video_files[0]) if video_files else None
 
         # ════════════════════════════════════════════════════════════════════════
-        # CAROUSEL  —  Copy → Slides → Export
+        # CAROUSEL  —  Write copy (Claude) → Structure slides → Export JSON
+        # Note: Puppeteer carousel rendering not yet supported; output is a
+        # structured JSON slide deck ready for Canva or a future renderer.
         # ════════════════════════════════════════════════════════════════════════
         elif content_type == "carousel":
-            if not script_path:
-                await step(
-                    "Writing slide copy", 15,
-                    [str(PYTHON), str(SCRIPTS / "generate_video_script.py"),
-                     "--brand", brand_arg, "--sujet", subject,
-                     "--format", "linkedin", "--duree", "3.0"],
-                )
-                files = sorted((OUTPUT / "scripts").glob("script_*.json"),
-                               key=lambda p: p.stat().st_mtime, reverse=True)
-                if not files:
-                    raise RuntimeError("Slide copy generation produced no output")
-                script_path = files[0]
+            num_slides = int(data.get("slides", 6))  # user-chosen slide count
 
-            _job_update(job, script_path=str(script_path))
+            _job_update(job, status="running", step="Writing slide copy", progress=15)
             await _save_job(job)
 
-            node_cmd = ["node", str(PUPPET / "renderer.js"),
-                        "--script", str(script_path),
-                        "--template", template,
-                        "--mode", "carousel"]
-            if logo_path:
-                node_cmd += ["--logo", str(logo_path)]
-            await step("Rendering slides", 55, node_cmd, cwd=PUPPET)
+            # Call Claude to write structured slide content directly
+            anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
+            if not anthropic_key:
+                raise RuntimeError("ANTHROPIC_API_KEY not set in .env")
 
-            # Export slides inline — build structured JSON without external script
+            lang_map = {"EN": "English", "FR": "French", "NL": "Dutch"}
+            lang_name = lang_map.get(language.upper(), "English")
+            style_hints = {
+                "viral_hook": "Hook-first, bold statements, curiosity gap.",
+                "educational": "Teach one clear concept per slide. Use data.",
+                "data_story": "Lead each slide with a key stat.",
+                "personal": "First person, personal story, authentic.",
+                "provocateur": "Challenge assumptions, contrarian.",
+                "thread": "Each slide is a standalone punchy point.",
+            }
+            canva_template = data.get("canva_template_url", "")
+            canva_note = f"\nVisual reference: {canva_template}" if canva_template else ""
+
+            carousel_prompt = f"""Write a {num_slides}-slide LinkedIn carousel in {lang_name}.
+
+TOPIC: {subject}
+BRAND: {"Rodschinson Investment" if brand_arg == "rodschinson" else "Rachid Chikhi"}
+STYLE: {style_hints.get(style, style_hints["educational"])}{canva_note}
+
+Return ONLY a JSON array with exactly {num_slides} objects. Schema:
+[
+  {{"index": 1, "type": "title", "headline": "...", "subheadline": "...", "cta": "Swipe →"}},
+  {{"index": 2, "type": "content", "headline": "Point title", "body": "2-3 sentence explanation", "stat": "optional key number"}},
+  ...
+  {{"index": {num_slides}, "type": "cta", "headline": "Call to action", "body": "Follow / DM / Link in bio", "hashtags": ["#Tag1","#Tag2","#Tag3"]}}
+]
+Slide 1 must be type "title". Last slide must be type "cta". Middle slides type "content".
+No markdown, no explanation — just the JSON array."""
+
+            async with httpx.AsyncClient(timeout=60) as _client:
+                _res = await _client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={"x-api-key": anthropic_key, "anthropic-version": "2023-06-01",
+                             "content-type": "application/json"},
+                    json={"model": "claude-sonnet-4-6", "max_tokens": 3000,
+                          "messages": [{"role": "user", "content": carousel_prompt}]},
+                )
+            if _res.status_code != 200:
+                raise RuntimeError(f"Claude API error {_res.status_code}: {_res.text[:200]}")
+
+            raw = _res.json()["content"][0]["text"].strip()
+            # Strip markdown fences if present
+            if raw.startswith("```"):
+                raw = re.sub(r"^```[a-z]*\n?", "", raw)
+                raw = re.sub(r"\n?```$", "", raw.strip())
+
+            try:
+                _slides = json.loads(raw)
+            except json.JSONDecodeError:
+                # Fallback: extract JSON array
+                import re as _re
+                m = _re.search(r"\[.*\]", raw, _re.DOTALL)
+                _slides = json.loads(m.group()) if m else []
+
             _job_update(job, status="running", step="Exporting slides", progress=85)
             await _save_job(job)
-
-            async with aiofiles.open(script_path) as _f:
-                _sd = json.loads(await _f.read())
-
-            _meta   = _sd.get("meta", {})
-            _scenes = _sd.get("scenes", [])
-            _slides = [{"index": 1, "type": "title", "headline": _meta.get("titre", subject),
-                        "subheadline": _meta.get("description", "")[:120], "cta": "Swipe →"}]
-            for _i, _sc in enumerate(_scenes[:7], start=2):
-                _vis = _sc.get("visuel", {})
-                _slides.append({"index": _i, "type": "content",
-                    "headline": _vis.get("titre_principal", _sc.get("nom", f"Point {_i-1}")),
-                    "body": _sc.get("narration", "")[:300],
-                    "stat": _vis.get("titre_principal", "") if _sc.get("type_visuel") == "big_number" else ""})
-            _slides.append({"index": len(_slides)+1, "type": "cta",
-                "headline": "Interested?", "body": "Follow for more insights.",
-                "hashtags": _meta.get("hashtags_linkedin", [])[:3]})
 
             carousel_dir = OUTPUT / "carousel"
             carousel_dir.mkdir(parents=True, exist_ok=True)
             carousel_out = carousel_dir / f"{job_id[:8]}_slides.json"
             carousel_out.write_text(json.dumps(_slides, ensure_ascii=False, indent=2), encoding="utf-8")
+
+            # Also save individual slide files
+            for _sl in _slides:
+                (carousel_dir / f"{job_id[:8]}_slide_{_sl['index']:02d}.json").write_text(
+                    json.dumps(_sl, ensure_ascii=False, indent=2), encoding="utf-8")
+
             output_file = str(carousel_out)
 
         # ════════════════════════════════════════════════════════════════════════
@@ -764,6 +794,80 @@ async def delete_template(tpl_id: str):
     if len(updated) == len(templates):
         raise HTTPException(404, "Template not found")
     await _templates_save(updated)
+
+
+# ── Canva Templates ────────────────────────────────────────────────────────────
+
+CANVA_TEMPLATES_FILE = OUTPUT / "canva_templates.json"
+
+
+async def _canva_load() -> list[dict]:
+    if not CANVA_TEMPLATES_FILE.exists(): return []
+    async with aiofiles.open(CANVA_TEMPLATES_FILE) as f:
+        return json.loads(await f.read())
+
+
+async def _canva_save(entries: list[dict]) -> None:
+    async with aiofiles.open(CANVA_TEMPLATES_FILE, "w") as f:
+        await f.write(json.dumps(entries, indent=2, default=str))
+
+
+class CanvaTemplateCreate(BaseModel):
+    name: str
+    url: str               # Canva share URL e.g. https://www.canva.com/design/{id}/...
+    type: str = "carousel" # carousel | video | image
+    thumbnail_url: str = ""
+
+
+@app.get("/api/canva-templates")
+async def list_canva_templates(type: Optional[str] = None):
+    templates = await _canva_load()
+    if type:
+        templates = [t for t in templates if t.get("type") == type]
+    return {"templates": templates}
+
+
+@app.post("/api/canva-templates", status_code=201)
+async def add_canva_template(body: CanvaTemplateCreate):
+    if "canva.com" not in body.url:
+        raise HTTPException(422, "URL must be a Canva share link (canva.com)")
+
+    # Extract design ID from URL for embed
+    # e.g. https://www.canva.com/design/DAxxxxxx/view
+    design_id = ""
+    import re as _re
+    m = _re.search(r"/design/([A-Za-z0-9_-]+)", body.url)
+    if m:
+        design_id = m.group(1)
+
+    embed_url = f"https://www.canva.com/design/{design_id}/view?embed=1" if design_id else ""
+    thumbnail = body.thumbnail_url or (
+        f"https://www.canva.com/design/{design_id}/thumbnail" if design_id else ""
+    )
+
+    templates = await _canva_load()
+    tpl = {
+        "id": str(uuid.uuid4()),
+        "name": body.name,
+        "url": body.url,
+        "embed_url": embed_url,
+        "thumbnail_url": thumbnail,
+        "design_id": design_id,
+        "type": body.type,
+        "created_at": _now(),
+    }
+    templates.insert(0, tpl)
+    await _canva_save(templates[:50])
+    return tpl
+
+
+@app.delete("/api/canva-templates/{tpl_id}", status_code=204)
+async def delete_canva_template(tpl_id: str):
+    templates = await _canva_load()
+    updated = [t for t in templates if t.get("id") != tpl_id]
+    if len(updated) == len(templates):
+        raise HTTPException(404, "Canva template not found")
+    await _canva_save(updated)
 
 
 # ── AI Template Generator ──────────────────────────────────────────────────────

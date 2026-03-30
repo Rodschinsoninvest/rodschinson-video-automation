@@ -175,11 +175,14 @@ const ALL_PLATFORMS = [
   { id: 'twitter',   label: 'Twitter/X', color: '#1DA1F2' },
 ]
 
+const SLIDE_COUNTS = [4, 5, 6, 7, 8, 10]
+
 const INITIAL_FORM = {
   subject: '', brand: 'investment', language: 'EN',
   contentType: 'video', format: '16:9',
   template: 'rodschinson_premium', style: 'viral_hook',
   voiceStyle: 'professional', platforms: ['linkedin'], logo: null,
+  slides: 6, canvaTemplateUrl: '',
 }
 
 function loadSavedTemplates() {
@@ -405,6 +408,120 @@ function Spinner() {
       <circle cx="7" cy="7" r="5.5" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
       <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
+  )
+}
+
+// ─── Canva Template Components ───────────────────────────────────────────────
+
+function CanvaTemplateCard({ tpl, active, onClick, onDelete }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{ cursor: 'pointer', borderRadius: 8, overflow: 'hidden', transition: 'all 0.15s', position: 'relative',
+        border: active ? '2px solid #00C4CC' : '2px solid var(--cs-border)',
+        transform: active ? 'scale(1.02)' : 'scale(1)',
+      }}>
+      {/* Canva badge */}
+      <div style={{ position: 'absolute', top: 6, left: 6, zIndex: 2, background: '#00C4CC', borderRadius: 3, padding: '2px 6px', fontSize: 9, fontWeight: 700, color: '#fff' }}>CANVA</div>
+      {onDelete && hover && (
+        <button onClick={e => { e.stopPropagation(); onDelete(tpl.id) }} style={{
+          position: 'absolute', top: 5, right: 5, zIndex: 2, width: 20, height: 20,
+          borderRadius: '50%', background: 'rgba(239,68,68,0.9)', border: 'none',
+          cursor: 'pointer', color: '#fff', fontSize: 11, lineHeight: 1,
+        }}>×</button>
+      )}
+      <div style={{
+        height: 56, background: tpl.thumbnail_url
+          ? `url(${tpl.thumbnail_url}) center/cover`
+          : 'linear-gradient(135deg,#00C4CC,#0097a7)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {!tpl.thumbnail_url && <span style={{ fontSize: 20 }}>🎨</span>}
+      </div>
+      <div style={{
+        padding: '7px 10px', fontSize: 11, textAlign: 'center',
+        background: active ? 'rgba(0,196,204,0.05)' : 'var(--cs-surface2)',
+        color: active ? '#0097a7' : 'var(--cs-text-sub)', fontWeight: active ? 600 : 400,
+        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+      }}>{tpl.name}</div>
+    </div>
+  )
+}
+
+function AddCanvaTemplateModal({ contentType, onAdded, onClose }) {
+  const [name, setName]   = useState('')
+  const [url, setUrl]     = useState('')
+  const [thumb, setThumb] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr]     = useState(null)
+
+  const typeMap = { carousel: 'carousel', image_post: 'image', video: 'video', reel: 'video', story: 'video' }
+  const canvaType = typeMap[contentType] || 'carousel'
+
+  const save = async () => {
+    if (!name.trim() || !url.trim()) { setErr('Name and Canva URL required.'); return }
+    if (!url.includes('canva.com')) { setErr('Must be a canva.com share link.'); return }
+    setSaving(true); setErr(null)
+    try {
+      const res = await fetch('/api/canva-templates', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), url: url.trim(), type: canvaType, thumbnail_url: thumb.trim() }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const tpl = await res.json()
+      onAdded(tpl)
+    } catch (e) {
+      setErr(e.message)
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 14, width: 460, maxWidth: '94vw', padding: 26, boxShadow: '0 20px 60px rgba(0,0,0,0.18)', animation: 'fadein 0.15s ease' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+          <div>
+            <h3 style={{ color: 'var(--cs-text)', fontSize: 15, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ background: '#00C4CC', borderRadius: 4, padding: '2px 8px', fontSize: 11, color: '#fff', fontWeight: 700 }}>CANVA</span>
+              Import Template
+            </h3>
+            <p style={{ color: 'var(--cs-text-muted)', fontSize: 12, margin: '4px 0 0' }}>Paste the share link from your Canva design</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 22 }}>×</button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <label style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>TEMPLATE NAME</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. My Carousel Blue Theme" style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: 7, border: '1px solid var(--cs-border)', background: 'var(--cs-input-bg)', color: 'var(--cs-text)', fontSize: 13, outline: 'none', fontFamily: 'inherit' }} />
+          </div>
+          <div>
+            <label style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>CANVA SHARE URL</label>
+            <input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://www.canva.com/design/DAxxxxxx/view" style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: 7, border: '1px solid var(--cs-border)', background: 'var(--cs-input-bg)', color: 'var(--cs-text)', fontSize: 13, outline: 'none', fontFamily: 'inherit' }} />
+            <div style={{ color: 'var(--cs-text-muted)', fontSize: 11, marginTop: 4 }}>In Canva: Share → Copy link</div>
+          </div>
+          <div>
+            <label style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>THUMBNAIL URL <span style={{ fontWeight: 400, color: 'var(--cs-text-muted)' }}>(optional)</span></label>
+            <input value={thumb} onChange={e => setThumb(e.target.value)} placeholder="https://..." style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: 7, border: '1px solid var(--cs-border)', background: 'var(--cs-input-bg)', color: 'var(--cs-text)', fontSize: 13, outline: 'none', fontFamily: 'inherit' }} />
+          </div>
+
+          <div style={{ background: 'rgba(0,196,204,0.06)', border: '1px solid rgba(0,196,204,0.2)', borderRadius: 7, padding: '8px 12px', fontSize: 11, color: 'var(--cs-text-muted)' }}>
+            The Canva design will be used as a visual reference. Content is generated by AI and styled to match your template.
+          </div>
+
+          {err && <div style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, padding: '8px 12px', color: '#dc2626', fontSize: 12 }}>{err}</div>}
+
+          <button onClick={save} disabled={saving} style={{
+            padding: '11px', borderRadius: 8, border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
+            background: saving ? 'var(--cs-hover)' : '#00C4CC',
+            color: saving ? 'var(--cs-text-muted)' : '#fff', fontSize: 13, fontWeight: 700,
+          }}>{saving ? 'Saving…' : '🎨 Import Template'}</button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -635,10 +752,20 @@ export default function NewContent() {
   const [showTplMenu, setShowTplMenu]       = useState(false)
   const tplMenuRef = useRef()
   // AI template generator
-  const [showGenTpl, setShowGenTpl]         = useState(false)
+  const [showGenTpl, setShowGenTpl]           = useState(false)
   const [customTemplates, setCustomTemplates] = useState(() => {
     try { return JSON.parse(localStorage.getItem('cs-custom-templates') || '[]') } catch { return [] }
   })
+  // Canva templates
+  const [showCanvaTpl, setShowCanvaTpl]       = useState(false)
+  const [canvaTemplates, setCanvaTemplates]   = useState([])
+
+  useEffect(() => {
+    fetch('/api/canva-templates')
+      .then(r => r.json())
+      .then(d => setCanvaTemplates(d.templates || []))
+      .catch(() => {})
+  }, [])
 
   // Derived
   const typeDef    = CONTENT_TYPES.find(t => t.id === form.contentType) || CONTENT_TYPES[0]
@@ -722,6 +849,8 @@ export default function NewContent() {
       contentType: form.contentType, format: form.format,
       template: form.template, style: form.style,
       voiceStyle: form.voiceStyle, platforms: form.platforms,
+      slides: form.slides,
+      ...(form.canvaTemplateUrl ? { canva_template_url: form.canvaTemplateUrl } : {}),
       ...(previewScript && editedScript ? { custom_script: editedScript } : {}),
     }))
     if (form.logo) body.append('logo', form.logo)
@@ -804,6 +933,13 @@ export default function NewContent() {
           contentType={form.contentType}
           onGenerated={handleTemplateGenerated}
           onClose={() => setShowGenTpl(false)}
+        />
+      )}
+      {showCanvaTpl && (
+        <AddCanvaTemplateModal
+          contentType={form.contentType}
+          onAdded={(tpl) => { setCanvaTemplates(prev => [tpl, ...prev]); setShowCanvaTpl(false); set('canvaTemplateUrl', tpl.url); set('template', tpl.id) }}
+          onClose={() => setShowCanvaTpl(false)}
         />
       )}
 
@@ -964,22 +1100,74 @@ export default function NewContent() {
               </Section>
             )}
 
+            {/* Slide count — carousel only */}
+            {form.contentType === 'carousel' && (
+              <Section title="Number of Slides" hint="How many slides in your carousel?">
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {SLIDE_COUNTS.map(n => (
+                    <Chip key={n} active={form.slides === n} onClick={() => set('slides', n)}>{n} slides</Chip>
+                  ))}
+                </div>
+              </Section>
+            )}
+
             {/* Templates — not shown for text_only */}
             {typeDef.showTemplate && (
               <Section title="Template" hint={`Templates designed for ${typeDef.label}`}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 10, marginBottom: 12 }}>
+                {/* Built-in + AI-generated templates */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 10, marginBottom: 10 }}>
                   {templates.map(t => (
                     <TemplateCard key={t.id} tpl={t} active={form.template === t.id} onClick={() => set('template', t.id)} />
                   ))}
                 </div>
-                <button onClick={() => setShowGenTpl(true)} style={{
-                  width: '100%', padding: '9px', borderRadius: 7, cursor: 'pointer',
-                  border: '1px dashed rgba(0,182,255,0.4)', background: 'rgba(0,182,255,0.04)',
-                  color: '#00B6FF', fontSize: 12, fontWeight: 600,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                }}>
-                  ✨ Generate new template with AI
-                </button>
+
+                {/* Canva templates (filtered by type) */}
+                {canvaTemplates.filter(t => {
+                  if (form.contentType === 'carousel') return t.type === 'carousel'
+                  if (form.contentType === 'image_post') return t.type === 'image'
+                  return t.type === 'video'
+                }).length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ color: 'var(--cs-text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ background: '#00C4CC', borderRadius: 3, padding: '1px 5px', color: '#fff', fontSize: 9 }}>CANVA</span>
+                      Your Canva Templates
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 10 }}>
+                      {canvaTemplates.filter(t => {
+                        if (form.contentType === 'carousel') return t.type === 'carousel'
+                        if (form.contentType === 'image_post') return t.type === 'image'
+                        return t.type === 'video'
+                      }).map(t => (
+                        <CanvaTemplateCard
+                          key={t.id}
+                          tpl={t}
+                          active={form.canvaTemplateUrl === t.url}
+                          onClick={() => { set('canvaTemplateUrl', t.url); set('template', t.id) }}
+                          onDelete={async (id) => {
+                            await fetch(`/api/canva-templates/${id}`, { method: 'DELETE' })
+                            setCanvaTemplates(prev => prev.filter(c => c.id !== id))
+                            if (form.canvaTemplateUrl) set('canvaTemplateUrl', '')
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => setShowGenTpl(true)} style={{
+                    flex: 1, padding: '9px', borderRadius: 7, cursor: 'pointer',
+                    border: '1px dashed rgba(0,182,255,0.4)', background: 'rgba(0,182,255,0.04)',
+                    color: '#00B6FF', fontSize: 12, fontWeight: 600,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  }}>✨ Generate with AI</button>
+                  <button onClick={() => setShowCanvaTpl(true)} style={{
+                    flex: 1, padding: '9px', borderRadius: 7, cursor: 'pointer',
+                    border: '1px dashed rgba(0,196,204,0.4)', background: 'rgba(0,196,204,0.04)',
+                    color: '#00C4CC', fontSize: 12, fontWeight: 600,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  }}>🎨 Import from Canva</button>
+                </div>
               </Section>
             )}
 
@@ -1096,7 +1284,8 @@ export default function NewContent() {
               <SummaryRow label="Brand"     value={BRANDS.find(b => b.id === form.brand)?.name} />
               <SummaryRow label="Language"  value={form.language} />
               {form.contentType !== 'text_only' && <SummaryRow label="Format"    value={form.format} />}
-              {typeDef.showTemplate && <SummaryRow label="Template"  value={templates.find(t => t.id === form.template)?.label} />}
+              {form.contentType === 'carousel' && <SummaryRow label="Slides" value={`${form.slides} slides`} />}
+              {typeDef.showTemplate && <SummaryRow label="Template"  value={form.canvaTemplateUrl ? `🎨 Canva: ${canvaTemplates.find(t => t.url === form.canvaTemplateUrl)?.name || 'Custom'}` : templates.find(t => t.id === form.template)?.label} />}
               {typeDef.showWritingStyle && <SummaryRow label="Style"     value={STYLES.find(s => s.id === form.style)?.label} />}
               {typeDef.showVoiceStyle   && <SummaryRow label="Voice"     value={VOICE_STYLES.find(v => v.id === form.voiceStyle)?.label} />}
               <SummaryRow label="Platforms" value={form.platforms.map(id => ALL_PLATFORMS.find(p => p.id === id)?.label).filter(Boolean).join(', ') || '—'} />
