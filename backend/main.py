@@ -1135,8 +1135,6 @@ async def publish_content(job_id: str):
     pub_dt = (datetime.now(timezone.utc) + timedelta(minutes=2)).strftime("%Y-%m-%dT%H:%M:%S")
 
     payload: dict = {
-        "blogId": blog_id,
-        "userId": user_id,
         "caption": caption,
         "networks": networks,
         "publicationDate": {"dateTime": pub_dt, "timezone": "UTC"},
@@ -1146,10 +1144,12 @@ async def publish_content(job_id: str):
     if entry.get("public_media_url"):
         payload["media"] = [{"url": entry["public_media_url"]}]
 
+    # blogId and userId go as query params, NOT in the body (v2 API requirement)
     async with httpx.AsyncClient(timeout=30) as client:
         res = await client.post(
             f"{_METRICOOL_BASE}/v2/scheduler/posts",
             headers=await _metricool_headers(),
+            params={"userId": user_id, "blogId": blog_id},
             json=payload,
         )
 
@@ -1249,7 +1249,6 @@ async def publish_schedule_entry(entry_id: str):
     networks  = {platform: {}} if platform in supported else {}
 
     payload: dict = {
-        "blogId": blog_id, "userId": user_id,
         "caption": caption, "networks": networks,
         "publicationDate": {"dateTime": pub_dt, "timezone": "UTC"},
     }
@@ -1260,6 +1259,7 @@ async def publish_schedule_entry(entry_id: str):
         res = await client.post(
             f"{_METRICOOL_BASE}/v2/scheduler/posts",
             headers=await _metricool_headers(),
+            params={"userId": user_id, "blogId": blog_id},
             json=payload,
         )
 
