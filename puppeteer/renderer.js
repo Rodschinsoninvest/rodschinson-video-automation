@@ -33,10 +33,17 @@ const SCENES_OUT = path.join(ROOT, 'output', 'scenes');
 const TMPL_DIR   = path.join(__dirname, 'templates');
 
 // ── QUALITY PRESETS ──────────────────────────────────────────────────────────
+// Landscape presets
 const QUALITY = {
   h: { width: 1920, height: 1080, fps: 24 },
   m: { width: 1280, height: 720,  fps: 24 },
   l: { width: 854,  height: 480,  fps: 20 },
+};
+// Portrait presets (9:16 for reels/stories)
+const QUALITY_PORTRAIT = {
+  h: { width: 1080, height: 1920, fps: 30 },
+  m: { width: 720,  height: 1280, fps: 30 },
+  l: { width: 540,  height: 960,  fps: 24 },
 };
 
 // ── TEMPLATE MAP ─────────────────────────────────────────────────────────────
@@ -268,7 +275,7 @@ async function renderScene(browser, rawScene, opts) {
       '-pix_fmt', 'yuv420p',
       '-crf', '20',
       '-preset', 'fast',
-      '-vf', `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`,
+      '-vf', `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`,
       outputPath,
     ], { stdio: 'pipe' });
 
@@ -308,8 +315,17 @@ async function main() {
   const script   = JSON.parse(fs.readFileSync(args.script, 'utf8'));
   const meta     = script.meta   || {};
   const scenes   = script.scenes || [];
-  const qual     = QUALITY[args.quality] || QUALITY.h;
   const tmplName = args.template || meta.template || 'rodschinson_premium';
+
+  // Resolve dimensions: script meta takes priority over quality presets
+  const scriptW   = meta.largeur || meta.width  || 0;
+  const scriptH   = meta.hauteur || meta.height || 0;
+  const isPortrait = scriptH > scriptW || meta.ratio === '9:16' || meta.format === 'reel';
+  const presets   = isPortrait ? QUALITY_PORTRAIT : QUALITY;
+  const baseQual  = presets[args.quality] || presets.h;
+  const qual      = (scriptW > 0 && scriptH > 0)
+    ? { width: scriptW, height: scriptH, fps: meta.fps || baseQual.fps }
+    : baseQual;
 
   // Resolve template: check known map first, then look for {name}.html on disk,
   // finally fall back to rodschinson_premium.
@@ -382,7 +398,8 @@ async function main() {
     console.log(`  python3 scripts/generate_audio.py --script ${args.script}\n`);
   }
 
-  process.exit(err.length > 0 ? 1 : 0);
+  // Exit 1 only if NOTHING rendered — partial failures still produce a video
+  process.exit(ok.length === 0 ? 1 : 0);
 }
 
 main().catch(e => { console.error('Fatal:', e.message); process.exit(1); });
