@@ -650,16 +650,16 @@ html, body {
 // Normalize field names from different Claude API response formats
 function normBN(d) {
   if (d.chiffre_principal) {
-    const raw = String(d.chiffre_principal).replace(/[%KMB+]/g,'').replace(/€/g,'').trim();
+    const raw = String(d.chiffre_principal).replace(/[%KMB+]/g,'').replace(/\u20AC/g,'').trim();
     const unit = d.chiffre_principal.includes('%') ? '%' :
-                 d.chiffre_principal.includes('€') ? '€' :
-                 d.chiffre_principal.includes('M') ? 'M€' : '';
+                 d.chiffre_principal.includes('\u20AC') ? '\u20AC' :
+                 d.chiffre_principal.includes('M') ? 'M\u20AC' : '';
     d.valeur = raw;
     d.unite  = unit;
   }
   if (d.chiffre_secondaire && !d.contexte) d.contexte = d.chiffre_secondaire;
   if (!d.valeur)   d.valeur  = String(d.nombre || d.value || d.number || 0);
-  if (!d.unite)    d.unite   = d.unit || d.unité || '%';
+  if (!d.unite)    d.unite   = d.unit || d['unit\u00E9'] || '%';
   if (!d.eyebrow)  d.eyebrow = d.label || d.titre || '';
   if (!d.contexte) d.contexte = d.description || d.subtitle || '';
   if (!d.formule)  d.formule  = d.formula || d.calcul || '';
@@ -669,7 +669,7 @@ function normBN(d) {
 function normTC(d) {
   if (!d.titre_principal) d.titre_principal = d.titre || d.title || d.headline || '';
   if (!d.sous_titre)      d.sous_titre      = d.subtitle || d.sous_titre || '';
-  if (!d.eyebrow)         d.eyebrow         = d.location || 'Brussels · Dubai · Casablanca';
+  if (!d.eyebrow)         d.eyebrow         = d.location || 'Brussels \u00B7 Dubai \u00B7 Casablanca';
   if (!d.scene_number)    d.scene_number    = d.numero || '01';
   return d;
 }
@@ -683,7 +683,7 @@ function normBC(d) {
     }));
   }
   if (!d.titre) d.titre = d.title || d.headline || '';
-  if (!d.source) d.source = d.sources || 'Source : CBRE / JLL — Rodschinson Investment';
+  if (!d.source) d.source = d.sources || 'Source : CBRE / JLL \u2014 Rodschinson Investment';
   if (!d.unite) d.unite = d.unit || '%';
   return d;
 }
@@ -711,7 +711,7 @@ function normTB(d) {
 
 function normCTA(d) {
   if (!d.headline) d.headline = d.titre || d.title || d.cta_text || '';
-  if (!d.cta_text) d.cta_text = d.bouton || d.button || d.cta || 'Consultation Gratuite — 30 min';
+  if (!d.cta_text) d.cta_text = d.bouton || d.button || d.cta || 'Consultation Gratuite \u2014 30 min';
   if (!d.url)      d.url      = d.site || d.link || 'rodschinson.com';
   if (!d.eyebrow)  d.eyebrow  = d.brand || 'Rodschinson Investment';
   return d;
@@ -721,12 +721,12 @@ const SCENE_BUILDERS = {
 
   title_card: (data) => { data = normTC(data); return  `
     <div class="scene title-card" id="scene">
-      <div class="tc-eyebrow">${data.eyebrow || 'Brussels · Dubai · Casablanca'}</div>
+      <div class="tc-eyebrow">${data.eyebrow || 'Brussels \u00B7 Dubai \u00B7 Casablanca'}</div>
       <div class="tc-title">${formatTitle(data.titre_principal || '')}</div>
       <div class="tc-divider"></div>
       <div class="tc-sub">${data.sous_titre || ''}</div>
       <div class="tc-waternum">${String(data.scene_number || '01').padStart(2,'0')}</div>
-    </div>`,
+    </div>`; },
 
   big_number: (data) => { data = normBN(data); return  `
     <div class="scene big-number" id="scene">
@@ -737,7 +737,7 @@ const SCENE_BUILDERS = {
       </div>
       <div class="bn-context">${data.contexte || ''}</div>
       ${data.formule ? `<div class="bn-formula">${formatFormula(data.formule)}</div>` : ''}
-    </div>`,
+    </div>`; },
 
   bar_chart: (data) => { data = normBC(data);
     const series = data.series || [];
@@ -803,9 +803,9 @@ const SCENE_BUILDERS = {
       <div class="cta-eyebrow">${data.eyebrow || 'Rodschinson Investment'}</div>
       <div class="cta-headline">${formatTitle(data.headline || '')}</div>
       <div class="cta-divider"></div>
-      <div class="cta-btn">${data.cta_text || 'Consultation Gratuite — 30 min'}</div>
+      <div class="cta-btn">${data.cta_text || 'Consultation Gratuite \u2014 30 min'}</div>
       <div class="cta-url">${data.url || 'rodschinson.com'}</div>
-    </div>`,
+    </div>`; },
 
   split_screen: (data) => { data = normCTA(data);
     const left  = data.colonne_gauche || {};
@@ -866,7 +866,7 @@ function formatTitle(text) {
 }
 
 function formatFormula(text) {
-  const nums = text.match(/[\d.,]+\s*[€%KM]*/g) || [];
+  const nums = text.match(/[\d.,]+\s*[\u20AC%KM]*/g) || [];
   let result = text;
   nums.forEach(n => {
     result = result.replace(n, `<span>${n}</span>`);

@@ -193,7 +193,27 @@ def export_reel(video_16x9: Path, output: Path) -> bool:
 
 # ─── PIPELINE COMPLET ────────────────────────────────────────────────────────
 
-def assemble(script_path: str, with_subtitles: bool = True) -> dict:
+MUSIC_DIR = ROOT / "assets" / "music"
+
+
+def pick_music_track(genre: str = "corporate") -> Path | None:
+    """Return path to a cached music track matching the genre."""
+    manifest_path = MUSIC_DIR / "tracks.json"
+    if manifest_path.exists():
+        import json as _json
+        tracks = _json.loads(manifest_path.read_text())
+        # prefer matching genre
+        for t in sorted(tracks, key=lambda x: x.get("genre") == genre, reverse=True):
+            p = Path(t.get("local", ""))
+            if p.exists():
+                return p
+    # fallback: any mp3 in music dir
+    mp3s = sorted(MUSIC_DIR.glob("*.mp3"))
+    return mp3s[0] if mp3s else None
+
+
+def assemble(script_path: str, with_subtitles: bool = True,
+             music_only: bool = False, music_genre: str = "corporate") -> dict:
     """Pipeline d'assemblage complet."""
 
     with open(script_path, encoding="utf-8") as f:
@@ -238,17 +258,22 @@ def assemble(script_path: str, with_subtitles: bool = True) -> dict:
             return {}
 
         # ── Étape 2 : Chercher l'audio ──────────────────────────────────
-        audio_file = OUTPUT_AUDIO / f"narration_{slug}_full.mp3"
-        if not audio_file.exists():
-            # Chercher un audio alternatif
-            alts = list(OUTPUT_AUDIO.glob(f"*{slug}*.mp3"))
-            if alts:
-                audio_file = sorted(alts)[-1]
-                print(f"  ℹ️  Audio alternatif trouvé : {audio_file.name}")
+        if music_only:
+            audio_file = pick_music_track(music_genre)
+            if audio_file:
+                print(f"  🎵  Music track : {audio_file.name}")
             else:
-                print(f"  ⚠️  Audio introuvable — vidéo sans son")
-                print(f"  Lancez : python scripts/generate_audio.py --script {script_path}")
-                audio_file = None
+                print(f"  ⚠️  No music track found — run download_music.py first")
+        else:
+            audio_file = OUTPUT_AUDIO / f"narration_{slug}_full.mp3"
+            if not audio_file.exists():
+                alts = list(OUTPUT_AUDIO.glob(f"*{slug}*.mp3"))
+                if alts:
+                    audio_file = sorted(alts)[-1]
+                    print(f"  ℹ️  Audio alternatif trouvé : {audio_file.name}")
+                else:
+                    print(f"  ⚠️  Audio introuvable — vidéo sans son")
+                    audio_file = None
 
         # ── Étape 3 : Merge audio ──────────────────────────────────────
         ts = datetime.now().strftime("%Y%m%d_%H%M")
@@ -256,11 +281,21 @@ def assemble(script_path: str, with_subtitles: bool = True) -> dict:
 
         import subprocess as sp
         if audio_file and audio_file.exists():
-            cmd = ["ffmpeg", "-y",
-                   "-i", str(concat_out),
-                   "-i", str(audio_file),
-                   "-c:v", "copy", "-c:a", "aac", "-shortest",
-                   str(out_16x9)]
+            # For music-only: loop music to match video duration, set volume low
+            if music_only:
+                cmd = ["ffmpeg", "-y",
+                       "-i", str(concat_out),
+                       "-stream_loop", "-1", "-i", str(audio_file),
+                       "-c:v", "copy", "-c:a", "aac", "-b:a", AUDIO_BITRATE,
+                       "-filter:a", "volume=0.3",
+                       "-map", "0:v:0", "-map", "1:a:0",
+                       "-shortest", str(out_16x9)]
+            else:
+                cmd = ["ffmpeg", "-y",
+                       "-i", str(concat_out),
+                       "-i", str(audio_file),
+                       "-c:v", "copy", "-c:a", "aac", "-shortest",
+                       str(out_16x9)]
             r = sp.run(cmd, capture_output=True, text=True)
             if r.returncode != 0:
                 print(f"  ❌ Merge audio failed: {r.stderr[-200:]}")
@@ -302,10 +337,15 @@ def main():
     parser = argparse.ArgumentParser(description="Rodschinson — Assemblage FFmpeg")
     parser.add_argument("--script",        help="Chemin JSON script")
     parser.add_argument("--no-subtitles",  action="store_true")
+    parser.add_argument("--music-only",    action="store_true", help="Use background music instead of voiceover")
+    parser.add_argument("--music-genre",   default="corporate", help="Music genre: corporate|cinematic|lofi|upbeat")
     args = parser.parse_args()
 
     if args.script:
-        assemble(args.script, with_subtitles=not args.no_subtitles)
+        assemble(args.script,
+                 with_subtitles=not args.no_subtitles,
+                 music_only=args.music_only,
+                 music_genre=args.music_genre)
     else:
         parser.print_help()
         print("\n  Exemple :")

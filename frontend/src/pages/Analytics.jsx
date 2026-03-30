@@ -263,13 +263,35 @@ export default function Analytics() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ color: 'var(--cs-text)', fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>Analytics</h1>
-          <p style={{ color: 'var(--cs-text-muted)', fontSize: 13, margin: 0 }}>
+          <p style={{ color: 'var(--cs-text-muted)', fontSize: 13, margin: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             Last 30 days · updated hourly
-            {apiError && <span style={{ color: 'rgba(200,169,110,0.6)', marginLeft: 10 }}>· API offline, showing demo data</span>}
+            {data?.source === 'metricool' && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(0,182,255,0.08)', border: '1px solid rgba(0,182,255,0.2)', borderRadius: 10, padding: '1px 8px', fontSize: 11, color: '#00B6FF', fontWeight: 600 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00B6FF', display: 'inline-block' }} />
+                Metricool
+              </span>
+            )}
+            {data?.source === 'internal' && (
+              <span style={{ color: 'rgba(200,169,110,0.6)', fontSize: 11 }}>· demo data — connect Metricool to see real stats</span>
+            )}
+            {apiError && <span style={{ color: 'rgba(200,169,110,0.6)', fontSize: 11 }}>· API offline</span>}
           </p>
         </div>
         <BrandFilter active={brand} onChange={b => { setBrand(b); load(b) }} />
       </div>
+
+      {/* Metricool setup banner */}
+      {!loading && data?.source === 'internal' && (
+        <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 10, background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ color: 'var(--cs-text)', fontSize: 13, fontWeight: 600, marginBottom: 2 }}>Connect Metricool for real analytics</div>
+            <div style={{ color: 'var(--cs-text-muted)', fontSize: 12 }}>Add <code style={{ background: 'var(--cs-hover)', padding: '1px 5px', borderRadius: 3 }}>METRICOOL_TOKEN</code>, <code style={{ background: 'var(--cs-hover)', padding: '1px 5px', borderRadius: 3 }}>METRICOOL_USER_ID</code> and <code style={{ background: 'var(--cs-hover)', padding: '1px 5px', borderRadius: 3 }}>METRICOOL_BLOG_ID</code> to your .env</div>
+          </div>
+          <a href="https://app.metricool.com/en/profile/integrations" target="_blank" rel="noreferrer" style={{ padding: '7px 16px', borderRadius: 7, background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.3)', color: '#C8A96E', fontSize: 12, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            Get API token →
+          </a>
+        </div>
+      )}
 
       {loading && <LoadingSkeleton />}
 

@@ -378,10 +378,10 @@ def generate_script(brand: str, brief: dict) -> dict:
     print(f"\n  🎬 Génération script : {titre}")
     print(f"     Format : {FORMATS[fmt]['label']} · {duree} min")
     print(f"     Brand  : {brand.upper()}")
-    print(f"     Claude : claude-sonnet-4-20250514\n")
+    print(f"     Claude : claude-sonnet-4-6\n")
 
     message = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=6000,
         system=system,
         messages=[{"role": "user", "content": prompt}],

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080, height=1080">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:   #031520;
+  --bg2:  #061e2e;
+  --sky:  #00B6FF;
+  --gold: #C8A96E;
+  --grn:  #00E5A0;
+  --dim:  rgba(255,255,255,0.5);
+  --sans: 'Space Grotesk', sans-serif;
+  --mono: 'Space Mono', monospace;
+}
+
+html, body {
+  width: 1080px;
+  height: 1080px;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: var(--sans);
+}
+
+.frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.scan-line {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--sky) 30%, var(--grn) 70%, transparent);
+  opacity: 0.8;
+}
+
+.grid-lines {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,182,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,182,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.brand-tag {
+  position: absolute;
+  bottom: 28px;
+  left: 40px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: rgba(0,182,255,0.3);
+  letter-spacing: 0.2em;
+}
+
+.slide-counter {
+  position: absolute;
+  bottom: 28px;
+  right: 40px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: rgba(0,182,255,0.4);
+  letter-spacing: 0.18em;
+}
+
+/* ── DATA BARS DECORATION ── */
+.data-bars {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 4px;
+  display: flex;
+  gap: 2px;
+  overflow: hidden;
+  opacity: 0.4;
+}
+
+.data-bars span {
+  flex: 1;
+  background: var(--sky);
+  height: 100%;
+}
+.data-bars span:nth-child(2n) { background: var(--gold); height: 60%; }
+.data-bars span:nth-child(3n) { background: var(--grn);  height: 80%; }
+
+.scene {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  padding: 64px 52px 78px;
+}
+.scene.active { display: flex; }
+
+/* ── TITLE ── */
+.slide-title .ticker {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--sky);
+  letter-spacing: 0.25em;
+  margin-bottom: 32px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.slide-title .ticker span {
+  color: var(--grn);
+  margin-left: 12px;
+}
+
+.slide-title .headline {
+  font-size: 74px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.05;
+  margin-bottom: 24px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all 0.6s ease 0.1s;
+}
+
+.slide-title .headline em {
+  font-style: normal;
+  color: var(--sky);
+}
+
+.slide-title .rule {
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--sky), var(--grn));
+  margin-bottom: 22px;
+  transition: width 0.6s ease 0.25s;
+}
+
+.slide-title .subheadline {
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--dim);
+  line-height: 1.7;
+  max-width: 720px;
+  opacity: 0;
+  transition: opacity 0.5s ease 0.35s;
+}
+
+.slide-title .meta {
+  margin-top: auto;
+  display: flex;
+  gap: 24px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: rgba(255,255,255,0.2);
+  letter-spacing: 0.12em;
+  opacity: 0;
+  transition: opacity 0.4s ease 0.6s;
+}
+
+/* ── CONTENT ── */
+.slide-content .data-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: rgba(0,182,255,0.08);
+  border: 1px solid rgba(0,182,255,0.2);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--sky);
+  letter-spacing: 0.18em;
+  margin-bottom: 20px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.slide-content .data-tag::before {
+  content: '▶';
+  color: var(--grn);
+  font-size: 8px;
+}
+
+.slide-content .headline {
+  font-size: 52px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+  margin-bottom: 20px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all 0.55s ease 0.1s;
+}
+
+.slide-content .body {
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--dim);
+  line-height: 1.7;
+  max-width: 840px;
+  opacity: 0;
+  transition: opacity 0.5s ease 0.2s;
+}
+
+.slide-content .stat-block {
+  margin-top: 28px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.5s ease 0.35s;
+}
+
+.slide-content .stat-line {
+  width: 4px;
+  height: 60px;
+  background: linear-gradient(180deg, var(--sky), var(--grn));
+  border-radius: 2px;
+  margin-right: 18px;
+  flex-shrink: 0;
+}
+
+.slide-content .stat-number {
+  font-family: var(--mono);
+  font-size: 52px;
+  font-weight: 700;
+  color: var(--sky);
+  line-height: 1;
+  margin-right: 14px;
+}
+
+.slide-content .stat-desc {
+  font-size: 14px;
+  color: var(--dim);
+  line-height: 1.5;
+  max-width: 360px;
+}
+
+/* ── CTA ── */
+.slide-cta {
+  background: linear-gradient(135deg, var(--bg2) 0%, #041a2a 100%);
+  justify-content: center;
+}
+
+.slide-cta .terminal-prompt {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--grn);
+  letter-spacing: 0.14em;
+  margin-bottom: 28px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.slide-cta .cta-headline {
+  font-size: 58px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+  margin-bottom: 16px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all 0.6s ease 0.1s;
+}
+
+.slide-cta .rule {
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--sky), var(--grn));
+  margin-bottom: 22px;
+  transition: width 0.6s ease 0.2s;
+}
+
+.slide-cta .cta-body {
+  font-size: 16px;
+  color: var(--dim);
+  line-height: 1.65;
+  max-width: 700px;
+  margin-bottom: 28px;
+  opacity: 0;
+  transition: opacity 0.5s ease 0.25s;
+}
+
+.slide-cta .hashtags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.5s ease 0.4s;
+}
+
+.slide-cta .hashtag {
+  padding: 5px 12px;
+  background: rgba(0,182,255,0.08);
+  border: 1px solid rgba(0,182,255,0.2);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--sky);
+}
+
+/* ── ANIMATED ── */
+.scene.anim .slide-title .ticker,
+.scene.anim .slide-title .subheadline,
+.scene.anim .slide-title .meta { opacity: 1; }
+.scene.anim .slide-title .headline { opacity: 1; transform: none; }
+.scene.anim .slide-title .rule { width: 80px; }
+
+.scene.anim .slide-content .data-tag,
+.scene.anim .slide-content .body,
+.scene.anim .slide-content .stat-block { opacity: 1; transform: none; }
+.scene.anim .slide-content .headline { opacity: 1; transform: none; }
+
+.scene.anim .slide-cta .terminal-prompt,
+.scene.anim .slide-cta .cta-body,
+.scene.anim .slide-cta .hashtags { opacity: 1; }
+.scene.anim .slide-cta .cta-headline { opacity: 1; transform: none; }
+.scene.anim .slide-cta .rule { width: 80px; }
+</style>
+</head>
+<body>
+
+<div class="grid-lines"></div>
+<div class="frame">
+  <div class="scan-line"></div>
+  <div class="brand-tag" id="frame-brand">RODSCHINSON — DATA INSIGHTS</div>
+  <div class="slide-counter" id="frame-counter"></div>
+  <div class="data-bars">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+</div>
+
+<div id="scene-container"></div>
+
+<script>
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(s) { return esc(s).replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); }
+
+window.loadScene = function(slideData) {
+  const c = document.getElementById('scene-container');
+  const idx   = slideData.index || 1;
+  const type  = slideData.type  || 'content';
+  const total = slideData.total || '';
+  const now   = new Date().toISOString().slice(0,10);
+
+  document.getElementById('frame-counter').textContent =
+    total ? `${String(idx).padStart(2,'0')}/${String(total).padStart(2,'0')}` : `${String(idx).padStart(2,'0')}`;
+
+  let html = '';
+  if (type === 'title') {
+    html = `<div class="scene slide-title" id="scene">
+      <div class="ticker">RODSCHINSON INVESTMENT <span>● LIVE</span></div>
+      <div class="headline">${fmt(slideData.headline || '')}</div>
+      <div class="rule"></div>
+      <div class="subheadline">${esc(slideData.subheadline || '')}</div>
+      <div class="meta">
+        <span>${esc(slideData.brand || 'rodschinson.com')}</span>
+        <span>${now}</span>
+        <span>${esc(slideData.cta || 'Swipe →')}</span>
+      </div>
+    </div>`;
+  } else if (type === 'cta') {
+    const tags = (slideData.hashtags || []).map(h => `<span class="hashtag">${esc(h)}</span>`).join('');
+    html = `<div class="scene slide-cta" id="scene">
+      <div class="terminal-prompt">$ contact --team rodschinson</div>
+      <div class="cta-headline">${fmt(slideData.headline || '')}</div>
+      <div class="rule"></div>
+      <div class="cta-body">${esc(slideData.body || '')}</div>
+      ${tags ? `<div class="hashtags">${tags}</div>` : ''}
+    </div>`;
+  } else {
+    let statHtml = '';
+    if (slideData.stat) {
+      const m = String(slideData.stat).match(/^([0-9.,]+\s*[%€KMB+]*)\s*[-–:·]?\s*(.*)$/);
+      statHtml = `<div class="stat-block">
+        <div class="stat-line"></div>
+        ${m ? `<div class="stat-number">${esc(m[1])}</div><div class="stat-desc">${esc(m[2]||slideData.stat)}</div>`
+             : `<div class="stat-desc">${esc(slideData.stat)}</div>`}
+      </div>`;
+    }
+    html = `<div class="scene slide-content" id="scene">
+      <div class="data-tag">INSIGHT ${String(idx).padStart(2,'0')}</div>
+      <div class="headline">${fmt(slideData.headline || '')}</div>
+      <div class="body">${esc(slideData.body || '')}</div>
+      ${statHtml}
+    </div>`;
+  }
+
+  c.innerHTML = html;
+  return true;
+};
+
+window.animateScene = function() {
+  const s = document.getElementById('scene');
+  if (!s) return;
+  requestAnimationFrame(() => {
+    s.classList.add('active');
+    setTimeout(() => s.classList.add('anim'), 40);
+  });
+};
+
+window.isAnimationComplete = function(d) {
+  return new Promise(r => setTimeout(r, d || 700));
+};
+</script>
+</body>
+</html>

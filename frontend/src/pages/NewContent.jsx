@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useGeneration } from '../contexts/GenerationContext'
+import { CarouselSlidePreview } from '../components/CarouselPreview'
 
 // ─── Content-type definitions ─────────────────────────────────────────────────
 // Each type declares: which steps it goes through, which formats apply,
@@ -176,13 +177,29 @@ const ALL_PLATFORMS = [
 ]
 
 const SLIDE_COUNTS = [4, 5, 6, 7, 8, 10]
+const VIDEO_DURATIONS = [
+  { value: 30,  label: '30s' },
+  { value: 60,  label: '1 min' },
+  { value: 90,  label: '1:30' },
+  { value: 120, label: '2 min' },
+  { value: 180, label: '3 min' },
+  { value: 300, label: '5 min' },
+]
+
+const MUSIC_GENRES = [
+  { id: 'corporate', label: 'Corporate' },
+  { id: 'cinematic', label: 'Cinematic' },
+  { id: 'lofi',      label: 'Lo-Fi'     },
+  { id: 'upbeat',    label: 'Upbeat'    },
+]
 
 const INITIAL_FORM = {
   subject: '', brand: 'investment', language: 'EN',
   contentType: 'video', format: '16:9',
   template: 'rodschinson_premium', style: 'viral_hook',
   voiceStyle: 'professional', platforms: ['linkedin'], logo: null,
-  slides: 6, canvaTemplateUrl: '',
+  slides: 6, duration: 60, canvaTemplateUrl: '',
+  audioMode: 'voice', musicGenre: 'corporate',
 }
 
 function loadSavedTemplates() {
@@ -525,33 +542,124 @@ function AddCanvaTemplateModal({ contentType, onAdded, onClose }) {
   )
 }
 
+// ─── Variation Card ───────────────────────────────────────────────────────────
+function VariationCard({ v, active, onClick, index }) {
+  return (
+    <div onClick={onClick} style={{
+      padding: '16px 18px', borderRadius: 10, cursor: 'pointer',
+      border: active ? '2px solid #00B6FF' : '1px solid var(--cs-border)',
+      background: active ? 'rgba(0,182,255,0.06)' : 'var(--cs-surface)',
+      transition: 'all 0.15s',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{
+          width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+          background: active ? 'rgba(0,182,255,0.15)' : 'var(--cs-hover)',
+          border: active ? '1px solid rgba(0,182,255,0.4)' : '1px solid var(--cs-border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: active ? '#00B6FF' : 'var(--cs-text-muted)', fontSize: 11, fontWeight: 700,
+        }}>{index + 1}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: active ? '#00B6FF' : 'var(--cs-text)', marginBottom: 4, lineHeight: 1.3 }}>
+            {v.title || v.angle || 'Concept ' + (index + 1)}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--cs-text-muted)', marginBottom: 6, fontStyle: 'italic' }}>
+            {v.angle || ''}
+          </div>
+          <div style={{
+            fontSize: 12, color: 'var(--cs-text-sub)', lineHeight: 1.5,
+            padding: '8px 10px', borderRadius: 6,
+            background: active ? 'rgba(0,182,255,0.04)' : 'var(--cs-hover)',
+            borderLeft: `2px solid ${active ? '#00B6FF' : 'var(--cs-border)'}`,
+          }}>
+            "{v.hook || ''}"
+          </div>
+          {v.scenes && v.scenes.length > 0 && (
+            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {v.scenes.slice(0, 3).map((s, i) => (
+                <span key={i} style={{
+                  padding: '2px 8px', borderRadius: 10, fontSize: 10,
+                  background: 'var(--cs-hover)', color: 'var(--cs-text-muted)',
+                  border: '1px solid var(--cs-border)',
+                }}>{typeof s === 'string' ? s.replace(/^Scene \d+:\s*/i, '').slice(0, 40) : ''}</span>
+              ))}
+              {v.scenes.length > 3 && <span style={{ fontSize: 10, color: 'var(--cs-text-muted)' }}>+{v.scenes.length - 3} more</span>}
+            </div>
+          )}
+          {v.slides && v.slides.length > 0 && (
+            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {v.slides.slice(0, 3).map((s, i) => (
+                <span key={i} style={{
+                  padding: '2px 8px', borderRadius: 10, fontSize: 10,
+                  background: 'var(--cs-hover)', color: 'var(--cs-text-muted)',
+                  border: '1px solid var(--cs-border)',
+                }}>{s.headline ? s.headline.slice(0, 40) : `Slide ${i+1}`}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
 // ─── Live Generation Progress Panel ──────────────────────────────────────────
 function GenerationPanel({ job, typeDef, onDone, onReset }) {
   const navigate = useNavigate()
-  const isDone    = job?.status === 'done'
-  const isError   = job?.status === 'error'
-  const isRunning = job?.status === 'running' || job?.status === 'pending'
-  const progress  = job?.progress || 0
-  const step      = job?.step || 'Queued'
-  const detail    = job?.detail || ''
+  const isDone     = job?.status === 'done'
+  const isError    = job?.status === 'error'
+  const isAborted  = job?.status === 'aborted'
+  const isRunning  = job?.status === 'running' || job?.status === 'pending'
+  const progress   = job?.progress || 0
+  const step       = job?.step || 'Queued'
+  const detail     = job?.detail || ''
+  const [aborting, setAborting] = useState(false)
+
+  async function handleAbort() {
+    if (!job?.job_id || aborting) return
+    setAborting(true)
+    try {
+      await fetch(`/api/jobs/${job.job_id}/abort`, { method: 'POST' })
+    } catch { /* ignore */ } finally {
+      setAborting(false)
+    }
+  }
 
   return (
     <div style={{ animation: 'fadein 0.2s ease' }}>
-      <div style={{ background: 'var(--cs-surface)', border: `1px solid ${isError ? 'rgba(239,68,68,0.3)' : isDone ? 'rgba(34,197,94,0.3)' : 'rgba(0,182,255,0.2)'}`, borderRadius: 12, padding: 28, marginBottom: 16 }}>
+      <div style={{ background: 'var(--cs-surface)', border: `1px solid ${isError || isAborted ? 'rgba(239,68,68,0.3)' : isDone ? 'rgba(34,197,94,0.3)' : 'rgba(0,182,255,0.2)'}`, borderRadius: 12, padding: 28, marginBottom: 16 }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: isDone ? 'rgba(34,197,94,0.1)' : isError ? 'rgba(239,68,68,0.1)' : 'rgba(0,182,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
-            {isDone ? '✅' : isError ? '❌' : typeDef.icon}
+          <div style={{ width: 44, height: 44, borderRadius: 10, background: isDone ? 'rgba(34,197,94,0.1)' : isError || isAborted ? 'rgba(239,68,68,0.1)' : 'rgba(0,182,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+            {isDone ? '✅' : isError ? '❌' : isAborted ? '⛔' : typeDef.icon}
           </div>
-          <div>
+          <div style={{ flex: 1 }}>
             <div style={{ color: 'var(--cs-text)', fontSize: 15, fontWeight: 700 }}>
-              {isDone ? `${typeDef.label} ready!` : isError ? 'Generation failed' : `Generating ${typeDef.label}…`}
+              {isDone ? `${typeDef.label} ready!` : isError ? 'Generation failed' : isAborted ? 'Generation cancelled' : `Generating ${typeDef.label}…`}
             </div>
             <div style={{ color: 'var(--cs-text-muted)', fontSize: 12, marginTop: 2 }}>
-              {isDone ? 'Your content has been added to the library.' : isError ? 'An error occurred during generation.' : `${step} · ${typeDef.estimatedTime} estimated`}
+              {isDone ? 'Your content has been added to the library.' : isError ? 'An error occurred during generation.' : isAborted ? 'Generation was stopped.' : `${step} · ${typeDef.estimatedTime} estimated`}
             </div>
           </div>
+          {/* Abort button — visible only while running */}
+          {isRunning && (
+            <button onClick={handleAbort} disabled={aborting} style={{
+              padding: '6px 14px', borderRadius: 7, cursor: aborting ? 'not-allowed' : 'pointer',
+              border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.06)',
+              color: '#ef4444', fontSize: 12, fontWeight: 600, flexShrink: 0,
+              opacity: aborting ? 0.6 : 1,
+            }}>
+              {aborting ? 'Stopping…' : '⛔ Abort'}
+            </button>
+          )}
+          {/* Dismiss × — always visible so stuck jobs can always be cleared */}
+          <button onClick={onReset} title="Dismiss" style={{
+            width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--cs-border)',
+            background: 'var(--cs-hover)', color: 'var(--cs-text-muted)', cursor: 'pointer',
+            fontSize: 14, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>×</button>
         </div>
 
         {/* Progress bar */}
@@ -600,13 +708,15 @@ function GenerationPanel({ job, typeDef, onDone, onReset }) {
               background: 'linear-gradient(135deg,#08316F,#00B6FF)', color: '#fff', fontSize: 13, fontWeight: 700,
             }}>View in Library →</button>
           )}
-          <button onClick={onReset} style={{
-            flex: isDone ? '0 0 auto' : 1, padding: '12px 20px', borderRadius: 8, cursor: 'pointer',
-            border: '1px solid var(--cs-border)', background: 'var(--cs-surface)',
-            color: 'var(--cs-text-sub)', fontSize: 13, fontWeight: 600,
-          }}>
-            {isDone ? '+ New Content' : isError ? '↩ Edit & Retry' : '+ Create Another'}
-          </button>
+          {!isRunning && (
+            <button onClick={onReset} style={{
+              flex: isDone ? '0 0 auto' : 1, padding: '12px 20px', borderRadius: 8, cursor: 'pointer',
+              border: '1px solid var(--cs-border)', background: 'var(--cs-surface)',
+              color: 'var(--cs-text-sub)', fontSize: 13, fontWeight: 600,
+            }}>
+              {isDone ? '+ New Content' : (isError || isAborted) ? '↩ Edit & Retry' : '+ Create Another'}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -747,6 +857,14 @@ export default function NewContent() {
   const [previewLoading, setPreviewLoading] = useState(false)
   const [previewScript, setPreviewScript]   = useState(null)
   const [editedScript, setEditedScript]     = useState('')
+  // Variations (step 1 concept picker)
+  const [variations, setVariations]           = useState([])
+  const [variationsLoading, setVariationsLoading] = useState(false)
+  const [selectedVariation, setSelectedVariation] = useState(null)
+  // Carousel slide preview
+  const [carouselSlides, setCarouselSlides]       = useState([])
+  const [carouselSlidesLoading, setCarouselSlidesLoading] = useState(false)
+  const [carouselActiveSlide, setCarouselActiveSlide] = useState(0)
   // Brief templates
   const [briefTemplates, setBriefTemplates] = useState(loadSavedTemplates)
   const [showTplMenu, setShowTplMenu]       = useState(false)
@@ -794,6 +912,8 @@ export default function NewContent() {
       template: newTemplate,
       platforms: newPlatforms.length ? newPlatforms : [validPlatforms[0]],
     }))
+    setVariations([]); setSelectedVariation(null)
+    setCarouselSlides([]); setCarouselActiveSlide(0)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.contentType])
 
@@ -813,6 +933,53 @@ export default function NewContent() {
         ? f.platforms.filter(p => p !== id)
         : [...f.platforms, id],
     }))
+
+  // ── Variations (step 1 concept picker) ─────────────────────────────────────
+  const handleGenerateVariations = async () => {
+    if (!form.subject.trim()) { setError('Enter a brief first.'); return }
+    setVariationsLoading(true); setError(null); setVariations([]); setSelectedVariation(null)
+    try {
+      const res = await fetch('/api/generate-variations', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: form.subject, brand: form.brand, language: form.language,
+          contentType: form.contentType, style: form.style, count: 5,
+        }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json()
+      setVariations(data.variations || [])
+    } catch (e) {
+      setError('Could not generate ideas — ' + e.message)
+    } finally { setVariationsLoading(false) }
+  }
+
+  const handlePickVariation = (v) => {
+    setSelectedVariation(v)
+    // Pre-fill subject with the chosen concept title
+    set('subject', v.title || v.angle || form.subject)
+  }
+
+  // ── Carousel slide preview ──────────────────────────────────────────────────
+  const handlePreviewCarouselSlides = async () => {
+    if (!form.subject.trim()) return
+    setCarouselSlidesLoading(true); setError(null); setCarouselSlides([])
+    try {
+      const res = await fetch('/api/preview-carousel', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: form.subject, brand: form.brand, language: form.language,
+          style: form.style, slides: form.slides,
+        }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json()
+      setCarouselSlides(data.slides || [])
+      setCarouselActiveSlide(0)
+    } catch (e) {
+      setError('Could not generate preview — ' + e.message)
+    } finally { setCarouselSlidesLoading(false) }
+  }
 
   // ── Script preview ──────────────────────────────────────────────────────────
   const handlePreviewScript = async () => {
@@ -850,6 +1017,9 @@ export default function NewContent() {
       template: form.template, style: form.style,
       voiceStyle: form.voiceStyle, platforms: form.platforms,
       slides: form.slides,
+      duration: form.duration,
+      audioMode: form.audioMode,
+      musicGenre: form.musicGenre,
       ...(form.canvaTemplateUrl ? { canva_template_url: form.canvaTemplateUrl } : {}),
       ...(previewScript && editedScript ? { custom_script: editedScript } : {}),
     }))
@@ -1055,6 +1225,41 @@ export default function NewContent() {
               </div>
             </Section>
 
+            {/* AI concept generator */}
+            <div style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 10, padding: 20, marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: variations.length ? 14 : 0 }}>
+                <div>
+                  <div style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    ✨ Generate 5 Concepts
+                  </div>
+                  <div style={{ color: 'var(--cs-text-muted)', fontSize: 11, marginTop: 2 }}>
+                    {selectedVariation ? `"${(selectedVariation.title || selectedVariation.angle || '').slice(0, 50)}"` : 'Let AI propose 5 different angles — pick the best one'}
+                  </div>
+                </div>
+                <button onClick={handleGenerateVariations} disabled={variationsLoading || !form.subject.trim()} style={{
+                  padding: '8px 16px', borderRadius: 7, flexShrink: 0,
+                  border: selectedVariation ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(0,182,255,0.4)',
+                  background: selectedVariation ? 'rgba(34,197,94,0.06)' : 'rgba(0,182,255,0.08)',
+                  color: selectedVariation ? '#16a34a' : '#00B6FF',
+                  fontSize: 12, fontWeight: 600, cursor: variationsLoading || !form.subject.trim() ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}>
+                  {variationsLoading ? <><Spinner /> Thinking…</> : selectedVariation ? '↺ Regenerate' : '✨ Get Ideas'}
+                </button>
+              </div>
+              {variations.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {variations.map((v, i) => (
+                    <VariationCard
+                      key={i} v={v} index={i}
+                      active={selectedVariation?.id === v.id || (selectedVariation === v)}
+                      onClick={() => handlePickVariation(v)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Brand + Language */}
             <Section title="Brand">
               <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
@@ -1106,6 +1311,17 @@ export default function NewContent() {
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {SLIDE_COUNTS.map(n => (
                     <Chip key={n} active={form.slides === n} onClick={() => set('slides', n)}>{n} slides</Chip>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            {/* Duration — video & reel only */}
+            {(form.contentType === 'video' || form.contentType === 'reel') && (
+              <Section title="Duration" hint="Target length of the video">
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {VIDEO_DURATIONS.map(d => (
+                    <Chip key={d.value} active={form.duration === d.value} onClick={() => set('duration', d.value)}>{d.label}</Chip>
                   ))}
                 </div>
               </Section>
@@ -1182,14 +1398,27 @@ export default function NewContent() {
               </Section>
             )}
 
-            {/* Voice style — only for video/reel */}
+            {/* Audio mode — only for video/reel */}
             {typeDef.showVoiceStyle && (
-              <Section title="Voice Style" hint="Tone for ElevenLabs voiceover">
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {VOICE_STYLES.map(v => (
-                    <Chip key={v.id} active={form.voiceStyle === v.id} onClick={() => set('voiceStyle', v.id)}>{v.label}</Chip>
-                  ))}
+              <Section title="Audio" hint="Choose voiceover (ElevenLabs) or background music only">
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                  <Chip active={form.audioMode === 'voice'} onClick={() => set('audioMode', 'voice')}>🎙 Voiceover</Chip>
+                  <Chip active={form.audioMode === 'music'} onClick={() => set('audioMode', 'music')}>🎵 Music only</Chip>
                 </div>
+                {form.audioMode === 'voice' && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {VOICE_STYLES.map(v => (
+                      <Chip key={v.id} active={form.voiceStyle === v.id} onClick={() => set('voiceStyle', v.id)}>{v.label}</Chip>
+                    ))}
+                  </div>
+                )}
+                {form.audioMode === 'music' && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {MUSIC_GENRES.map(g => (
+                      <Chip key={g.id} active={form.musicGenre === g.id} onClick={() => set('musicGenre', g.id)}>{g.label}</Chip>
+                    ))}
+                  </div>
+                )}
               </Section>
             )}
 
@@ -1218,14 +1447,54 @@ export default function NewContent() {
         {step === 3 && (
           <div style={{ animation: 'fadein 0.15s ease' }}>
 
-            {/* Script / copy preview (for all types) */}
-            {typeDef.showScriptPreview && (
+            {/* ── Carousel: visual slide preview ── */}
+            {form.contentType === 'carousel' && (
+              <div style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 10, padding: 20, marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: carouselSlides.length ? 16 : 0 }}>
+                  <div>
+                    <div style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>
+                      🖼️ Slide Preview
+                    </div>
+                    <div style={{ color: 'var(--cs-text-muted)', fontSize: 12 }}>
+                      {carouselSlides.length
+                        ? `${carouselSlides.length} slides · click to browse`
+                        : 'Preview your slides before rendering'}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handlePreviewCarouselSlides}
+                    disabled={carouselSlidesLoading}
+                    style={{
+                      padding: '8px 16px', borderRadius: 7, flexShrink: 0,
+                      border: carouselSlides.length ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(0,182,255,0.4)',
+                      background: carouselSlides.length ? 'rgba(34,197,94,0.06)' : 'rgba(0,182,255,0.08)',
+                      color: carouselSlides.length ? '#16a34a' : '#00B6FF',
+                      fontSize: 12, fontWeight: 600,
+                      cursor: carouselSlidesLoading ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 8,
+                    }}
+                  >
+                    {carouselSlidesLoading ? <><Spinner /> Generating…</> : carouselSlides.length ? '↺ Regenerate' : '⚡ Preview Slides'}
+                  </button>
+                </div>
+                {carouselSlides.length > 0 && (
+                  <CarouselSlidePreview
+                    slides={carouselSlides}
+                    template={form.template || 'carousel_bold'}
+                    activeSlide={carouselActiveSlide}
+                    onSlideChange={setCarouselActiveSlide}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Script / copy preview (non-carousel types) */}
+            {typeDef.showScriptPreview && form.contentType !== 'carousel' && (
               <div style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 10, padding: 20, marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                   <div>
                     <div style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>
                       {form.contentType === 'text_only'    ? 'Text Preview'
-                       : form.contentType === 'carousel'   ? 'Slide Copy Preview'
                        : form.contentType === 'image_post' ? 'Headline & Copy Preview'
                        : 'Script Preview'}
                     </div>
@@ -1285,9 +1554,10 @@ export default function NewContent() {
               <SummaryRow label="Language"  value={form.language} />
               {form.contentType !== 'text_only' && <SummaryRow label="Format"    value={form.format} />}
               {form.contentType === 'carousel' && <SummaryRow label="Slides" value={`${form.slides} slides`} />}
+              {(form.contentType === 'video' || form.contentType === 'reel') && <SummaryRow label="Duration" value={VIDEO_DURATIONS.find(d => d.value === form.duration)?.label || `${form.duration}s`} />}
               {typeDef.showTemplate && <SummaryRow label="Template"  value={form.canvaTemplateUrl ? `🎨 Canva: ${canvaTemplates.find(t => t.url === form.canvaTemplateUrl)?.name || 'Custom'}` : templates.find(t => t.id === form.template)?.label} />}
               {typeDef.showWritingStyle && <SummaryRow label="Style"     value={STYLES.find(s => s.id === form.style)?.label} />}
-              {typeDef.showVoiceStyle   && <SummaryRow label="Voice"     value={VOICE_STYLES.find(v => v.id === form.voiceStyle)?.label} />}
+              {typeDef.showVoiceStyle   && <SummaryRow label="Audio" value={form.audioMode === 'music' ? `🎵 Music — ${MUSIC_GENRES.find(g => g.id === form.musicGenre)?.label}` : `🎙 Voiceover — ${VOICE_STYLES.find(v => v.id === form.voiceStyle)?.label}`} />}
               <SummaryRow label="Platforms" value={form.platforms.map(id => ALL_PLATFORMS.find(p => p.id === id)?.label).filter(Boolean).join(', ') || '—'} />
               {previewScript && (
                 <div style={{ marginTop: 8, padding: '6px 10px', borderRadius: 6, background: 'rgba(0,182,255,0.06)', border: '1px solid rgba(0,182,255,0.15)' }}>

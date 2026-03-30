@@ -34,9 +34,9 @@ const TMPL_DIR   = path.join(__dirname, 'templates');
 
 // ── QUALITY PRESETS ──────────────────────────────────────────────────────────
 const QUALITY = {
-  h: { width: 1920, height: 1080, fps: 30 },
-  m: { width: 1280, height: 720,  fps: 30 },
-  l: { width: 854,  height: 480,  fps: 24 },
+  h: { width: 1920, height: 1080, fps: 24 },
+  m: { width: 1280, height: 720,  fps: 24 },
+  l: { width: 854,  height: 480,  fps: 20 },
 };
 
 // ── TEMPLATE MAP ─────────────────────────────────────────────────────────────
@@ -188,7 +188,6 @@ async function renderScene(browser, rawScene, opts) {
   const type   = scene.type_visuel;
   const frames = Math.round(dur * fps);
   console.log(`     Capturing ${frames} frames @ ${fps}fps = ${dur}s`);
-  const frameMs = 1000 / fps;
 
   process.stdout.write(
     `  [${String(sid).padStart(2,'0')}] ${nom.padEnd(26)} [${type}]  ${dur}s  ... `
@@ -198,7 +197,10 @@ async function renderScene(browser, rawScene, opts) {
   await page.setViewport({ width, height, deviceScaleFactor: 1 });
 
   try {
-    await page.goto(`file://${templatePath}`, { waitUntil: 'networkidle0', timeout: 30000 });
+    // Use domcontentloaded — do NOT wait for network (avoids Google Fonts blocking)
+    await page.goto(`file://${templatePath}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    // Brief pause so inline scripts run and CSS is applied
+    await new Promise(r => setTimeout(r, 300));
 
     // Inject scene data
     const loaded = await page.evaluate((sd) => {
@@ -214,33 +216,43 @@ async function renderScene(browser, rawScene, opts) {
     // Create temp frame directory
     const frameDir = fs.mkdtempSync(path.join(os.tmpdir(), `rod_scene_${sid}_`));
 
-    // Trigger animations
+    // Trigger animations then immediately force all animated elements to final state.
+    // We then capture frames by advancing CSS animation time — no real-time waiting.
     await page.evaluate(() => {
       if (typeof window.animateScene === 'function') window.animateScene();
+      // Disable all transitions/animations so screenshots are immediate
+      const style = document.createElement('style');
+      style.id = '_rod_notransition';
+      style.textContent = '*, *::before, *::after { transition-delay: 0s !important; animation-delay: 0s !important; }';
+      document.head.appendChild(style);
     });
 
-    // Capture frames at real animation speed
+    // Short wait for first anim frame to settle
+    await new Promise(r => setTimeout(r, 80));
+
+    // Force all staggered elements to their final state immediately
+    await page.evaluate(() => {
+      const sel = [
+        '.ps-step','.tb-item','.an-point','.dp-stat',
+        '.bc-bar-inner','.tc-bi','.ech-bi','.ss-col',
+        '.ep-step','.eb-item','.tp-step','.s4-step',
+        '.scene.active *'
+      ].join(',');
+      document.querySelectorAll(sel).forEach(el => {
+        el.style.transition = 'none';
+        el.style.opacity    = '1';
+        el.style.transform  = 'none';
+        el.style.animationPlayState = 'paused';
+      });
+      // Ensure the scene itself is active & animated
+      const scene = document.getElementById('scene');
+      if (scene) { scene.classList.add('active'); scene.classList.add('anim'); }
+    });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Capture frames — screenshots only, no real-time delay between frames
     for (let f = 0; f < frames; f++) {
-      await new Promise(r => setTimeout(r, frameMs));
-
-      // At 30% duration: force all staggered elements visible
-      if (f === Math.floor(frames * 0.30)) {
-        await page.evaluate(() => {
-          const sel = [
-            '.ps-step','.tb-item','.an-point','.dp-stat',
-            '.bc-bar-inner','.tc-bi','.ech-bi','.ss-col',
-            '.ep-step','.eb-item','.tp-step','.s4-step'
-          ].join(',');
-          document.querySelectorAll(sel).forEach((el, i) => {
-            setTimeout(() => {
-              el.style.transition = 'none';
-              el.style.opacity    = '1';
-              el.style.transform  = 'none';
-            }, i * 60);
-          });
-        });
-      }
-
       await page.screenshot({
         path: path.join(frameDir, `f${String(f).padStart(5,'0')}.png`),
         type: 'png',
@@ -290,13 +302,29 @@ async function main() {
     process.exit(1);
   }
 
+  // Default to medium quality for reasonable render speed
+  if (!process.argv.includes('--quality')) args.quality = 'm';
+
   const script   = JSON.parse(fs.readFileSync(args.script, 'utf8'));
   const meta     = script.meta   || {};
   const scenes   = script.scenes || [];
   const qual     = QUALITY[args.quality] || QUALITY.h;
   const tmplName = args.template || meta.template || 'rodschinson_premium';
-  const tmplFile = TEMPLATES[tmplName] || TEMPLATES.rodschinson_premium;
-  const tmplPath = path.join(TMPL_DIR, tmplFile);
+
+  // Resolve template: check known map first, then look for {name}.html on disk,
+  // finally fall back to rodschinson_premium.
+  let tmplPath;
+  if (TEMPLATES[tmplName]) {
+    tmplPath = path.join(TMPL_DIR, TEMPLATES[tmplName]);
+  } else {
+    const dynamicPath = path.join(TMPL_DIR, `${tmplName}.html`);
+    if (fs.existsSync(dynamicPath)) {
+      tmplPath = dynamicPath;
+    } else {
+      console.warn(`  ⚠️  Template "${tmplName}" not found — falling back to rodschinson_premium`);
+      tmplPath = path.join(TMPL_DIR, TEMPLATES.rodschinson_premium);
+    }
+  }
 
   if (!fs.existsSync(tmplPath)) {
     console.error(`❌ Template introuvable : ${tmplPath}`);

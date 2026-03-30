@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useGeneration } from '../contexts/GenerationContext'
+import { CarouselSlidePreview } from '../components/CarouselPreview'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -290,6 +291,9 @@ function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose })
         <span style={{ color: 'var(--cs-text-muted)', fontSize: 12 }}>{fmtDate(item.created_at)}</span>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={onRegenerate} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 12 }}>↻ Regenerate</button>
+          {item.output_file && (
+            <button onClick={() => window.open(`/api/download/${item.job_id}`, '_blank')} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.06)', color: '#16a34a', fontSize: 12, fontWeight: 600 }}>⬇ Download</button>
+          )}
           <button onClick={onDelete} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 12 }}>🗑 Delete</button>
           {!showSchedule && item.status !== 'Scheduled' && item.status !== 'Published' && (
             <button onClick={() => setShowSchedule(true)} style={{
@@ -309,10 +313,10 @@ function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose })
               try {
                 const res = await fetch(`/api/publish/${item.job_id}`, { method: 'POST' })
                 if (res.ok) { onStatusChange(item.job_id, 'Published'); onClose() }
-                else alert('Publish failed — check Ayrshare API key in .env')
+                else alert('Publish failed — check METRICOOL_TOKEN, METRICOOL_USER_ID, METRICOOL_BLOG_ID in .env')
               } catch { alert('Publish endpoint unreachable') }
             }} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: 'none', background: 'linear-gradient(135deg,#08316F,#00B6FF)', color: '#fff', fontSize: 12, fontWeight: 600 }}>
-              Publish Now
+              Publish via Metricool
             </button>
           )}
         </div>
@@ -321,20 +325,34 @@ function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose })
   )
 }
 
+
 function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete }) {
   const gradient = TEMPLATE_GRADIENTS[item.template] || 'linear-gradient(135deg,#08316F,#0d1a30)'
   const type     = TYPE_META[item.content_type] || { icon: '📄', label: item.content_type }
   const isVideo  = VIDEO_TYPES.has(item.content_type)
   const isImage  = IMAGE_TYPES.has(item.content_type)
   const isText   = TEXT_TYPES.has(item.content_type)
+  const [slides, setSlides] = useState(null)
+  const [activeSlide, setActiveSlide] = useState(0)
+
+  useEffect(() => {
+    if (item.content_type === 'carousel' && item.output_file) {
+      fetch(`/api/carousel-slides/${item.job_id}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.slides) { setSlides(d.slides); setActiveSlide(0) } })
+        .catch(() => {})
+    }
+  }, [item.job_id, item.content_type, item.output_file])
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div onClick={e => e.stopPropagation()} style={{
         background: 'var(--cs-surface)', border: '1px solid var(--cs-border)',
-        borderRadius: 14, width: isText ? 620 : 520, maxWidth: '94vw',
+        borderRadius: 14,
+        width: item.content_type === 'carousel' ? 780 : isText ? 620 : 520,
+        maxWidth: '96vw',
         overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', animation: 'fadein 0.15s ease',
-        display: 'flex', flexDirection: 'column', maxHeight: '90vh',
+        display: 'flex', flexDirection: 'column', maxHeight: '92vh',
       }}>
 
         {/* ── Video preview ── */}
@@ -352,28 +370,38 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
 
         {/* ── Carousel preview ── */}
         {item.content_type === 'carousel' && (
-          <div style={{ background: gradient, padding: '20px 24px', flexShrink: 0 }}>
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-              {/* Mock slide thumbnails — real ones would be images from output */}
-              {[1,2,3,4,5].map(n => (
-                <div key={n} style={{ width: 80, height: 80, borderRadius: 6, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700 }}>
-                  {n}
-                </div>
-              ))}
-            </div>
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 8 }}>Carousel · {item.template?.replace(/_/g,' ')}</div>
+          <div style={{ background: 'var(--cs-bg)', padding: '16px 28px', flexShrink: 0 }}>
+            {slides ? (
+              <CarouselSlidePreview
+                slides={slides}
+                template={item.template || 'carousel_bold'}
+                activeSlide={activeSlide}
+                onSlideChange={setActiveSlide}
+              />
+            ) : (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', height: 80, color: 'var(--cs-text-muted)', fontSize: 12 }}>
+                {item.output_file ? 'Loading slides…' : 'No preview yet — generate first'}
+              </div>
+            )}
           </div>
         )}
 
         {/* ── Image post preview ── */}
         {item.content_type === 'image_post' && (
-          <div style={{ background: gradient, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 40 }}>📸</div>
-              <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 6 }}>{item.format} · {item.template?.replace(/_/g,' ')}</div>
+          item.output_file ? (
+            <div style={{ background: '#000', maxHeight: 340, overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+              <img src={`/api/image/${item.job_id}`} alt={item.title} style={{ maxWidth: '100%', maxHeight: 340, objectFit: 'contain', display: 'block' }} />
+              <div style={{ position: 'absolute', top: 10, right: 10 }}><StatusBadge status={item.status} /></div>
             </div>
-            <div style={{ position: 'absolute', top: 10, right: 10 }}><StatusBadge status={item.status} /></div>
-          </div>
+          ) : (
+            <div style={{ background: gradient, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 40 }}>📸</div>
+                <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 6 }}>{item.format} · {item.template?.replace(/_/g,' ')}</div>
+              </div>
+              <div style={{ position: 'absolute', top: 10, right: 10 }}><StatusBadge status={item.status} /></div>
+            </div>
+          )
         )}
 
         {/* ── Text post preview — show the actual text content ── */}
@@ -399,10 +427,11 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
             </div>
           )}
 
-          {/* Carousel slides count */}
-          {isImage && item.content_type === 'carousel' && (
-            <div style={{ background: 'rgba(0,182,255,0.06)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, border: '1px solid rgba(0,182,255,0.15)' }}>
-              <span style={{ color: '#00B6FF', fontSize: 12 }}>🖼️ Carousel ready · Download slide images from the output folder</span>
+          {/* Carousel info */}
+          {item.content_type === 'carousel' && slides && (
+            <div style={{ background: 'rgba(0,182,255,0.06)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, border: '1px solid rgba(0,182,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ color: '#00B6FF', fontSize: 12 }}>🖼️ {slides.length} slides ready</span>
+              <button onClick={() => window.open(`/api/download/${item.job_id}`, '_blank')} style={{ padding: '4px 12px', borderRadius: 5, cursor: 'pointer', border: '1px solid rgba(22,163,74,0.4)', background: 'rgba(22,163,74,0.08)', color: '#16a34a', fontSize: 11, fontWeight: 600 }}>⬇ Download PNGs</button>
             </div>
           )}
 
@@ -474,6 +503,9 @@ function ContentCard({ item, onStatusChange, onRegenerate, onDelete }) {
         <div style={{ display: 'flex', gap: 4, padding: '8px 10px', borderTop: '1px solid var(--cs-border-sub)', flexWrap: 'wrap' }}>
           <ActionBtn label="Preview" onClick={() => setPreview(true)} color="#0284c7" />
           <ActionBtn label="↻" onClick={() => onRegenerate(item)} color="#b45309" />
+          {item.output_file && (
+            <ActionBtn label="⬇" onClick={() => window.open(`/api/download/${item.job_id}`, '_blank')} color="#16a34a" />
+          )}
           {nextStatus && nextStatus !== 'Scheduled' && (
             <ActionBtn
               label={`→ ${nextStatus}`}

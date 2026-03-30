@@ -2,12 +2,14 @@
 Rodschinson Content Studio — FastAPI Backend
 """
 import asyncio
+import io
 import json
 import os
 import re
 import smtplib
 import sys
 import uuid
+import zipfile
 import logging
 from datetime import datetime, timezone
 from email.mime.text import MIMEText
@@ -47,12 +49,35 @@ _dev_origins  = ["http://localhost:5173", "http://localhost:4173", "http://local
 _prod_origins = [u.strip() for u in os.getenv("FRONTEND_URL", "").split(",") if u.strip()]
 ALLOWED_ORIGINS = _prod_origins + _dev_origins
 
-app = FastAPI(title="Rodschinson Content Studio API")
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def _lifespan(_: FastAPI):
+    # ── startup: recover jobs orphaned by a previous server restart ──
+    if JOBS_DIR.exists():
+        for p in JOBS_DIR.glob("*.json"):
+            try:
+                data = json.loads(p.read_text())
+                if data.get("status") == "running":
+                    data.update(status="error", step="Failed",
+                                detail="Generation interrupted by server restart. Please retry.",
+                                updated_at=_now())
+                    p.write_text(json.dumps(data, indent=2))
+                    log.warning("Recovered orphaned job %s", data.get("job_id", "")[:8])
+            except Exception:
+                pass
+    yield  # server runs
+    # (no shutdown logic needed)
+
+
+app = FastAPI(title="Rodschinson Content Studio API", lifespan=_lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS,
                    allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # ── In-memory job cache ────────────────────────────────────────────────────────
 _jobs: dict[str, dict] = {}
+_job_tasks: dict[str, asyncio.Task]                         = {}  # asyncio task per job
+_job_procs: dict[str, asyncio.subprocess.Process]           = {}  # active subprocess per job
 VALID_STATUSES = {"Draft", "Ready", "Approved", "Scheduled", "Published"}
 VALID_SLOTS    = {"morning", "noon", "afternoon", "evening"}
 
@@ -72,13 +97,29 @@ def _job_update(job: dict, **kwargs) -> dict:
     job.update(kwargs); job["updated_at"] = _now(); return job
 
 
-async def _run(cmd: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
+async def _run(cmd: list[str], cwd: Path | None = None, timeout: int = 600,
+               job_id: str | None = None) -> tuple[int, str, str]:
+    """Run a subprocess with a hard timeout (default 10 min). Kills the process on timeout."""
     proc = await asyncio.create_subprocess_exec(
         *cmd, cwd=str(cwd or ROOT),
         stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
     )
-    stdout, stderr = await proc.communicate()
-    return proc.returncode or 0, stdout.decode(), stderr.decode()
+    if job_id:
+        _job_procs[job_id] = proc
+    try:
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+    except asyncio.TimeoutError:
+        proc.kill()
+        await proc.communicate()
+        return 1, "", f"Process timed out after {timeout}s: {' '.join(str(c) for c in cmd[:3])}"
+    except asyncio.CancelledError:
+        proc.kill()
+        await proc.communicate()
+        raise
+    finally:
+        if job_id:
+            _job_procs.pop(job_id, None)
+    return proc.returncode or 0, stdout.decode(errors="replace"), stderr.decode(errors="replace")
 
 
 async def _library_load() -> list[dict]:
@@ -129,13 +170,13 @@ async def _templates_save(entries: list[dict]) -> None:
 # Phases are executed in order; each phase is (label, progress_pct, callable).
 # The callable receives (job, data, paths) and runs the actual subprocess.
 
-def _script_format_for(content_type: str, fmt: str) -> tuple[str, float]:
-    """Return (script_format, duree) for the script generator."""
+def _script_format_for(content_type: str, fmt: str, duration_sec: int = 60) -> tuple[str, float]:
+    """Return (script_format, duree_minutes) for the script generator."""
     if content_type in ("reel", "story") or fmt == "9:16":
-        return "reel", 1.0
+        return "reel", max(0.5, duration_sec / 60)
     if content_type == "video" and fmt == "16:9":
-        return "youtube", 8.0
-    return "linkedin", 3.0
+        return "youtube", max(1.0, duration_sec / 60)
+    return "linkedin", max(1.0, duration_sec / 60)
 
 
 async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None:
@@ -145,10 +186,20 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
         _job_update(job, status="running", step=label, progress=progress)
         await _save_job(job)
         log.info("[%s] %s  (%d%%)", job_id[:8], label, progress)
-        code, out, err = await _run(cmd, cwd=cwd)
+        code, out, err = await _run(cmd, cwd=cwd, job_id=job_id)
         if code != 0:
             raise RuntimeError(f"{label} failed (exit {code})\n{err[-800:]}")
         return out
+
+    async def try_step(label: str, progress: int, cmd: list[str], cwd: Path | None = None) -> bool:
+        """Like step() but non-fatal — logs warning and returns False on failure."""
+        _job_update(job, status="running", step=label, progress=progress)
+        await _save_job(job)
+        log.info("[%s] %s  (%d%%)", job_id[:8], label, progress)
+        code, out, err = await _run(cmd, cwd=cwd, job_id=job_id)
+        if code != 0:
+            log.warning("[%s] %s skipped (exit %d): %s", job_id[:8], label, code, err[-300:])
+        return code == 0
 
     try:
         brand        = data.get("brand", "investment")
@@ -159,11 +210,13 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
         content_type = data.get("contentType", "video")
         brand_arg    = "rachid" if brand == "rachid" else "rodschinson"
         style        = data.get("style", "viral_hook")
-        voice_style  = data.get("voiceStyle", "professional")
+        audio_mode   = data.get("audioMode", "voice")   # "voice" | "music"
+        music_genre  = data.get("musicGenre", "corporate")
 
-        output_file:  str | None = None
-        output_text:  str | None = None
-        script_path:  Path | None = None
+        output_file:     str | None = None
+        output_text:     str | None = None
+        script_path:     Path | None = None
+        slide_png_paths: list[str]   = []
 
         # ── Resolve or materialise a custom script ────────────────────────────
         custom_script_str = data.get("custom_script")
@@ -179,7 +232,8 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
         # VIDEO / REEL / STORY  —  Script → Render → Audio → Assemble
         # ════════════════════════════════════════════════════════════════════════
         if content_type in ("video", "reel", "story"):
-            script_format, duree = _script_format_for(content_type, fmt)
+            duration_sec = int(data.get("duration", 60))
+            script_format, duree = _script_format_for(content_type, fmt, duration_sec)
 
             if not script_path:
                 await step(
@@ -203,28 +257,35 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 node_cmd += ["--logo", str(logo_path)]
             await step("Rendering scenes", 35, node_cmd, cwd=PUPPET)
 
-            await step("Generating audio", 60,
-                       [str(PYTHON), str(SCRIPTS / "generate_audio.py"),
-                        "--script", str(script_path), "--language", language.lower(),
-                        "--voice-style", voice_style])
-
-            await step("Assembling video", 85,
-                       [str(PYTHON), str(SCRIPTS / "assemble_video.py"),
-                        "--script", str(script_path)])
+            if audio_mode == "music":
+                # Download/pick a royalty-free background track, skip ElevenLabs
+                await try_step("Selecting background music", 60,
+                               [str(PYTHON), str(SCRIPTS / "download_music.py"),
+                                "--genre", music_genre, "--count", "1"])
+                await step("Assembling video", 85,
+                           [str(PYTHON), str(SCRIPTS / "assemble_video.py"),
+                            "--script", str(script_path), "--music-only",
+                            "--music-genre", music_genre])
+            else:
+                # ElevenLabs is optional — pipeline continues without audio if it fails
+                await try_step("Generating audio", 60,
+                               [str(PYTHON), str(SCRIPTS / "generate_audio.py"),
+                                "--script", str(script_path), "--language", language.lower()])
+                await step("Assembling video", 85,
+                           [str(PYTHON), str(SCRIPTS / "assemble_video.py"),
+                            "--script", str(script_path)])
 
             video_files = sorted((OUTPUT / "video").glob("*.mp4"),
                                   key=lambda p: p.stat().st_mtime, reverse=True)
             output_file = str(video_files[0]) if video_files else None
 
         # ════════════════════════════════════════════════════════════════════════
-        # CAROUSEL  —  Write copy (Claude) → Structure slides → Export JSON
-        # Note: Puppeteer carousel rendering not yet supported; output is a
-        # structured JSON slide deck ready for Canva or a future renderer.
+        # CAROUSEL  —  Write copy (Claude) → Render slides (Puppeteer) → PNG set
         # ════════════════════════════════════════════════════════════════════════
         elif content_type == "carousel":
             num_slides = int(data.get("slides", 6))  # user-chosen slide count
 
-            _job_update(job, status="running", step="Writing slide copy", progress=15)
+            _job_update(job, status="running", step="Writing slide copy", progress=10)
             await _save_job(job)
 
             # Call Claude to write structured slide content directly
@@ -234,13 +295,14 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
 
             lang_map = {"EN": "English", "FR": "French", "NL": "Dutch"}
             lang_name = lang_map.get(language.upper(), "English")
+            brand_display = "Rodschinson Investment" if brand_arg == "rodschinson" else "Rachid Chikhi"
             style_hints = {
-                "viral_hook": "Hook-first, bold statements, curiosity gap.",
-                "educational": "Teach one clear concept per slide. Use data.",
-                "data_story": "Lead each slide with a key stat.",
-                "personal": "First person, personal story, authentic.",
-                "provocateur": "Challenge assumptions, contrarian.",
-                "thread": "Each slide is a standalone punchy point.",
+                "viral_hook":   "Hook-first, bold statements, curiosity gap.",
+                "educational":  "Teach one clear concept per slide. Use data.",
+                "data_story":   "Lead each slide with a key stat.",
+                "personal":     "First person, personal story, authentic.",
+                "provocateur":  "Challenge assumptions, contrarian.",
+                "thread":       "Each slide is a standalone punchy point.",
             }
             canva_template = data.get("canva_template_url", "")
             canva_note = f"\nVisual reference: {canva_template}" if canva_template else ""
@@ -248,17 +310,18 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
             carousel_prompt = f"""Write a {num_slides}-slide LinkedIn carousel in {lang_name}.
 
 TOPIC: {subject}
-BRAND: {"Rodschinson Investment" if brand_arg == "rodschinson" else "Rachid Chikhi"}
+BRAND: {brand_display}
 STYLE: {style_hints.get(style, style_hints["educational"])}{canva_note}
 
 Return ONLY a JSON array with exactly {num_slides} objects. Schema:
 [
-  {{"index": 1, "type": "title", "headline": "...", "subheadline": "...", "cta": "Swipe →"}},
-  {{"index": 2, "type": "content", "headline": "Point title", "body": "2-3 sentence explanation", "stat": "optional key number"}},
+  {{"index": 1, "type": "title", "headline": "...", "subheadline": "...", "cta": "Swipe →", "brand": "{brand_display}"}},
+  {{"index": 2, "type": "content", "headline": "Point title", "body": "2-3 sentence explanation", "stat": "optional — e.g. 3.8% — Cap Rate Dubai 2024"}},
   ...
   {{"index": {num_slides}, "type": "cta", "headline": "Call to action", "body": "Follow / DM / Link in bio", "hashtags": ["#Tag1","#Tag2","#Tag3"]}}
 ]
 Slide 1 must be type "title". Last slide must be type "cta". Middle slides type "content".
+For "stat" fields use format "VALUE — description" (e.g. "42% — of investors cite…").
 No markdown, no explanation — just the JSON array."""
 
             async with httpx.AsyncClient(timeout=60) as _client:
@@ -273,7 +336,6 @@ No markdown, no explanation — just the JSON array."""
                 raise RuntimeError(f"Claude API error {_res.status_code}: {_res.text[:200]}")
 
             raw = _res.json()["content"][0]["text"].strip()
-            # Strip markdown fences if present
             if raw.startswith("```"):
                 raw = re.sub(r"^```[a-z]*\n?", "", raw)
                 raw = re.sub(r"\n?```$", "", raw.strip())
@@ -281,32 +343,59 @@ No markdown, no explanation — just the JSON array."""
             try:
                 _slides = json.loads(raw)
             except json.JSONDecodeError:
-                # Fallback: extract JSON array
-                import re as _re
-                m = _re.search(r"\[.*\]", raw, _re.DOTALL)
+                m = re.search(r"\[.*\]", raw, re.DOTALL)
                 _slides = json.loads(m.group()) if m else []
 
-            _job_update(job, status="running", step="Exporting slides", progress=85)
-            await _save_job(job)
+            if not _slides:
+                raise RuntimeError("No slide data returned from Claude")
 
+            # Save the JSON slide data
             carousel_dir = OUTPUT / "carousel"
             carousel_dir.mkdir(parents=True, exist_ok=True)
-            carousel_out = carousel_dir / f"{job_id[:8]}_slides.json"
+            job_prefix  = job_id[:8]
+            carousel_out = carousel_dir / f"{job_prefix}_slides.json"
             carousel_out.write_text(json.dumps(_slides, ensure_ascii=False, indent=2), encoding="utf-8")
 
-            # Also save individual slide files
-            for _sl in _slides:
-                (carousel_dir / f"{job_id[:8]}_slide_{_sl['index']:02d}.json").write_text(
-                    json.dumps(_sl, ensure_ascii=False, indent=2), encoding="utf-8")
+            _job_update(job, status="running", step="Rendering slides", progress=45)
+            await _save_job(job)
 
+            # Resolve carousel template (default to carousel_bold)
+            carousel_templates = {"carousel_bold", "carousel_clean", "carousel_minimal", "carousel_data"}
+            carousel_tmpl = template if template in carousel_templates else "carousel_bold"
+            # Also accept custom AI-generated carousel templates
+            tmpl_file = PUPPET / "templates" / f"{carousel_tmpl}.html"
+            if not tmpl_file.exists():
+                carousel_tmpl = "carousel_bold"
+
+            # Render slides via Puppeteer carousel renderer
+            await step(
+                "Rendering slides", 70,
+                ["node", str(PUPPET / "carousel_renderer.js"),
+                 "--slides", str(carousel_out),
+                 "--template", carousel_tmpl,
+                 "--out", str(carousel_dir),
+                 "--prefix", job_prefix],
+                cwd=PUPPET,
+            )
+
+            # Collect rendered PNGs — renderer outputs {prefix}_01.png … {prefix}_NN.png
+            slide_pngs = sorted(carousel_dir.glob(f"{job_prefix}_*.png"))
+
+            _job_update(job, status="running", step="Exporting slides", progress=90)
+            await _save_job(job)
+
+            # output_file points to the JSON (used by carousel-slides endpoint)
             output_file = str(carousel_out)
+            # Store PNG paths for the library entry
+            slide_png_paths = [str(p) for p in slide_pngs]
 
         # ════════════════════════════════════════════════════════════════════════
         # IMAGE POST  —  Copy → Render single image
         # ════════════════════════════════════════════════════════════════════════
         elif content_type == "image_post":
             if not script_path:
-                await step(
+                # Try full script generator; if it fails build a minimal inline script
+                await try_step(
                     "Writing headline & copy", 20,
                     [str(PYTHON), str(SCRIPTS / "generate_video_script.py"),
                      "--brand", brand_arg, "--sujet", subject,
@@ -314,20 +403,41 @@ No markdown, no explanation — just the JSON array."""
                 )
                 files = sorted((OUTPUT / "scripts").glob("script_*.json"),
                                key=lambda p: p.stat().st_mtime, reverse=True)
-                if not files:
-                    raise RuntimeError("Copy generation produced no output")
-                script_path = files[0]
+                if files:
+                    script_path = files[0]
+                else:
+                    # Inline fallback: build minimal single-scene script from Claude
+                    _job_update(job, status="running", step="Writing copy", progress=20)
+                    await _save_job(job)
+                    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+                    brand_display = "Rodschinson Investment" if brand_arg == "rodschinson" else "Rachid Chikhi"
+                    copy_prompt = f"""Write a branded image post for {brand_display}.
+Topic: {subject}
+Return ONLY a JSON object:
+{{"meta":{{"id":"post","brand":"{brand_display}","format":"linkedin","ratio":"{fmt}","largeur":1080,"hauteur":1080,"fps":1,"duree_totale_sec":1,"langue":"{language.lower()}"}},"scenes":[{{"id":1,"nom":"post","duree_sec":1,"type_visuel":"title_card","narration":"","visuel":{{"titre_principal":"<headline max 8 words>","sous_titre":"<subline max 12 words>","eyebrow":"{brand_display}"}}}}]}}"""
+                    async with httpx.AsyncClient(timeout=30) as _c:
+                        _r = await _c.post(
+                            "https://api.anthropic.com/v1/messages",
+                            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                            json={"model": "claude-sonnet-4-6", "max_tokens": 600,
+                                  "messages": [{"role": "user", "content": copy_prompt}]},
+                        )
+                    raw = _r.json()["content"][0]["text"].strip()
+                    if raw.startswith("```"):
+                        raw = re.sub(r"^```[a-z]*\n?", "", raw)
+                        raw = re.sub(r"\n?```$", "", raw.strip())
+                    script_dir = OUTPUT / "scripts"
+                    script_dir.mkdir(parents=True, exist_ok=True)
+                    script_path = script_dir / f"script_{job_id[:8]}_custom.json"
+                    script_path.write_text(raw, encoding="utf-8")
 
             _job_update(job, script_path=str(script_path))
             await _save_job(job)
 
-            node_cmd = ["node", str(PUPPET / "renderer.js"),
+            node_cmd = ["node", str(PUPPET / "image_renderer.js"),
                         "--script", str(script_path),
                         "--template", template,
-                        "--mode", "image",
                         "--format", fmt.replace(":", "x")]
-            if logo_path:
-                node_cmd += ["--logo", str(logo_path)]
             await step("Rendering image", 80, node_cmd, cwd=PUPPET)
 
             img_files = sorted((OUTPUT / "images").glob("post_*.png"),
@@ -438,13 +548,22 @@ Return ONLY the post text, nothing else."""
         }
         if output_text:
             lib_entry["output_text"] = output_text
+        if slide_png_paths:
+            lib_entry["slide_images"] = slide_png_paths
 
         await _library_append(lib_entry)
 
+    except asyncio.CancelledError:
+        log.info("[%s] Pipeline aborted by user", job_id[:8])
+        _job_update(job, status="aborted", step="Aborted", detail="Generation cancelled by user.")
+        await _save_job(job)
     except Exception as exc:
         log.error("[%s] Pipeline error: %s", job_id[:8], exc)
         _job_update(job, status="error", step="Failed", detail=str(exc))
         await _save_job(job)
+    finally:
+        _job_tasks.pop(job_id, None)
+        _job_procs.pop(job_id, None)
 
 
 # ── Routes ─────────────────────────────────────────────────────────────────────
@@ -485,7 +604,8 @@ async def generate(payload: str = Form(...), logo: Optional[UploadFile] = File(N
     }
     _jobs[job_id] = job
     await _save_job(job)
-    asyncio.create_task(_run_pipeline(job_id, data, logo_path))
+    task = asyncio.create_task(_run_pipeline(job_id, data, logo_path))
+    _job_tasks[job_id] = task
     return {"job_id": job_id, "status": "pending"}
 
 
@@ -534,6 +654,217 @@ async def preview_script(body: PreviewRequest):
     return {"script": script, "path": str(script_files[0])}
 
 
+# ── Carousel Slide Preview ──────────────────────────────────────────────────────
+
+@app.post("/api/preview-carousel")
+async def preview_carousel(body: dict):
+    """Generate carousel slide JSON for preview (no rendering). Returns slides array."""
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(503, "ANTHROPIC_API_KEY not set in .env")
+
+    subject    = body.get("subject", "").strip()
+    brand      = body.get("brand", "investment")
+    language   = body.get("language", "EN")
+    style      = body.get("style", "educational")
+    num_slides = min(max(int(body.get("slides", 6)), 3), 12)
+
+    if not subject:
+        raise HTTPException(422, "subject is required")
+
+    brand_display = "Rodschinson Investment" if brand != "rachid" else "Rachid Chikhi"
+    lang_map = {"EN": "English", "FR": "French", "NL": "Dutch"}
+    lang_name = lang_map.get(language.upper(), "English")
+    style_hints = {
+        "viral_hook":   "Hook-first, bold statements, curiosity gap.",
+        "educational":  "Teach one clear concept per slide. Use data.",
+        "data_story":   "Lead each slide with a key stat.",
+        "personal":     "First person, personal story, authentic.",
+        "provocateur":  "Challenge assumptions, contrarian.",
+        "thread":       "Each slide is a standalone punchy point.",
+    }
+
+    prompt = f"""Write a {num_slides}-slide LinkedIn carousel in {lang_name}.
+TOPIC: {subject}
+BRAND: {brand_display}
+STYLE: {style_hints.get(style, style_hints["educational"])}
+
+Return ONLY a JSON array with exactly {num_slides} objects:
+[
+  {{"index": 1, "type": "title", "headline": "...", "subheadline": "...", "cta": "Swipe →", "brand": "{brand_display}"}},
+  {{"index": 2, "type": "content", "headline": "...", "body": "2-3 sentences", "stat": "VALUE — description"}},
+  ...
+  {{"index": {num_slides}, "type": "cta", "headline": "...", "body": "...", "hashtags": ["#Tag1","#Tag2","#Tag3"]}}
+]
+Slide 1 = title. Last slide = cta. All middle slides = content.
+No markdown, no explanation — JSON array only."""
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        res = await client.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
+                     "content-type": "application/json"},
+            json={"model": "claude-sonnet-4-6", "max_tokens": 3000,
+                  "messages": [{"role": "user", "content": prompt}]},
+        )
+    if res.status_code != 200:
+        raise HTTPException(502, f"Claude API error {res.status_code}: {res.text[:200]}")
+
+    raw = res.json()["content"][0]["text"].strip()
+    if raw.startswith("```"):
+        raw = re.sub(r"^```[a-z]*\n?", "", raw)
+        raw = re.sub(r"\n?```$", "", raw.strip())
+
+    try:
+        slides = json.loads(raw)
+    except json.JSONDecodeError:
+        m = re.search(r"\[.*\]", raw, re.DOTALL)
+        slides = json.loads(m.group()) if m else []
+
+    return {"slides": slides, "total": len(slides)}
+
+
+# ── Content Variations ────────────────────────────────────────────────────────
+
+def _variations_prompt(content_type: str, subject: str, language: str,
+                        style: str, brand: str, count: int) -> str:
+    lang_map = {"EN": "English", "FR": "French", "NL": "Dutch"}
+    lang = lang_map.get(language.upper(), "English")
+    brand_ctx = ("Rodschinson Investment — premium CRE & M&A advisory, Brussels/Dubai/Casablanca"
+                 if brand != "rachid" else "Rachid Chikhi — personal brand, entrepreneur & investor")
+    style_hint = {
+        "viral_hook": "Bold hook-first, curiosity gap, contrarian statement.",
+        "educational": "Teach one clear concept. Data-backed, structured.",
+        "data_story": "Lead with a key stat, build the narrative around numbers.",
+        "personal": "First-person story, authentic, vulnerable moment.",
+        "provocateur": "Challenge conventional wisdom, strong opinion.",
+        "thread": "Each point standalone, punchy, Twitter-style.",
+    }.get(style, "")
+
+    if content_type in ("video", "reel", "story"):
+        duration = "60-90s" if content_type == "reel" else "2-5 min"
+        return f"""You are a content strategist for {brand_ctx}.
+Generate {count} DISTINCT script concepts for a {content_type} ({duration}) in {lang}.
+Topic: {subject}
+Style directive: {style_hint}
+
+Return ONLY a valid JSON array with exactly {count} objects. Each object:
+{{
+  "id": 1,
+  "angle": "one-line creative angle / approach",
+  "title": "compelling video title",
+  "hook": "opening line / first sentence that grabs attention",
+  "scenes": ["Scene 1: description", "Scene 2: description", ...],
+  "cta": "closing call to action"
+}}
+
+Each concept must have a DIFFERENT angle (e.g. data-led, story-led, provocateur, how-to, myth-busting).
+Scenes array: 4-7 items, each a brief description of what that scene covers.
+Return ONLY the JSON array, no markdown, no explanation."""
+
+    if content_type == "carousel":
+        return f"""You are a content strategist for {brand_ctx}.
+Generate {count} DISTINCT carousel concepts in {lang}.
+Topic: {subject}
+Style directive: {style_hint}
+
+Return ONLY a valid JSON array with exactly {count} objects. Each object:
+{{
+  "id": 1,
+  "angle": "one-line creative angle",
+  "title": "carousel title / cover headline",
+  "hook": "cover slide hook — what makes someone swipe",
+  "slides": [
+    {{"index": 1, "type": "title", "headline": "...", "subheadline": "..."}},
+    {{"index": 2, "type": "content", "headline": "point title", "body": "2-3 sentences", "stat": "optional stat"}},
+    ...
+    {{"index": N, "type": "cta", "headline": "...", "body": "follow/DM us...", "hashtags": ["#tag1","#tag2","#tag3"]}}
+  ]
+}}
+
+Each concept: different angle, 5-8 slides total, first slide type=title, last type=cta.
+Return ONLY the JSON array, no markdown."""
+
+    if content_type == "text_only":
+        return f"""You are a content writer for {brand_ctx}.
+Write {count} DISTINCT versions of a {lang} social media post (LinkedIn / newsletter style).
+Topic: {subject}
+Style directive: {style_hint}
+
+Return ONLY a valid JSON array with exactly {count} objects:
+{{
+  "id": 1,
+  "angle": "one-line description of the angle used",
+  "hook": "the opening line",
+  "text": "the FULL post text, ready to publish, 150-400 words, proper line breaks with \\n"
+}}
+
+Each version must have a radically different hook and angle.
+Return ONLY the JSON array, no markdown."""
+
+    # image_post / story / default
+    return f"""You are a content strategist for {brand_ctx}.
+Generate {count} DISTINCT content concepts for a {content_type} in {lang}.
+Topic: {subject}
+Style: {style_hint}
+
+Return ONLY a valid JSON array with exactly {count} objects:
+{{
+  "id": 1,
+  "angle": "creative angle",
+  "title": "headline / main text",
+  "hook": "attention-grabbing first element",
+  "description": "brief description of visual layout and copy"
+}}
+Return ONLY the JSON array."""
+
+
+@app.post("/api/generate-variations")
+async def generate_variations(body: dict):
+    """Generate 3-5 content propositions using Claude. User picks one before full generation."""
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(503, "ANTHROPIC_API_KEY not set in .env")
+
+    content_type = body.get("contentType", "video")
+    subject      = body.get("subject", "").strip()
+    language     = body.get("language", "EN")
+    style        = body.get("style", "viral_hook")
+    brand        = body.get("brand", "investment")
+    count        = min(max(int(body.get("count", 3)), 2), 5)
+
+    if not subject:
+        raise HTTPException(422, "subject is required")
+
+    prompt = _variations_prompt(content_type, subject, language, style, brand, count)
+
+    async with httpx.AsyncClient(timeout=90) as client:
+        res = await client.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
+                     "content-type": "application/json"},
+            json={"model": "claude-opus-4-6",
+                  "max_tokens": 4096,
+                  "messages": [{"role": "user", "content": prompt}]},
+        )
+
+    if res.status_code != 200:
+        raise HTTPException(502, f"Claude API error {res.status_code}: {res.text[:300]}")
+
+    raw = res.json()["content"][0]["text"].strip()
+    # Extract JSON array robustly
+    m = re.search(r'\[.*\]', raw, re.DOTALL)
+    if not m:
+        raise HTTPException(502, "Could not parse variations JSON from Claude response")
+
+    try:
+        variations = json.loads(m.group())
+    except json.JSONDecodeError as e:
+        raise HTTPException(502, f"Invalid JSON from Claude: {e}")
+
+    return {"variations": variations[:count], "content_type": content_type}
+
+
 # ── Job status ─────────────────────────────────────────────────────────────────
 
 @app.get("/api/jobs/{job_id}")
@@ -549,9 +880,54 @@ async def get_job(job_id: str):
     raise HTTPException(404, "Job not found")
 
 
+@app.post("/api/jobs/{job_id}/abort", status_code=200)
+async def abort_job(job_id: str):
+    """Cancel an in-progress generation job."""
+    # Kill the active subprocess first (stops renderer/ffmpeg/etc. immediately)
+    proc = _job_procs.get(job_id)
+    if proc:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+
+    # Cancel the asyncio task (triggers CancelledError in the pipeline)
+    task = _job_tasks.get(job_id)
+    if task and not task.done():
+        task.cancel()
+        try:
+            await asyncio.wait_for(asyncio.shield(task), timeout=3)
+        except (asyncio.CancelledError, asyncio.TimeoutError):
+            pass
+
+    # If the job was already done/errored, just report it
+    path = JOBS_DIR / f"{job_id}.json"
+    if path.exists():
+        async with aiofiles.open(path) as f:
+            job = json.loads(await f.read())
+        if job.get("status") not in ("running", "pending"):
+            return {"status": job["status"], "detail": "Job was already finished."}
+
+    # Ensure the file is marked aborted (pipeline may not have handled CancelledError yet)
+    if job_id in _jobs:
+        job = _jobs[job_id]
+    elif path.exists():
+        async with aiofiles.open(path) as f:
+            job = json.loads(await f.read())
+    else:
+        raise HTTPException(404, "Job not found")
+
+    if job.get("status") not in ("aborted", "error", "done"):
+        _job_update(job, status="aborted", step="Aborted", detail="Generation cancelled by user.")
+        _jobs[job_id] = job
+        await _save_job(job)
+
+    return {"status": "aborted"}
+
+
 # ── Video streaming ────────────────────────────────────────────────────────────
 
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 @app.get("/api/video/{job_id}")
 async def serve_video(job_id: str):
@@ -564,6 +940,94 @@ async def serve_video(job_id: str):
     if not path.exists():
         raise HTTPException(404, "Video file missing on disk")
     return FileResponse(path, media_type="video/mp4")
+
+
+@app.get("/api/image/{job_id}")
+async def serve_image(job_id: str):
+    """Serve the rendered PNG for an image_post job."""
+    lib = await _library_load()
+    entry = next((e for e in lib if e.get("job_id") == job_id), None)
+    if not entry or not entry.get("output_file"):
+        raise HTTPException(404, "Image not found")
+    path = Path(entry["output_file"])
+    if not path.exists():
+        raise HTTPException(404, "Image file missing on disk")
+    return FileResponse(path, media_type="image/png")
+
+
+@app.get("/api/carousel-slides/{job_id}")
+async def get_carousel_slides(job_id: str):
+    """Return the slide JSON array for a carousel job."""
+    lib = await _library_load()
+    entry = next((e for e in lib if e.get("job_id") == job_id), None)
+    if not entry or not entry.get("output_file"):
+        raise HTTPException(404, "Carousel not found")
+    path = Path(entry["output_file"])
+    if not path.exists():
+        raise HTTPException(404, "Carousel file missing on disk")
+    slides = json.loads(path.read_text(encoding="utf-8"))
+    return {"slides": slides}
+
+
+
+@app.get("/api/download/{job_id}")
+async def download_asset(job_id: str):
+    """Download the output asset for a job. Carousels are served as styled HTML."""
+    lib = await _library_load()
+    entry = next((e for e in lib if e.get("job_id") == job_id), None)
+    if not entry or not entry.get("output_file"):
+        raise HTTPException(404, "Asset not found")
+    path = Path(entry["output_file"])
+    if not path.exists():
+        raise HTTPException(404, "Asset file missing on disk")
+
+    # Carousels: always serve a ZIP of PNGs — never fall through to JSON
+    if entry.get("content_type") == "carousel":
+        # 1. Try recorded slide_images paths
+        recorded = entry.get("slide_images", [])
+        existing = [p for p in recorded if Path(p).exists()]
+        if not existing:
+            # 2. Read manifest file if present (has correct paths from renderer)
+            carousel_dir = OUTPUT / "carousel"
+            prefix = job_id[:8]
+            manifest_file = carousel_dir / f"{prefix}_manifest.json"
+            if manifest_file.exists():
+                try:
+                    mdata = json.loads(manifest_file.read_text())
+                    existing = [p for p in mdata.get("slides", []) if Path(p).exists()]
+                except Exception:
+                    pass
+        if not existing:
+            # 3. Glob by prefix pattern
+            carousel_dir = OUTPUT / "carousel"
+            prefix = job_id[:8]
+            existing = sorted(str(p) for p in carousel_dir.glob(f"{prefix}_*.png"))
+        if not existing:
+            raise HTTPException(404, "No rendered slide images found — please regenerate the carousel")
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for i, p in enumerate(existing, 1):
+                zf.write(p, f"slide_{i:02d}.png")
+        buf.seek(0)
+        safe_title = (entry.get("title") or job_id)[:40].replace(" ", "_").replace("/", "-")
+        return StreamingResponse(
+            buf,
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{safe_title}_slides.zip"'},
+        )
+
+    content_type_map = {
+        ".mp4":  "video/mp4",
+        ".txt":  "text/plain",
+        ".png":  "image/png",
+        ".jpg":  "image/jpeg",
+        ".pdf":  "application/pdf",
+    }
+    suffix = path.suffix.lower()
+    media_type = content_type_map.get(suffix, "application/octet-stream")
+    safe_title = (entry.get("title") or job_id)[:40].replace(" ", "_").replace("/", "-")
+    filename = f"{safe_title}{suffix}"
+    return FileResponse(path, media_type=media_type, filename=filename)
 
 
 # ── Library ────────────────────────────────────────────────────────────────────
@@ -606,15 +1070,39 @@ async def update_library_status(job_id: str, body: StatusUpdate):
 
 # ── Publish (Ayrshare) ─────────────────────────────────────────────────────────
 
+_METRICOOL_BASE = "https://app.metricool.com/api"
+
+# Metricool platform category → display name + impressions/views field key
+_MC_PLATFORMS = {
+    "instagram": ("Instagram", ["igImpressions", "igReach"]),
+    "facebook":  ("Facebook",  ["fbImpressions", "fbReach"]),
+    "linkedin":  ("LinkedIn",  ["liImpressions", "liReach"]),
+    "youtube":   ("YouTube",   ["ytViews"]),
+    "tiktok":    ("TikTok",    ["ttViews"]),
+    "twitter":   ("Twitter",   ["twImpressions"]),
+}
+
+
+async def _metricool_headers() -> dict:
+    return {"X-Mc-Auth": os.getenv("METRICOOL_TOKEN", ""), "Content-Type": "application/json"}
+
+
 @app.post("/api/publish/{job_id}")
 async def publish_content(job_id: str):
     """
-    Publish content to all its platforms via Ayrshare.
-    Requires AYRSHARE_API_KEY in .env.
+    Schedule content on all configured platforms via Metricool.
+    Requires METRICOOL_TOKEN, METRICOOL_USER_ID, METRICOOL_BLOG_ID in .env.
     """
-    api_key = os.getenv("AYRSHARE_API_KEY", "")
-    if not api_key:
-        raise HTTPException(503, "AYRSHARE_API_KEY not configured in .env")
+    token   = os.getenv("METRICOOL_TOKEN", "")
+    user_id = os.getenv("METRICOOL_USER_ID", "")
+    blog_id = os.getenv("METRICOOL_BLOG_ID", "")
+
+    if not all([token, user_id, blog_id]):
+        raise HTTPException(
+            503,
+            "Metricool not configured — add METRICOOL_TOKEN, METRICOOL_USER_ID, "
+            "METRICOOL_BLOG_ID to your .env file",
+        )
 
     lib = await _library_load()
     entry = next((e for e in lib if e.get("job_id") == job_id), None)
@@ -625,37 +1113,44 @@ async def publish_content(job_id: str):
     if not platforms:
         raise HTTPException(422, "No platforms configured for this content")
 
-    # Map our platform IDs to Ayrshare platform keys
-    platform_map = {
-        "linkedin": "linkedin", "instagram": "instagram",
-        "facebook": "facebook", "youtube": "youtube", "tiktok": "tiktok",
-    }
-    ayrshare_platforms = [platform_map[p] for p in platforms if p in platform_map]
+    # Caption: prefer generated text post, otherwise use title
+    caption = (entry.get("output_text") or entry.get("title", ""))[:2200]
 
-    payload = {
-        "post": entry.get("title", ""),
-        "platforms": ayrshare_platforms,
+    # Networks payload: Metricool uses keys matching our platform IDs
+    supported = {"linkedin", "instagram", "facebook", "tiktok", "youtube", "twitter"}
+    networks  = {p: {} for p in platforms if p in supported}
+
+    # Publish 2 minutes from now so Metricool has time to process
+    from datetime import datetime, timezone, timedelta
+    pub_dt = (datetime.now(timezone.utc) + timedelta(minutes=2)).strftime("%Y-%m-%dT%H:%M:%S")
+
+    payload: dict = {
+        "blogId": blog_id,
+        "userId": user_id,
+        "caption": caption,
+        "networks": networks,
+        "publicationDate": {"dateTime": pub_dt, "timezone": "UTC"},
     }
-    if entry.get("output_file") and Path(entry["output_file"]).exists():
-        # Ayrshare needs a public URL — in production, upload to S3/Cloudflare first
-        payload["mediaUrls"] = []  # placeholder; wire file upload separately
+
+    # Attach media if a public URL is stored on the entry
+    if entry.get("public_media_url"):
+        payload["media"] = [{"url": entry["public_media_url"]}]
 
     async with httpx.AsyncClient(timeout=30) as client:
         res = await client.post(
-            "https://app.ayrshare.com/api/post",
-            headers={"Authorization": f"Bearer {api_key}"},
+            f"{_METRICOOL_BASE}/v2/scheduler/posts",
+            headers=await _metricool_headers(),
             json=payload,
         )
 
     if res.status_code not in (200, 201):
-        log.error("Ayrshare error: %s %s", res.status_code, res.text[:300])
-        raise HTTPException(502, f"Ayrshare returned {res.status_code}")
+        log.error("Metricool publish error: %s %s", res.status_code, res.text[:400])
+        raise HTTPException(502, f"Metricool returned {res.status_code}: {res.text[:300]}")
 
-    # Mark as Published
     entry["status"] = "Published"; entry["updated_at"] = _now()
     await _library_save(lib)
 
-    return {"status": "published", "ayrshare": res.json()}
+    return {"status": "published", "metricool": res.json()}
 
 
 # ── Schedule ───────────────────────────────────────────────────────────────────
@@ -897,20 +1392,40 @@ async def generate_template(body: TemplateGenRequest):
 
     dest = PUPPET / "templates" / f"{slug}.html"
 
-    # Resolve dimensions from type
+    # Resolve dimensions and type-specific contract from type
     if body.type == "carousel":
         width, height = 1080, 1080
-        scene_hint = "Create 5 slide scenes (title, point 1-3, CTA). Each slide is full-screen."
+        data_contract = """window.loadScene receives a slide object:
+  { index, type ("title"|"content"|"cta"), headline, subheadline, body, stat, cta, hashtags[], brand, total }
+  The function must populate a <div id="scene-container"> with the rendered slide HTML and return true.
+  Design three CSS classes: .slide-title, .slide-content, .slide-cta.
+  For "title": show headline, subheadline, brand name, swipe CTA.
+  For "content": show point number, headline, body text, optional stat callout block.
+  For "cta": show headline, body, hashtag pills.
+  window.animateScene() triggers CSS transitions to final state."""
+        extra_design = "Square 1080×1080px slides. Bold typography. Rich visual hierarchy. Each slide must look like a standalone premium social media post."
     elif body.type == "image":
         width, height = 1080, 1080
-        scene_hint = "Create a single branded image scene with headline, stat, and logo."
+        data_contract = """window.loadScene receives:
+  { type_visuel, visuel: { titre_principal, sous_titre, eyebrow, valeur, unite, ... } }
+  Implement SCENE_BUILDERS for at least: title_card, big_number, text_bullets, cta_screen.
+  Populate <div id="scene-container"> and return true."""
+        extra_design = "Square 1080×1080px single branded image. Clean, impactful layout."
     else:  # video
         width, height = 1920, 1080
-        scene_hint = "Create 4 scenes: title card, 2 content slides, and an outro."
+        data_contract = """window.loadScene receives a scene object:
+  { type_visuel, visuel: { titre_principal, sous_titre, eyebrow, valeur, unite, contexte,
+    formule, series[], etapes[], items[], headline, body, stat, colonne_gauche, colonne_droite, ... } }
+  Implement SCENE_BUILDERS for ALL these type_visuel values:
+    title_card, big_number, bar_chart, process_steps, text_bullets,
+    cta_screen, split_screen, comparison_table, quote_card.
+  Populate <div id="scene-container"> with the built HTML and return true.
+  window.animateScene() triggers CSS enter transitions."""
+        extra_design = "16:9 widescreen 1920×1080px. Cinematic layout. This template must match the premium Rodschinson brand."
 
     prompt = f"""You are an expert Puppeteer HTML template developer for Rodschinson Content Studio.
 
-Generate a complete, self-contained HTML file for a branded content template with these specs:
+Generate a complete, self-contained HTML file for a branded content template.
 
 Name: {body.name}
 Description: {body.description}
@@ -919,24 +1434,29 @@ Background color: {body.bg_color}
 Accent color: {body.accent_color}
 Canvas size: {width}x{height}px
 
-REQUIREMENTS:
-1. The HTML must work as a standalone Puppeteer screenshot target (no external scripts).
-2. Use Google Fonts via @import (Cormorant Garamond + Space Grotesk preferred, or choose appropriate fonts).
-3. CSS custom properties in :root for colors: --bg, --accent, --text, --serif, --sans.
-4. html/body: fixed {width}px x {height}px, overflow hidden.
-5. Scenes use class "scene" and "scene active" pattern — Puppeteer activates them via JS.
-6. Each scene is position:absolute inset:0.
-7. Brand watermark at bottom: small text "RODSCHINSON" in accent color.
-8. CSS animations for text/elements entering (opacity + translateX/Y transitions).
-9. A JS function window.activateScene(n) that adds "active" class to scene n, removes from others.
-10. {scene_hint}
-11. The template must be visually stunning, professional, and match the description.
-12. Use the brand colors as the dominant palette.
-13. Include subtle geometric shapes or patterns as background decoration (SVG or CSS).
+VISUAL DESIGN REQUIREMENTS:
+1. The HTML must work as a standalone Puppeteer screenshot target (no external scripts except Google Fonts).
+2. Use Google Fonts via @import (Cormorant Garamond + Space Grotesk preferred, or suitable alternatives).
+3. CSS custom properties in :root: --bg ({body.bg_color}), --accent ({body.accent_color}), --text, --serif, --sans.
+4. html/body: exactly {width}px × {height}px, overflow hidden, background: var(--bg).
+5. Brand watermark at bottom: small "RODSCHINSON" text in accent color, low opacity.
+6. CSS entry animations: opacity + translateX/Y transitions on key elements.
+7. .scene class: position absolute, inset 0, display none. .scene.active: display flex.
+8. .scene.anim class triggers all animated elements to their final visible state.
+9. Include rich decorative background elements: SVG geometry (circles, lines, polygons), subtle grid or noise texture, diagonal accents. Make it visually stunning.
+10. {extra_design}
 
-OUTPUT: Return ONLY the complete HTML file content, no explanation, no markdown code blocks."""
+JAVASCRIPT CONTRACT (CRITICAL — Puppeteer calls these functions):
+{data_contract}
 
-    async with httpx.AsyncClient(timeout=60) as client:
+REQUIRED JS FUNCTIONS:
+- window.loadScene(data) → populates #scene-container, returns true on success / false if unknown type
+- window.animateScene() → adds .active then .anim to #scene after a requestAnimationFrame
+- window.isAnimationComplete(ms) → returns Promise that resolves after ms milliseconds
+
+OUTPUT: Return ONLY the complete HTML file content. No explanation, no markdown code fences."""
+
+    async with httpx.AsyncClient(timeout=300) as client:
         res = await client.post(
             "https://api.anthropic.com/v1/messages",
             headers={
@@ -945,7 +1465,7 @@ OUTPUT: Return ONLY the complete HTML file content, no explanation, no markdown 
                 "content-type": "application/json",
             },
             json={
-                "model": "claude-opus-4-6",
+                "model": "claude-sonnet-4-6",
                 "max_tokens": 8000,
                 "messages": [{"role": "user", "content": prompt}],
             },
@@ -981,60 +1501,136 @@ OUTPUT: Return ONLY the complete HTML file content, no explanation, no markdown 
 
 # ── Analytics ──────────────────────────────────────────────────────────────────
 
-@app.get("/api/analytics")
-async def get_analytics(brand: Optional[str] = None):
-    import math
+async def _metricool_analytics(token: str, user_id: str, blog_id: str) -> dict | None:
+    """Fetch analytics data from Metricool. Returns None on any failure."""
     from datetime import date, timedelta
 
-    lib = await _library_load()
+    today = date.today()
+    start = (today - timedelta(days=29)).strftime("%Y%m%d")
+    end   = today.strftime("%Y%m%d")
 
+    params  = {"userId": user_id, "blogId": blog_id, "start": start, "end": end}
+    headers = {"X-Mc-Auth": token}
+
+    platforms_out: list[dict] = []
+    total_views   = 0
+    total_eng     = 0.0
+    eng_count     = 0
+
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            # Per-platform aggregated metrics
+            for platform_id, (display_name, view_keys) in _MC_PLATFORMS.items():
+                try:
+                    r = await client.get(
+                        f"{_METRICOOL_BASE}/stats/aggregations/{platform_id}",
+                        headers=headers, params=params,
+                    )
+                    if r.status_code != 200:
+                        continue
+                    d = r.json()
+                    views = next((int(d[k]) for k in view_keys if k in d and d[k]), 0)
+                    eng   = float(d.get("engagement") or d.get(f"{platform_id[:2]}Engagement") or 0)
+                    if views > 0:
+                        platforms_out.append({"platform": display_name, "views": views})
+                        total_views += views
+                    if eng > 0:
+                        total_eng += eng; eng_count += 1
+                except Exception:
+                    continue
+
+            # 30-day timeline — try Instagram impressions as main signal
+            views30: list[dict] = []
+            timeline_metrics = ["igimpressions", "liImpressions", "fbImpressions"]
+            for metric in timeline_metrics:
+                try:
+                    r = await client.get(
+                        f"{_METRICOOL_BASE}/stats/timeline/{metric}",
+                        headers=headers, params=params,
+                    )
+                    if r.status_code != 200:
+                        continue
+                    raw = r.json()
+                    items = raw if isinstance(raw, list) else raw.get("data", [])
+                    if items:
+                        for item in items:
+                            dt_str = item.get("date") or item.get("day") or ""
+                            val    = int(item.get("value") or item.get("count") or 0)
+                            try:
+                                from datetime import datetime as _dt
+                                dt_fmt = _dt.strptime(str(dt_str)[:8], "%Y%m%d").strftime("%d %b")
+                            except Exception:
+                                dt_fmt = str(dt_str)
+                            views30.append({
+                                "date": dt_fmt, "views": val,
+                                "rodschinson": round(val * 0.62),
+                                "rachid":      round(val * 0.38),
+                            })
+                        break
+                except Exception:
+                    continue
+
+    except Exception as exc:
+        log.warning("Metricool analytics request failed: %s", exc)
+        return None
+
+    if not platforms_out and not views30:
+        return None  # nothing usable — let caller fall back
+
+    platforms_out.sort(key=lambda x: x["views"], reverse=True)
+    avg_eng = round(total_eng / max(eng_count, 1), 1)
+
+    return {
+        "totalViews":  total_views,
+        "viewsDelta":  0,
+        "engagement":  avg_eng or 0.0,
+        "engDelta":    0,
+        "platforms":   platforms_out,
+        "views30":     views30,
+        "source":      "metricool",
+    }
+
+
+@app.get("/api/analytics")
+async def get_analytics(brand: Optional[str] = None):
+    lib   = await _library_load()
+    token   = os.getenv("METRICOOL_TOKEN", "")
+    user_id = os.getenv("METRICOOL_USER_ID", "")
+    blog_id = os.getenv("METRICOOL_BLOG_ID", "")
+
+    mc_data: dict | None = None
+    if token and user_id and blog_id:
+        mc_data = await _metricool_analytics(token, user_id, blog_id)
+
+    # Library-derived counts (always available)
     if brand and brand != "both":
         lib_f = [e for e in lib if e.get("brand") == brand]
-        mul = 0.62 if brand == "rodschinson" else 0.38
+        mul   = 0.62 if brand == "rodschinson" else 0.38
     else:
-        lib_f = lib
-        mul = 1.0
+        lib_f = lib; mul = 1.0
 
     videos_gen = len(lib_f)
+    leads      = len([e for e in lib_f if e.get("status") in {"Scheduled", "Published"}]) * 5 + 14
 
-    # Real platform breakdown: count scheduled/published posts by platform
-    platform_raw = {}
-    base_views = {"LinkedIn": 48200, "YouTube": 31500, "Instagram": 27800, "TikTok": 19400, "Facebook": 8100}
-    platform_name_map = {"linkedin":"LinkedIn","youtube":"YouTube","instagram":"Instagram","tiktok":"TikTok","facebook":"Facebook"}
-
-    for entry in lib_f:
-        for p in entry.get("platforms", []):
-            key = platform_name_map.get(p, p.title())
-            platform_raw[key] = platform_raw.get(key, 0) + 1
-
-    # Blend real counts (as a multiplier) with base views
-    platforms_out = []
-    for name, base in base_views.items():
-        real_boost = 1 + (platform_raw.get(name, 0) * 0.05)
-        platforms_out.append({"platform": name, "views": round(base * mul * real_boost)})
-    platforms_out.sort(key=lambda x: x["views"], reverse=True)
-
-    # 30-day views series
-    today = date.today()
-    views30 = []
-    for i in range(30):
-        d = today - timedelta(days=29 - i)
-        base = 1200 + math.sin(i * 0.4) * 600 + (hash(str(d)) % 400)
-        # Scale by real library size
-        scale = max(1.0, videos_gen / 10)
-        rod_v = round(abs(base) * 0.62 * min(scale, 3))
-        rac_v = round(abs(base) * 0.38 * min(scale, 3))
-        views30.append({
-            "date": d.strftime("%d %b"),
-            "views": round(abs(base) * mul * min(scale, 3)),
-            "rodschinson": rod_v, "rachid": rac_v,
-        })
-
-    total_views = sum(e["views"] for e in views30) * 4
-
-    # Real leads: Scheduled + Published library entries
-    leads = len([e for e in lib_f if e.get("status") in {"Scheduled","Published"}]) * 5 + 14
-    engagement = round(4.2 * mul + (videos_gen * 0.02), 1)
+    if mc_data:
+        # Blend brand filter multiplier into Metricool totals
+        total_views   = round(mc_data["totalViews"]  * mul)
+        platforms_out = [{"platform": p["platform"], "views": round(p["views"] * mul)} for p in mc_data["platforms"]]
+        views30       = [
+            {**row,
+             "views":       round(row["views"] * mul),
+             "rodschinson": round(row["rodschinson"] * mul),
+             "rachid":      round(row["rachid"] * mul),
+            } for row in mc_data["views30"]
+        ] if mc_data["views30"] else _fallback_views30(mul, videos_gen)
+        engagement = mc_data["engagement"]
+        source     = "metricool"
+    else:
+        # Pure internal fallback
+        platforms_out, views30 = _fallback_platforms(lib_f, mul), _fallback_views30(mul, videos_gen)
+        total_views = sum(e["views"] for e in views30) * 4
+        engagement  = round(4.2 * mul + (videos_gen * 0.02), 1)
+        source      = "internal"
 
     return {
         "brand":       brand or "both",
@@ -1048,4 +1644,33 @@ async def get_analytics(brand: Optional[str] = None):
         "leadsDelta":  max(1, leads // 7),
         "views30":     views30,
         "platforms":   platforms_out,
+        "source":      source,
     }
+
+
+def _fallback_platforms(lib_f: list, mul: float) -> list[dict]:
+    base_views = {"LinkedIn": 48200, "YouTube": 31500, "Instagram": 27800, "TikTok": 19400, "Facebook": 8100}
+    name_map   = {"linkedin": "LinkedIn", "youtube": "YouTube", "instagram": "Instagram",
+                  "tiktok": "TikTok", "facebook": "Facebook"}
+    counts: dict[str, int] = {}
+    for e in lib_f:
+        for p in e.get("platforms", []):
+            k: str = name_map.get(str(p), str(p).title())
+            counts[k] = counts.get(k, 0) + 1
+    out = [{"platform": n, "views": round(base * mul * (1 + counts.get(n, 0) * 0.05))}
+           for n, base in base_views.items()]
+    return sorted(out, key=lambda x: x["views"], reverse=True)
+
+
+def _fallback_views30(mul: float, videos_gen: int) -> list[dict]:
+    import math
+    from datetime import date, timedelta
+    today = date.today(); scale = max(1.0, videos_gen / 10); rows = []
+    for i in range(30):
+        d    = today - timedelta(days=29 - i)
+        base = abs(1200 + math.sin(i * 0.4) * 600 + (hash(str(d)) % 400))
+        v    = round(base * mul * min(scale, 3))
+        rows.append({"date": d.strftime("%d %b"), "views": v,
+                     "rodschinson": round(base * 0.62 * min(scale, 3)),
+                     "rachid":      round(base * 0.38 * min(scale, 3))})
+    return rows

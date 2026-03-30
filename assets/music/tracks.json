@@ -1,0 +1,47 @@
+[
+  {
+    "id": "corporate-1",
+    "title": "Backed Vibes Clean (Kevin MacLeod)",
+    "genre": "corporate",
+    "mood": "professional",
+    "url": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Backed%20Vibes%20Clean.mp3",
+    "duration": 120,
+    "local": "/Users/yacerelfatihy/rodschinson/video_automation/assets/music/corporate-1.mp3"
+  },
+  {
+    "id": "corporate-2",
+    "title": "Decisions (Kevin MacLeod)",
+    "genre": "corporate",
+    "mood": "upbeat",
+    "url": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Decisions.mp3",
+    "duration": 115,
+    "local": "/Users/yacerelfatihy/rodschinson/video_automation/assets/music/corporate-2.mp3"
+  },
+  {
+    "id": "cinematic-1",
+    "title": "Arcadia (Kevin MacLeod)",
+    "genre": "cinematic",
+    "mood": "dramatic",
+    "url": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Arcadia.mp3",
+    "duration": 130,
+    "local": "/Users/yacerelfatihy/rodschinson/video_automation/assets/music/cinematic-1.mp3"
+  },
+  {
+    "id": "lofi-1",
+    "title": "Chill (Kevin MacLeod)",
+    "genre": "lofi",
+    "mood": "relaxed",
+    "url": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Chill.mp3",
+    "duration": 180,
+    "local": "/Users/yacerelfatihy/rodschinson/video_automation/assets/music/lofi-1.mp3"
+  },
+  {
+    "id": "upbeat-1",
+    "title": "Upbeat Forever (Kevin MacLeod)",
+    "genre": "upbeat",
+    "mood": "energetic",
+    "url": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Upbeat%20Forever.mp3",
+    "duration": 140,
+    "local": "/Users/yacerelfatihy/rodschinson/video_automation/assets/music/upbeat-1.mp3"
+  }
+]

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080, height=1080">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,400;1,600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue:  #08316F;
+  --sky:   #00B6FF;
+  --gold:  #C8A96E;
+  --bg:    #F4F7FB;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans:  'Space Grotesk', sans-serif;
+}
+
+html, body {
+  width: 1080px;
+  height: 1080px;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: var(--sans);
+}
+
+.frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.top-accent {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--blue), var(--sky));
+}
+
+.left-accent {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 5px;
+  background: linear-gradient(180deg, var(--blue) 0%, var(--sky) 60%, transparent 100%);
+}
+
+.brand-tag {
+  position: absolute;
+  bottom: 30px;
+  left: 36px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: rgba(8,49,111,0.4);
+}
+
+.slide-counter {
+  position: absolute;
+  bottom: 30px;
+  right: 36px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: rgba(8,49,111,0.3);
+}
+
+/* ── DECORATIVE SVG ── */
+.deco {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  padding: 72px 56px 80px;
+}
+.scene.active { display: flex; }
+
+/* ── TITLE ── */
+.slide-title .eyebrow {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--sky);
+  border-bottom: 2px solid var(--sky);
+  padding-bottom: 6px;
+  margin-bottom: 30px;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.5s ease;
+}
+
+.slide-title .headline {
+  font-family: var(--serif);
+  font-size: 80px;
+  font-weight: 700;
+  color: var(--blue);
+  line-height: 1.05;
+  margin-bottom: 24px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all 0.6s ease 0.1s;
+}
+
+.slide-title .headline em {
+  font-style: italic;
+  color: var(--gold);
+}
+
+.slide-title .subheadline {
+  font-size: 18px;
+  color: rgba(8,49,111,0.65);
+  line-height: 1.65;
+  max-width: 720px;
+  opacity: 0;
+  transition: opacity 0.5s ease 0.3s;
+}
+
+.slide-title .divider {
+  width: 0;
+  height: 3px;
+  background: var(--gold);
+  margin: 22px 0;
+  transition: width 0.6s ease 0.2s;
+}
+
+.slide-title .swipe-cta {
+  margin-top: auto;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: rgba(8,49,111,0.4);
+  opacity: 0;
+  transition: opacity 0.4s ease 0.6s;
+}
+
+/* ── CONTENT ── */
+.slide-content .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--sky);
+  margin-bottom: 22px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.slide-content .tag::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 2px;
+  background: var(--sky);
+}
+
+.slide-content .headline {
+  font-family: var(--serif);
+  font-size: 54px;
+  font-weight: 700;
+  color: var(--blue);
+  line-height: 1.1;
+  margin-bottom: 22px;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: all 0.55s ease 0.1s;
+}
+
+.slide-content .body {
+  font-size: 19px;
+  color: rgba(8,49,111,0.75);
+  line-height: 1.7;
+  max-width: 840px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.5s ease 0.2s;
+}
+
+.slide-content .stat-block {
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 24px;
+  background: var(--blue);
+  border-radius: 10px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.5s ease 0.35s;
+}
+
+.slide-content .stat-value {
+  font-family: var(--serif);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.slide-content .stat-label {
+  font-size: 14px;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.5;
+}
+
+/* ── CTA ── */
+.slide-cta {
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding-bottom: 80px;
+  background: linear-gradient(145deg, var(--blue) 0%, #0a4ba0 100%);
+}
+
+.slide-cta .cta-overline {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.slide-cta .cta-headline {
+  font-family: var(--serif);
+  font-size: 64px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+  margin-bottom: 20px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all 0.55s ease 0.1s;
+}
+
+.slide-cta .cta-body {
+  font-size: 16px;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.65;
+  max-width: 760px;
+  margin-bottom: 30px;
+  opacity: 0;
+  transition: opacity 0.5s ease 0.25s;
+}
+
+.slide-cta .cta-divider {
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--sky), var(--gold));
+  margin-bottom: 24px;
+  transition: width 0.6s ease 0.2s;
+}
+
+.slide-cta .hashtags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.5s ease 0.4s;
+}
+
+.slide-cta .hashtag {
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+}
+
+/* ── ANIMATED ── */
+.scene.anim .slide-title .eyebrow,
+.scene.anim .slide-title .subheadline,
+.scene.anim .slide-title .swipe-cta { opacity: 1; transform: none; }
+.scene.anim .slide-title .headline { opacity: 1; transform: none; }
+.scene.anim .slide-title .divider { width: 60px; }
+
+.scene.anim .slide-content .tag { opacity: 1; }
+.scene.anim .slide-content .headline { opacity: 1; transform: none; }
+.scene.anim .slide-content .body { opacity: 1; transform: none; }
+.scene.anim .slide-content .stat-block { opacity: 1; transform: none; }
+
+.scene.anim .slide-cta .cta-overline,
+.scene.anim .slide-cta .cta-body,
+.scene.anim .slide-cta .hashtags { opacity: 1; }
+.scene.anim .slide-cta .cta-headline { opacity: 1; transform: none; }
+.scene.anim .slide-cta .cta-divider { width: 80px; }
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <div class="top-accent"></div>
+  <div class="left-accent"></div>
+  <div class="brand-tag" id="frame-brand">Rodschinson Investment</div>
+  <div class="slide-counter" id="frame-counter"></div>
+</div>
+
+<!-- Decorative background geometry -->
+<svg class="deco" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="980" cy="100" r="340" fill="none" stroke="#08316F" stroke-width="2"/>
+  <circle cx="980" cy="100" r="220" fill="none" stroke="#08316F" stroke-width="1.5"/>
+  <rect x="600" y="500" width="600" height="600" fill="none" stroke="#08316F" stroke-width="1.5" transform="rotate(20 980 800)"/>
+  <line x1="0" y1="0" x2="1080" y2="1080" stroke="#08316F" stroke-width="1"/>
+  <polygon points="0,1080 200,600 400,1080" fill="none" stroke="#08316F" stroke-width="1"/>
+</svg>
+
+<div id="scene-container"></div>
+
+<script>
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(s) { return esc(s).replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); }
+
+function parseStatBlock(stat) {
+  if (!stat) return '';
+  // Try to extract a number for the big display
+  const m = stat.match(/^([0-9.,]+\s*[%€KMB+]*)\s*[-–:·]?\s*(.*)$/);
+  if (m) {
+    return `<div class="stat-block">
+      <div class="stat-value">${esc(m[1])}</div>
+      <div class="stat-label">${esc(m[2] || stat)}</div>
+    </div>`;
+  }
+  return `<div class="stat-block"><div class="stat-label">${esc(stat)}</div></div>`;
+}
+
+window.loadScene = function(slideData) {
+  const c = document.getElementById('scene-container');
+  const idx   = slideData.index || 1;
+  const type  = slideData.type  || 'content';
+  const total = slideData.total || '';
+
+  document.getElementById('frame-counter').textContent =
+    total ? `${String(idx).padStart(2,'0')} / ${String(total).padStart(2,'0')}` : '';
+
+  let html = '';
+
+  if (type === 'title') {
+    html = `<div class="scene slide-title" id="scene">
+      <div class="eyebrow">${esc(slideData.brand || 'Rodschinson')}</div>
+      <div class="headline">${fmt(slideData.headline || '')}</div>
+      <div class="divider"></div>
+      <div class="subheadline">${esc(slideData.subheadline || '')}</div>
+      <div class="swipe-cta">${esc(slideData.cta || 'Swipe →')}</div>
+    </div>`;
+  } else if (type === 'cta') {
+    const tags = (slideData.hashtags || []).map(h => `<span class="hashtag">${esc(h)}</span>`).join('');
+    html = `<div class="scene slide-cta" id="scene">
+      <div class="cta-overline">Take action</div>
+      <div class="cta-headline">${fmt(slideData.headline || '')}</div>
+      <div class="cta-divider"></div>
+      <div class="cta-body">${esc(slideData.body || '')}</div>
+      ${tags ? `<div class="hashtags">${tags}</div>` : ''}
+    </div>`;
+  } else {
+    html = `<div class="scene slide-content" id="scene">
+      <div class="tag">Point ${String(idx).padStart(2,'0')}</div>
+      <div class="headline">${fmt(slideData.headline || '')}</div>
+      <div class="body">${esc(slideData.body || '')}</div>
+      ${parseStatBlock(slideData.stat)}
+    </div>`;
+  }
+
+  c.innerHTML = html;
+  return true;
+};
+
+window.animateScene = function() {
+  const s = document.getElementById('scene');
+  if (!s) return;
+  requestAnimationFrame(() => {
+    s.classList.add('active');
+    setTimeout(() => s.classList.add('anim'), 40);
+  });
+};
+
+window.isAnimationComplete = function(d) {
+  return new Promise(r => setTimeout(r, d || 700));
+};
+</script>
+</body>
+</html>

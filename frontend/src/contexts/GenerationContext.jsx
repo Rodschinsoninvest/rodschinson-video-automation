@@ -7,8 +7,10 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback } f
 
 const GenerationContext = createContext()
 
-const MAX_JOBS = 6
-const POLL_MS  = 2000
+const MAX_JOBS       = 6
+const POLL_MS        = 2000
+const MAX_NET_ERRORS = 5    // after this many consecutive failures, mark job as connection-lost
+const TERMINAL       = new Set(['done', 'error', 'aborted'])
 
 function loadPersistedJobs() {
   try { return JSON.parse(sessionStorage.getItem('cs-active-jobs') || '[]') } catch { return [] }
@@ -20,36 +22,54 @@ function persistJobs(jobs) {
 
 export function GenerationProvider({ children }) {
   const [jobs, setJobs] = useState(loadPersistedJobs)
-  const intervalsRef = useRef({})   // job_id → intervalId
+  const intervalsRef  = useRef({})  // job_id → intervalId
+  const netErrorsRef  = useRef({})  // job_id → consecutive network error count
 
   // ── Poll a single job ────────────────────────────────────────────────────────
   const _poll = useCallback((job_id) => {
     if (intervalsRef.current[job_id]) return  // already polling
+    netErrorsRef.current[job_id] = 0
 
     intervalsRef.current[job_id] = setInterval(async () => {
       try {
         const res  = await fetch(`/api/jobs/${job_id}`)
-        if (!res.ok) throw new Error()
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
+        netErrorsRef.current[job_id] = 0  // reset on success
 
         setJobs(prev => {
           const updated = prev.map(j =>
             j.job_id === job_id
-              ? { ...j, status: data.status, progress: data.progress ?? 0, step: data.step ?? '' }
+              ? { ...j, status: data.status, progress: data.progress ?? 0,
+                  step: data.step ?? '', detail: data.detail ?? j.detail ?? '' }
               : j
           )
           persistJobs(updated)
           return updated
         })
 
-        if (data.status === 'done' || data.status === 'error') {
+        if (TERMINAL.has(data.status)) {
           clearInterval(intervalsRef.current[job_id])
           delete intervalsRef.current[job_id]
         }
       } catch {
-        // Network error — stop polling
-        clearInterval(intervalsRef.current[job_id])
-        delete intervalsRef.current[job_id]
+        // Network error — count consecutive failures, keep retrying until threshold
+        netErrorsRef.current[job_id] = (netErrorsRef.current[job_id] || 0) + 1
+        if (netErrorsRef.current[job_id] >= MAX_NET_ERRORS) {
+          clearInterval(intervalsRef.current[job_id])
+          delete intervalsRef.current[job_id]
+          // Mark as error locally so the UI shows a dismissable state
+          setJobs(prev => {
+            const updated = prev.map(j =>
+              j.job_id === job_id && !TERMINAL.has(j.status)
+                ? { ...j, status: 'error', step: 'Failed',
+                    detail: 'Lost connection to backend. The server may have restarted — please retry.' }
+                : j
+            )
+            persistJobs(updated)
+            return updated
+          })
+        }
       }
     }, POLL_MS)
   }, [])
@@ -57,7 +77,7 @@ export function GenerationProvider({ children }) {
   // Resume polling for any unfinished jobs on mount (after page reload / navigation)
   useEffect(() => {
     jobs.forEach(j => {
-      if (j.status === 'pending' || j.status === 'running') {
+      if (!TERMINAL.has(j.status)) {
         _poll(j.job_id)
       }
     })
