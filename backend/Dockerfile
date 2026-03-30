@@ -2,7 +2,7 @@
 FROM python:3.11-slim AS builder
 
 WORKDIR /build
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 
@@ -41,8 +41,10 @@ COPY --from=builder /install /usr/local
 
 WORKDIR /app
 
-# Copy backend source
-COPY . .
+# Copy backend + supporting dirs from repo root
+COPY backend/ .
+COPY puppeteer/ ./puppeteer/
+COPY scripts/ ./scripts/
 
 # Install Node deps for Puppeteer renderer
 RUN if [ -f puppeteer/package.json ]; then \
