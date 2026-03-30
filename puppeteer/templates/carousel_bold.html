@@ -9,13 +9,13 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --blue:  #08316F;
-  --blue2: #0a3d8a;
-  --sky:   #00B6FF;
-  --gold:  #C8A96E;
-  --white: #FFFFFF;
-  --serif: 'Cormorant Garamond', Georgia, serif;
-  --sans:  'Space Grotesk', sans-serif;
+  --blue:   #08316F;
+  --blue2:  #0a3d8a;
+  --sky:    #00B6FF;
+  --gold:   #C8A96E;
+  --white:  #FFFFFF;
+  --serif:  'Cormorant Garamond', Georgia, serif;
+  --sans:   'Space Grotesk', sans-serif;
 }
 
 html, body {
@@ -25,262 +25,286 @@ html, body {
   font-family: var(--sans);
 }
 
-/* ── BASE FRAME ── */
-.frame { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
-
-.top-bar {
-  position: absolute; top: 0; left: 0; right: 0; height: 5px;
-  background: linear-gradient(90deg, var(--sky) 0%, var(--gold) 45%, var(--sky) 100%);
-}
-
-.brand-tag {
-  position: absolute; bottom: 34px; left: 44px;
-  font-family: var(--sans); font-size: 10px; font-weight: 700;
-  letter-spacing: 0.38em; text-transform: uppercase;
-  color: rgba(200,169,110,0.45);
-}
-
-.slide-counter {
-  position: absolute; bottom: 34px; right: 44px;
-  font-size: 10px; font-weight: 600; letter-spacing: 0.22em;
-  color: rgba(255,255,255,0.22);
-}
-
-/* ── RICH GEOMETRIC BACKGROUND ── */
+/* ── GEOMETRIC BACKGROUND ── */
 .geo-bg {
-  position: absolute; inset: 0; pointer-events: none;
-  overflow: hidden;
+  position: absolute; inset: 0; pointer-events: none; overflow: hidden;
 }
-
-/* Dark gradient overlay — adds depth */
 .geo-bg::before {
   content: '';
   position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse 700px 700px at 110% 110%, rgba(0,182,255,0.07) 0%, transparent 60%),
-    radial-gradient(ellipse 500px 500px at -10% -10%, rgba(200,169,110,0.05) 0%, transparent 60%),
-    radial-gradient(ellipse 900px 500px at 50% 120%, rgba(8,49,111,0.8) 0%, transparent 70%);
+    radial-gradient(ellipse 900px 900px at 108% 108%, rgba(0,182,255,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 600px 600px at -8% -8%,  rgba(200,169,110,0.09) 0%, transparent 55%),
+    radial-gradient(ellipse 1080px 600px at 50% 130%, rgba(4,22,60,0.9) 0%, transparent 65%);
 }
 
-/* ── SCENE BASE ── */
+/* ── FRAME CHROME ── */
+.top-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 6px; z-index: 30;
+  background: linear-gradient(90deg, var(--sky) 0%, var(--gold) 50%, var(--sky) 100%);
+}
+
+/* Logo block top-left */
+.logo-block {
+  position: absolute; top: 38px; left: 48px; z-index: 30;
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-monogram {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--gold), rgba(200,169,110,0.6));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--blue);
+  flex-shrink: 0;
+}
+.logo-text {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.38em;
+  text-transform: uppercase; color: rgba(200,169,110,0.65);
+  line-height: 1.3;
+}
+.logo-text span { display: block; letter-spacing: 0.15em; color: rgba(255,255,255,0.3); font-size: 7px; font-weight: 400; }
+
+.slide-counter {
+  position: absolute; bottom: 38px; right: 48px; z-index: 30;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.2em;
+  color: rgba(255,255,255,0.18);
+}
+
+/* ── SCENE ── */
 .scene {
-  position: absolute; inset: 0;
-  display: none; flex-direction: column;
-  padding: 72px 56px 88px;
-  z-index: 5;
+  position: absolute; inset: 0; display: none;
+  flex-direction: column; z-index: 10;
 }
 .scene.active { display: flex; }
 
-/* ══════ TITLE SLIDE ══════ */
+/* ══════════════════════════════════
+   TITLE SLIDE — full-canvas layout
+══════════════════════════════════ */
+.slide-title {
+  padding: 100px 56px 80px;
+  justify-content: space-between;
+}
+
+.slide-title .t-top {
+  /* top section: eyebrow */
+}
 .slide-title .eyebrow {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.48em;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.46em;
   text-transform: uppercase; color: var(--gold);
-  margin-bottom: 28px;
-  opacity: 0; transform: translateY(-8px);
-  transition: all 0.5s ease;
+  opacity: 0; transform: translateY(-6px);
+  transition: all 0.45s ease 0.05s;
 }
 
+.slide-title .t-mid {
+  /* center section: headline takes maximum vertical space */
+  flex: 1; display: flex; flex-direction: column;
+  justify-content: center; padding: 24px 0;
+}
 .slide-title .headline {
-  font-family: var(--serif); font-size: 84px; font-weight: 700;
-  color: var(--white); line-height: 1.02;
-  margin-bottom: 0;
-  opacity: 0; transform: translateY(16px);
-  transition: all 0.65s cubic-bezier(0.16,1,0.3,1) 0.1s;
+  font-family: var(--serif); font-size: 90px; font-weight: 700;
+  color: var(--white); line-height: 1.0; letter-spacing: -0.01em;
+  opacity: 0; transform: translateY(20px);
+  transition: all 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s;
 }
-
 .slide-title .headline em { font-style: italic; color: var(--gold); }
 
 .slide-title .divider {
-  width: 0; height: 3px; margin: 22px 0;
+  width: 0; height: 3px; margin: 28px 0;
   background: linear-gradient(90deg, var(--sky), var(--gold) 60%, transparent);
   transition: width 0.7s cubic-bezier(0.16,1,0.3,1) 0.3s;
 }
-
 .slide-title .subheadline {
-  font-size: 17px; font-weight: 400; color: rgba(255,255,255,0.6);
-  line-height: 1.7; max-width: 680px;
+  font-size: 18px; font-weight: 400; color: rgba(255,255,255,0.55);
+  line-height: 1.7; max-width: 700px;
   opacity: 0; transition: opacity 0.5s ease 0.45s;
 }
 
-.slide-title .swipe-row {
-  margin-top: auto; display: flex; align-items: center; gap: 12px;
-  opacity: 0; transition: opacity 0.4s ease 0.7s;
+.slide-title .t-bot {
+  /* bottom section: swipe CTA */
 }
-
 .slide-title .swipe-pill {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 18px; border-radius: 24px;
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 10px 22px; border-radius: 28px;
   border: 1px solid rgba(200,169,110,0.35);
-  background: rgba(200,169,110,0.06);
-  font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
-  color: rgba(200,169,110,0.8);
+  background: rgba(200,169,110,0.07);
+  font-size: 12px; font-weight: 600; letter-spacing: 0.1em;
+  color: rgba(200,169,110,0.75);
+  opacity: 0; transition: opacity 0.4s ease 0.65s;
 }
 
-/* ══════ CONTENT SLIDE ══════ */
+/* ══════════════════════════════════
+   CONTENT SLIDE — distributed layout
+══════════════════════════════════ */
+.slide-content {
+  padding: 100px 56px 80px;
+  justify-content: space-between;
+}
+
+.slide-content .c-top {
+  /* tag + headline */
+}
 .slide-content .tag-row {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 20px;
-  opacity: 0; transition: opacity 0.4s ease;
+  display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+  opacity: 0; transition: opacity 0.4s ease 0.0s;
 }
-
 .slide-content .tag-num {
-  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
-  background: rgba(0,182,255,0.12); border: 1px solid rgba(0,182,255,0.3);
+  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  background: rgba(0,182,255,0.13); border: 1px solid rgba(0,182,255,0.32);
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; color: var(--sky);
-  letter-spacing: 0.05em;
+  font-size: 11px; font-weight: 700; color: var(--sky); letter-spacing: 0.04em;
 }
-
 .slide-content .tag-label {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.38em;
-  text-transform: uppercase; color: rgba(0,182,255,0.7);
+  font-size: 9px; font-weight: 700; letter-spacing: 0.42em;
+  text-transform: uppercase; color: rgba(0,182,255,0.65);
 }
-
 .slide-content .headline {
-  font-family: var(--serif); font-size: 56px; font-weight: 700;
-  color: var(--white); line-height: 1.08; margin-bottom: 22px;
+  font-family: var(--serif); font-size: 62px; font-weight: 700;
+  color: var(--white); line-height: 1.06; letter-spacing: -0.005em;
   opacity: 0; transform: translateY(14px);
-  transition: all 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s;
+  transition: all 0.65s cubic-bezier(0.16,1,0.3,1) 0.08s;
 }
 
+.slide-content .c-mid {
+  /* body text — grows to fill space */
+  flex: 1; display: flex; align-items: center; padding: 20px 0;
+}
 .slide-content .body {
-  font-size: 18px; font-weight: 400; color: rgba(255,255,255,0.7);
-  line-height: 1.72; max-width: 880px;
+  font-size: 19px; font-weight: 400; color: rgba(255,255,255,0.65);
+  line-height: 1.78; max-width: 900px;
   opacity: 0; transition: opacity 0.5s ease 0.2s;
 }
 
+.slide-content .c-bot {
+  /* stat block — anchored to bottom */
+}
 .slide-content .stat-block {
-  margin-top: 30px; display: flex; align-items: stretch; gap: 0;
-  background: rgba(0,0,0,0.25); border-radius: 10px; overflow: hidden;
+  display: flex; align-items: stretch; gap: 0;
+  background: rgba(0,0,0,0.3); border-radius: 12px; overflow: hidden;
+  border: 1px solid rgba(0,182,255,0.12);
   opacity: 0; transform: translateY(10px);
   transition: all 0.5s ease 0.35s;
 }
-
 .slide-content .stat-left {
-  padding: 16px 22px;
-  background: linear-gradient(135deg, rgba(0,182,255,0.15), rgba(0,182,255,0.05));
-  border-right: 1px solid rgba(0,182,255,0.2);
+  padding: 20px 26px;
+  background: linear-gradient(135deg, rgba(0,182,255,0.18), rgba(0,182,255,0.06));
+  border-right: 1px solid rgba(0,182,255,0.18);
   display: flex; align-items: center; justify-content: center;
-  min-width: 100px;
+  min-width: 120px;
 }
-
 .slide-content .stat-value {
-  font-family: var(--serif); font-size: 48px; font-weight: 700;
-  color: var(--sky); line-height: 1;
-  white-space: nowrap;
+  font-family: var(--serif); font-size: 54px; font-weight: 700;
+  color: var(--sky); line-height: 1; white-space: nowrap;
 }
-
 .slide-content .stat-right {
-  padding: 14px 18px;
-  display: flex; align-items: center;
+  padding: 18px 22px; display: flex; align-items: center; flex: 1;
 }
-
 .slide-content .stat-desc {
-  font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.65);
-  line-height: 1.5;
+  font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.6);
+  line-height: 1.55;
+}
+.slide-content .stat-simple {
+  padding: 18px 24px; flex: 1; display: flex; align-items: center;
+  font-size: 14px; font-weight: 600; color: var(--sky);
+  border-left: 3px solid var(--sky);
 }
 
-/* ══════ CTA SLIDE ══════ */
+/* horizontal accent line above stat */
+.slide-content .c-bot-rule {
+  height: 1px; background: linear-gradient(90deg, rgba(0,182,255,0.25), transparent);
+  margin-bottom: 16px;
+  opacity: 0; transition: opacity 0.4s ease 0.3s;
+}
+
+/* ══════════════════════════════════
+   CTA SLIDE — centered full-canvas
+══════════════════════════════════ */
 .slide-cta {
-  align-items: center; justify-content: center; text-align: center;
-  background: linear-gradient(145deg, #08316F 0%, #0d4db5 55%, #082a62 100%);
+  background: linear-gradient(145deg, #08316F 0%, #0d4db5 52%, #082a62 100%);
+  align-items: center; justify-content: space-between;
+  padding: 100px 72px 80px; text-align: center;
 }
-
+.slide-cta .cta-top {
+  /* label */
+}
 .slide-cta .cta-label {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.48em;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.5em;
   text-transform: uppercase; color: var(--gold);
-  margin-bottom: 24px;
   opacity: 0; transition: opacity 0.4s ease;
 }
-
+.slide-cta .cta-mid {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 24px 0;
+}
 .slide-cta .cta-headline {
-  font-family: var(--serif); font-size: 66px; font-weight: 700;
-  color: var(--white); line-height: 1.05; margin-bottom: 0;
+  font-family: var(--serif); font-size: 72px; font-weight: 700;
+  color: var(--white); line-height: 1.05; max-width: 780px;
   opacity: 0; transform: scale(0.94);
   transition: all 0.65s cubic-bezier(0.16,1,0.3,1) 0.1s;
 }
-
-.slide-cta .cta-divider {
-  width: 0; height: 2px; margin: 24px auto;
+.slide-cta .cta-rule {
+  width: 0; height: 2px; margin: 28px auto;
   background: linear-gradient(90deg, var(--sky), var(--gold));
   transition: width 0.7s ease 0.25s;
 }
-
 .slide-cta .cta-body {
-  font-size: 16px; color: rgba(255,255,255,0.6);
-  line-height: 1.65; max-width: 580px; margin-bottom: 28px;
-  opacity: 0; transition: opacity 0.5s ease 0.3s;
+  font-size: 17px; color: rgba(255,255,255,0.58);
+  line-height: 1.7; max-width: 620px;
+  opacity: 0; transition: opacity 0.5s ease 0.32s;
 }
-
+.slide-cta .cta-bot {
+  /* hashtags */
+}
 .slide-cta .hashtags {
-  display: flex; flex-wrap: wrap; gap: 8px;
-  justify-content: center;
-  opacity: 0; transition: opacity 0.5s ease 0.45s;
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  opacity: 0; transition: opacity 0.5s ease 0.48s;
 }
-
 .slide-cta .hashtag {
-  padding: 6px 16px; border-radius: 24px;
+  padding: 7px 18px; border-radius: 28px;
   background: rgba(0,182,255,0.1); border: 1px solid rgba(0,182,255,0.28);
-  font-size: 12px; font-weight: 600; color: var(--sky); letter-spacing: 0.04em;
+  font-size: 12px; font-weight: 600; color: var(--sky); letter-spacing: 0.03em;
 }
 
 /* ── ANIMATED STATES ── */
 .scene.anim .slide-title .eyebrow,
 .scene.anim .slide-title .subheadline,
-.scene.anim .slide-title .swipe-row { opacity: 1; transform: none; }
-.scene.anim .slide-title .headline { opacity: 1; transform: none; }
-.scene.anim .slide-title .divider { width: 120px; }
+.scene.anim .slide-title .swipe-pill     { opacity: 1; transform: none; }
+.scene.anim .slide-title .headline       { opacity: 1; transform: none; }
+.scene.anim .slide-title .divider        { width: 140px; }
 
 .scene.anim .slide-content .tag-row,
 .scene.anim .slide-content .body,
-.scene.anim .slide-content .stat-block { opacity: 1; transform: none; }
-.scene.anim .slide-content .headline { opacity: 1; transform: none; }
+.scene.anim .slide-content .c-bot-rule   { opacity: 1; transform: none; }
+.scene.anim .slide-content .headline     { opacity: 1; transform: none; }
+.scene.anim .slide-content .stat-block   { opacity: 1; transform: none; }
 
 .scene.anim .slide-cta .cta-label,
 .scene.anim .slide-cta .cta-body,
-.scene.anim .slide-cta .hashtags { opacity: 1; }
-.scene.anim .slide-cta .cta-headline { opacity: 1; transform: scale(1); }
-.scene.anim .slide-cta .cta-divider { width: 100px; }
+.scene.anim .slide-cta .hashtags         { opacity: 1; }
+.scene.anim .slide-cta .cta-headline     { opacity: 1; transform: scale(1); }
+.scene.anim .slide-cta .cta-rule         { width: 120px; }
 </style>
 </head>
 <body>
 
-<!-- DEEP BACKGROUND GEOMETRY -->
+<!-- BACKGROUND GEOMETRY -->
 <div class="geo-bg">
-  <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:0.055" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-    <!-- Large outer rings -->
-    <circle cx="540" cy="540" r="480" fill="none" stroke="#00B6FF" stroke-width="1.2"/>
-    <circle cx="540" cy="540" r="360" fill="none" stroke="#00B6FF" stroke-width="0.8"/>
-    <circle cx="540" cy="540" r="240" fill="none" stroke="#C8A96E" stroke-width="0.6"/>
-    <!-- Rotated squares -->
-    <rect x="120" y="120" width="840" height="840" fill="none" stroke="#00B6FF" stroke-width="0.9" transform="rotate(12 540 540)"/>
-    <rect x="200" y="200" width="680" height="680" fill="none" stroke="#C8A96E" stroke-width="0.7" transform="rotate(28 540 540)"/>
-    <rect x="280" y="280" width="520" height="520" fill="none" stroke="#00B6FF" stroke-width="0.5" transform="rotate(45 540 540)"/>
-    <!-- Cross lines -->
-    <line x1="0" y1="540" x2="1080" y2="540" stroke="#00B6FF" stroke-width="0.5"/>
-    <line x1="540" y1="0" x2="540" y2="1080" stroke="#00B6FF" stroke-width="0.5"/>
-    <!-- Diagonals -->
-    <line x1="0" y1="0" x2="1080" y2="1080" stroke="#C8A96E" stroke-width="0.4"/>
-    <line x1="1080" y1="0" x2="0" y2="1080" stroke="#C8A96E" stroke-width="0.4"/>
-    <!-- Corner triangles -->
-    <polygon points="0,0 280,0 0,280" fill="none" stroke="#00B6FF" stroke-width="0.7"/>
-    <polygon points="1080,1080 800,1080 1080,800" fill="none" stroke="#C8A96E" stroke-width="0.7"/>
-    <!-- Arc segments -->
-    <path d="M 0,540 A 540,540 0 0 1 540,0" fill="none" stroke="#C8A96E" stroke-width="0.5"/>
-    <path d="M 1080,540 A 540,540 0 0 1 540,1080" fill="none" stroke="#00B6FF" stroke-width="0.5"/>
-    <!-- Dot grid (sparse) -->
-    <g fill="#00B6FF" opacity="0.6">
-      <circle cx="180" cy="180" r="2.5"/><circle cx="360" cy="180" r="2.5"/>
-      <circle cx="540" cy="180" r="2.5"/><circle cx="720" cy="180" r="2.5"/>
-      <circle cx="900" cy="180" r="2.5"/><circle cx="180" cy="360" r="2.5"/>
-      <circle cx="900" cy="360" r="2.5"/><circle cx="180" cy="540" r="2.5"/>
-      <circle cx="900" cy="540" r="2.5"/><circle cx="180" cy="720" r="2.5"/>
-      <circle cx="900" cy="720" r="2.5"/><circle cx="180" cy="900" r="2.5"/>
-      <circle cx="360" cy="900" r="2.5"/><circle cx="540" cy="900" r="2.5"/>
-      <circle cx="720" cy="900" r="2.5"/><circle cx="900" cy="900" r="2.5"/>
-    </g>
-    <!-- Radial spokes -->
-    <g stroke="#C8A96E" stroke-width="0.4" opacity="0.7">
+  <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:0.09" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+    <circle cx="540" cy="540" r="500" fill="none" stroke="#00B6FF" stroke-width="1.4"/>
+    <circle cx="540" cy="540" r="380" fill="none" stroke="#00B6FF" stroke-width="0.9"/>
+    <circle cx="540" cy="540" r="255" fill="none" stroke="#C8A96E" stroke-width="0.8"/>
+    <circle cx="540" cy="540" r="140" fill="none" stroke="#00B6FF" stroke-width="0.5"/>
+    <rect x="100" y="100" width="880" height="880" fill="none" stroke="#00B6FF" stroke-width="1.0" transform="rotate(12 540 540)"/>
+    <rect x="190" y="190" width="700" height="700" fill="none" stroke="#C8A96E" stroke-width="0.7" transform="rotate(28 540 540)"/>
+    <rect x="270" y="270" width="540" height="540" fill="none" stroke="#00B6FF" stroke-width="0.5" transform="rotate(45 540 540)"/>
+    <line x1="0" y1="540" x2="1080" y2="540" stroke="#00B6FF" stroke-width="0.6"/>
+    <line x1="540" y1="0" x2="540" y2="1080" stroke="#00B6FF" stroke-width="0.6"/>
+    <line x1="0" y1="0" x2="1080" y2="1080" stroke="#C8A96E" stroke-width="0.5"/>
+    <line x1="1080" y1="0" x2="0" y2="1080" stroke="#C8A96E" stroke-width="0.5"/>
+    <polygon points="0,0 320,0 0,320" fill="none" stroke="#00B6FF" stroke-width="0.9"/>
+    <polygon points="1080,1080 760,1080 1080,760" fill="none" stroke="#C8A96E" stroke-width="0.9"/>
+    <polygon points="1080,0 760,0 1080,320" fill="none" stroke="#00B6FF" stroke-width="0.6"/>
+    <path d="M 0,540 A 540,540 0 0 1 540,0" fill="none" stroke="#C8A96E" stroke-width="0.6"/>
+    <path d="M 1080,540 A 540,540 0 0 1 540,1080" fill="none" stroke="#00B6FF" stroke-width="0.6"/>
+    <g stroke="#C8A96E" stroke-width="0.45" opacity="0.8">
       <line x1="540" y1="540" x2="0"    y2="270"/>
       <line x1="540" y1="540" x2="0"    y2="810"/>
       <line x1="540" y1="540" x2="1080" y2="270"/>
@@ -290,15 +314,31 @@ html, body {
       <line x1="540" y1="540" x2="270"  y2="1080"/>
       <line x1="540" y1="540" x2="810"  y2="1080"/>
     </g>
+    <g fill="#00B6FF" opacity="0.55">
+      <circle cx="180" cy="180" r="2.8"/><circle cx="360" cy="180" r="2.8"/><circle cx="540" cy="180" r="2.8"/><circle cx="720" cy="180" r="2.8"/><circle cx="900" cy="180" r="2.8"/>
+      <circle cx="180" cy="360" r="2.8"/>                                                                                                                       <circle cx="900" cy="360" r="2.8"/>
+      <circle cx="180" cy="540" r="2.8"/>                                                                                                                       <circle cx="900" cy="540" r="2.8"/>
+      <circle cx="180" cy="720" r="2.8"/>                                                                                                                       <circle cx="900" cy="720" r="2.8"/>
+      <circle cx="180" cy="900" r="2.8"/><circle cx="360" cy="900" r="2.8"/><circle cx="540" cy="900" r="2.8"/><circle cx="720" cy="900" r="2.8"/><circle cx="900" cy="900" r="2.8"/>
+    </g>
   </svg>
+  <!-- Bottom vignette to anchor content visually -->
+  <div style="position:absolute;bottom:0;left:0;right:0;height:340px;background:linear-gradient(to top,rgba(4,16,44,0.85) 0%,transparent 100%)"></div>
+  <!-- Right side glow -->
+  <div style="position:absolute;top:0;right:0;bottom:0;width:300px;background:linear-gradient(to left,rgba(0,182,255,0.04) 0%,transparent 100%)"></div>
 </div>
 
-<!-- FRAME OVERLAY -->
-<div class="frame">
-  <div class="top-bar"></div>
-  <div class="brand-tag" id="frame-brand">Rodschinson Investment</div>
-  <div class="slide-counter" id="frame-counter"></div>
+<!-- TOP BAR -->
+<div class="top-bar"></div>
+
+<!-- LOGO -->
+<div class="logo-block" id="logo-block">
+  <div class="logo-monogram">R</div>
+  <div class="logo-text">Rodschinson<span>Investment</span></div>
 </div>
+
+<!-- COUNTER -->
+<div class="slide-counter" id="frame-counter"></div>
 
 <!-- SCENE CONTAINER -->
 <div id="scene-container"></div>
@@ -313,15 +353,17 @@ function fmt(s) {
 
 function parseStatBlock(stat) {
   if (!stat) return '';
-  const m = String(stat).match(/^([0-9.,]+\s*[%€KMB+]*)\s*[-–—:·]\s*(.*)$/);
+  const m = String(stat).match(/^([0-9.,]+\s*[%€xKMBk+]*)\s*[-–—:·]\s*(.*)$/);
   if (m) {
-    return `<div class="stat-block">
+    return `<div class="c-bot-rule"></div>
+    <div class="stat-block">
       <div class="stat-left"><div class="stat-value">${esc(m[1])}</div></div>
       <div class="stat-right"><div class="stat-desc">${esc(m[2] || stat)}</div></div>
     </div>`;
   }
-  return `<div class="stat-block">
-    <div class="stat-right" style="padding:16px 22px"><div class="stat-desc">${esc(stat)}</div></div>
+  return `<div class="c-bot-rule"></div>
+  <div class="stat-block">
+    <div class="stat-simple">${esc(stat)}</div>
   </div>`;
 }
 
@@ -332,42 +374,58 @@ window.loadScene = function(slideData) {
   const total = slideData.total || '';
 
   document.getElementById('frame-counter').textContent =
-    total ? `${String(idx).padStart(2,'0')} / ${String(total).padStart(2,'0')}` : String(idx).padStart(2,'0');
+    total ? `${String(idx).padStart(2,'0')} / ${String(total).padStart(2,'0')}` : '';
+
+  // Update logo brand name if provided
+  if (slideData.brand) {
+    const lt = document.querySelector('.logo-text');
+    if (lt) lt.innerHTML = esc(slideData.brand) + '<span>Investment</span>';
+  }
 
   let html = '';
 
   if (type === 'title') {
     html = `<div class="scene slide-title" id="scene">
-      <div class="eyebrow">${esc(slideData.brand || 'Rodschinson Investment')}</div>
-      <div class="headline">${fmt(slideData.headline || '')}</div>
-      <div class="divider"></div>
-      <div class="subheadline">${esc(slideData.subheadline || '')}</div>
-      <div class="swipe-row">
-        <div class="swipe-pill">
-          <span>→</span>
-          <span>${esc(slideData.cta || 'Swipe to read')}</span>
-        </div>
+      <div class="t-top">
+        <div class="eyebrow">— ${new Date().getFullYear()} Market Intelligence</div>
+      </div>
+      <div class="t-mid">
+        <div class="headline">${fmt(slideData.headline || '')}</div>
+        <div class="divider"></div>
+        <div class="subheadline">${esc(slideData.subheadline || '')}</div>
+      </div>
+      <div class="t-bot">
+        <div class="swipe-pill"><span>→</span><span>${esc(slideData.cta || 'Swipe →')}</span></div>
       </div>
     </div>`;
+
   } else if (type === 'cta') {
-    const tags = (slideData.hashtags || [])
-      .map(h => `<span class="hashtag">${esc(h)}</span>`).join('');
+    const tags = (slideData.hashtags || []).map(h => `<span class="hashtag">${esc(h)}</span>`).join('');
     html = `<div class="scene slide-cta" id="scene">
-      <div class="cta-label">Let's connect</div>
-      <div class="cta-headline">${fmt(slideData.headline || '')}</div>
-      <div class="cta-divider"></div>
-      <div class="cta-body">${esc(slideData.body || '')}</div>
-      ${tags ? `<div class="hashtags">${tags}</div>` : ''}
+      <div class="cta-top"><div class="cta-label">Let's connect</div></div>
+      <div class="cta-mid">
+        <div class="cta-headline">${fmt(slideData.headline || '')}</div>
+        <div class="cta-rule"></div>
+        <div class="cta-body">${esc(slideData.body || '')}</div>
+      </div>
+      <div class="cta-bot">${tags ? `<div class="hashtags">${tags}</div>` : ''}</div>
     </div>`;
+
   } else {
     html = `<div class="scene slide-content" id="scene">
-      <div class="tag-row">
-        <div class="tag-num">${String(idx).padStart(2,'0')}</div>
-        <div class="tag-label">Key Point</div>
+      <div class="c-top">
+        <div class="tag-row">
+          <div class="tag-num">${String(idx).padStart(2,'0')}</div>
+          <div class="tag-label">Key Point</div>
+        </div>
+        <div class="headline">${fmt(slideData.headline || '')}</div>
       </div>
-      <div class="headline">${fmt(slideData.headline || '')}</div>
-      <div class="body">${esc(slideData.body || '')}</div>
-      ${parseStatBlock(slideData.stat)}
+      <div class="c-mid">
+        <div class="body">${esc(slideData.body || '')}</div>
+      </div>
+      <div class="c-bot">
+        ${parseStatBlock(slideData.stat)}
+      </div>
     </div>`;
   }
 
