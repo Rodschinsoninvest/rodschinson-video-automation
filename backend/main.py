@@ -244,7 +244,8 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                     "Generating script", 10,
                     [str(PYTHON), str(SCRIPTS / "generate_video_script.py"),
                      "--brand", brand_arg, "--sujet", subject,
-                     "--format", script_format, "--duree", str(duree)],
+                     "--format", script_format, "--duree", str(duree),
+                     "--template", template],
                 )
                 files = sorted((OUTPUT / "scripts").glob("script_*.json"),
                                key=lambda p: p.stat().st_mtime, reverse=True)

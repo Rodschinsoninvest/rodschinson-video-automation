@@ -182,6 +182,42 @@ FORMATS = {
     },
 }
 
+# ─── TEMPLATE HINTS ──────────────────────────────────────────────────────────
+# Tells the AI how to adapt scene types and tone for each template.
+
+TEMPLATE_HINTS = {
+    "rodschinson_premium": {
+        "style": "Dark blue #08316F + gold #C8A96E + sky blue #00B6FF. Corporate, authoritative, data-rich.",
+        "best_types": ["title_card", "big_number", "bar_chart", "text_bullets", "process_steps", "cta_screen"],
+        "avoid": [],
+        "tone": "Institutional, precise, investment-grade. Numbers front and center.",
+    },
+    "cre": {
+        "style": "Very dark #080E1A + electric cyan #00E5C8. CRE-focused, premium, terminal aesthetic.",
+        "best_types": ["title_card", "big_number", "bar_chart", "text_bullets", "cta_screen"],
+        "avoid": ["pie_chart", "world_map", "icon_grid", "timeline"],
+        "tone": "Stat-heavy, market data, cap rates / yields / IRR. Keep scenes to 3-5 max. Each scene = one key number or insight.",
+    },
+    "news_reel": {
+        "style": "Dark red #2d0f0f + bright red #FF4444 + white. Breaking news, Al-Jazeera style with ticker.",
+        "best_types": ["title_card", "big_number", "text_bullets", "bar_chart", "quote_card", "cta_screen"],
+        "avoid": ["process_steps", "icon_grid"],
+        "tone": "Urgent, journalistic, headline-driven. Short punchy sentences. Use 'BREAKING' or 'EXCLUSIVE' framing.",
+    },
+    "tech_data": {
+        "style": "Very dark blue #031520 + sky blue #00B6FF. Bloomberg/data terminal aesthetic.",
+        "best_types": ["title_card", "big_number", "bar_chart", "line_chart", "comparison_table", "text_bullets", "cta_screen"],
+        "avoid": ["quote_card"],
+        "tone": "Analytical, data-grid heavy, financial terminal style. Maximize use of charts and comparison tables.",
+    },
+    "corporate_minimal": {
+        "style": "White/near-black, clean editorial. Suited for thought leadership.",
+        "best_types": ["title_card", "text_bullets", "quote_card", "process_steps", "split_screen", "cta_screen"],
+        "avoid": ["bar_chart", "line_chart"],
+        "tone": "Clean, editorial, thought-leadership. Less data, more story and insight.",
+    },
+}
+
 # ─── SYSTEM PROMPT ───────────────────────────────────────────────────────────
 
 def get_system_prompt(brand: str) -> str:
@@ -242,6 +278,7 @@ def build_script_prompt(brand: str, brief: dict) -> str:
     cible      = brief.get("cible", "")
     donnees    = brief.get("donnees", "")
     titre      = brief.get("titre", "")
+    template   = brief.get("template", "rodschinson_premium")
 
     brand_name = "Rodschinson Investment" if brand == "rodschinson" else "Rachid Chikhi"
     site       = "rodschinson.com" if brand == "rodschinson" else "rachidchikhi.com"
@@ -267,6 +304,16 @@ Narration : max 400 mots au total. Phrases courtes et rythmées."""
 - Scène N : Conclusion + récap + CTA (30s)
 Narration : 120-150 mots par minute de vidéo. Phrases naturelles, respirées."""
 
+    hint = TEMPLATE_HINTS.get(template, TEMPLATE_HINTS["rodschinson_premium"])
+    best_types_str = ", ".join(f'"{t}"' for t in hint["best_types"])
+    avoid_str      = (", ".join(f'"{t}"' for t in hint["avoid"]) + " — ÉVITE CES TYPES") if hint["avoid"] else "aucun"
+    template_note  = f"""TEMPLATE SÉLECTIONNÉ : {template}
+- Style visuel : {hint['style']}
+- Ton adapté   : {hint['tone']}
+- Types PRIORITAIRES pour ce template : {best_types_str}
+- Types à éviter : {avoid_str}
+Utilise EXCLUSIVEMENT les types prioritaires listés ci-dessus pour ce template."""
+
     return f"""Génère un script vidéo complet pour {brand_name}.
 
 BRIEF :
@@ -280,6 +327,8 @@ BRIEF :
 - Nombre de scènes : {n_scenes}
 
 {structure_note}
+
+{template_note}
 
 TYPES DE VISUELS MANIM DISPONIBLES (utilise UNIQUEMENT ces types) :
 - "title_card"       : titre centré, sous-titre, fond coloré brand
@@ -312,6 +361,7 @@ RETOURNE UNIQUEMENT ce JSON valide (aucun texte avant ou après) :
     "fps":          {fmt_info['fps']},
     "duree_totale_sec": {int(duree * 60)},
     "langue":       "fr",
+    "template":     "{template}",
     "genere_le":    "{datetime.datetime.now().isoformat()}",
     "tags_youtube": ["tag1", "tag2", "tag3", "tag4", "tag5"],
     "hashtags_linkedin": ["#hashtag1", "#hashtag2", "#hashtag3"]
@@ -857,6 +907,7 @@ def main():
     parser.add_argument("--donnees",   default="",   help="Sources et chiffres disponibles")
     parser.add_argument("--cible",     default="",   help="Audience cible")
     parser.add_argument("--format",    choices=["youtube", "linkedin", "reel"], default="youtube")
+    parser.add_argument("--template",  default="",   help="Template ID (ex: rodschinson_premium, cre, news_reel)")
     parser.add_argument("--duree",     type=float,   default=8.0, help="Durée en minutes")
     parser.add_argument("--n-scenes",  type=int,     default=0,   help="Nombre de scènes (0=auto)")
     parser.add_argument("--catalog",   default="",   help="ID du sujet prédéfini (ex: cap_rate_explique)")
@@ -904,9 +955,10 @@ def main():
         }
 
     # Overrides CLI
-    if args.sujet:   brief["sujet"]  = args.sujet
-    if args.format:  brief["format"] = args.format
-    if args.duree:   brief["duree"]  = args.duree
+    if args.sujet:    brief["sujet"]     = args.sujet
+    if args.format:   brief["format"]    = args.format
+    if args.duree:    brief["duree"]     = args.duree
+    if args.template: brief["template"]  = args.template
     if args.n_scenes > 0:
         brief["n_scenes"] = args.n_scenes
     elif "n_scenes" not in brief:
