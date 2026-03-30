@@ -244,15 +244,32 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 node_cmd += ["--logo", str(logo_path)]
             await step("Rendering slides", 55, node_cmd, cwd=PUPPET)
 
-            # Export step — collect rendered images
-            await step("Exporting slide images", 85,
-                       [str(PYTHON), str(SCRIPTS / "export_carousel.py"),
-                        "--script", str(script_path)])
+            # Export slides inline — build structured JSON without external script
+            _job_update(job, status="running", step="Exporting slides", progress=85)
+            await _save_job(job)
 
-            # Find output folder or zip
-            carousel_files = sorted((OUTPUT / "carousel").glob(f"{job_id[:8]}*"),
-                                    key=lambda p: p.stat().st_mtime, reverse=True)
-            output_file = str(carousel_files[0]) if carousel_files else None
+            async with aiofiles.open(script_path) as _f:
+                _sd = json.loads(await _f.read())
+
+            _meta   = _sd.get("meta", {})
+            _scenes = _sd.get("scenes", [])
+            _slides = [{"index": 1, "type": "title", "headline": _meta.get("titre", subject),
+                        "subheadline": _meta.get("description", "")[:120], "cta": "Swipe →"}]
+            for _i, _sc in enumerate(_scenes[:7], start=2):
+                _vis = _sc.get("visuel", {})
+                _slides.append({"index": _i, "type": "content",
+                    "headline": _vis.get("titre_principal", _sc.get("nom", f"Point {_i-1}")),
+                    "body": _sc.get("narration", "")[:300],
+                    "stat": _vis.get("titre_principal", "") if _sc.get("type_visuel") == "big_number" else ""})
+            _slides.append({"index": len(_slides)+1, "type": "cta",
+                "headline": "Interested?", "body": "Follow for more insights.",
+                "hashtags": _meta.get("hashtags_linkedin", [])[:3]})
+
+            carousel_dir = OUTPUT / "carousel"
+            carousel_dir.mkdir(parents=True, exist_ok=True)
+            carousel_out = carousel_dir / f"{job_id[:8]}_slides.json"
+            carousel_out.write_text(json.dumps(_slides, ensure_ascii=False, indent=2), encoding="utf-8")
+            output_file = str(carousel_out)
 
         # ════════════════════════════════════════════════════════════════════════
         # IMAGE POST  —  Copy → Render single image
@@ -288,7 +305,7 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
             output_file = str(img_files[0]) if img_files else None
 
         # ════════════════════════════════════════════════════════════════════════
-        # TEXT ONLY  —  Outline → Write → Polish
+        # TEXT ONLY  —  Outline → Write (inline Claude) → Polish
         # ════════════════════════════════════════════════════════════════════════
         elif content_type == "text_only":
             if not script_path:
@@ -304,33 +321,67 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                     raise RuntimeError("Outline generation produced no output")
                 script_path = files[0]
 
-            _job_update(job, script_path=str(script_path))
+            _job_update(job, script_path=str(script_path), status="running", step="Writing post", progress=55)
             await _save_job(job)
 
-            # Generate full text post
+            # Inline Claude call — no external script needed
+            async with aiofiles.open(script_path) as _f:
+                script_data = json.loads(await _f.read())
+
+            scenes = script_data.get("scenes", [])
+            meta   = script_data.get("meta", {})
+            hashtags = " ".join(meta.get("hashtags_linkedin", ["#RealEstate", "#Investment", "#Rodschinson"]))
+            narrations = "\n".join(f"- {s.get('narration', s.get('nom',''))}" for s in scenes[:6])
+
+            style_hints = {
+                "viral_hook":   "Start with a bold controversial hook. Short punchy lines.",
+                "educational":  "Teach one clear concept. Use numbered points. Add real data.",
+                "data_story":   "Lead with a surprising stat. Tell the story behind the numbers.",
+                "personal":     "First person. Share a personal lesson. Be authentic.",
+                "provocateur":  "Challenge a common belief. Contrarian stance. Invite debate.",
+                "thread":       "Numbered thread format (1/ 2/ 3/…). Each point standalone.",
+            }
+            lang_map = {"EN": "English", "FR": "French", "NL": "Dutch"}
+            lang_name = lang_map.get(language.upper(), "English")
+
+            post_prompt = f"""Write a complete {lang_name} LinkedIn post.
+
+BRAND: {meta.get('brand', brand_arg)}
+TOPIC: {subject}
+KEY POINTS:
+{narrations}
+
+STYLE: {style_hints.get(style, style_hints['educational'])}
+LANGUAGE: Write exclusively in {lang_name}.
+FORMAT: 150-400 words, line breaks between paragraphs, 3-5 emojis, clear CTA, end with: {hashtags}
+
+Return ONLY the post text, nothing else."""
+
+            anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
+            if not anthropic_key:
+                raise RuntimeError("ANTHROPIC_API_KEY not set in .env")
+
+            async with httpx.AsyncClient(timeout=60) as _client:
+                _res = await _client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={"x-api-key": anthropic_key, "anthropic-version": "2023-06-01",
+                             "content-type": "application/json"},
+                    json={"model": "claude-sonnet-4-6", "max_tokens": 1500,
+                          "messages": [{"role": "user", "content": post_prompt}]},
+                )
+            if _res.status_code != 200:
+                raise RuntimeError(f"Claude API error {_res.status_code}: {_res.text[:200]}")
+            post_text = _res.json()["content"][0]["text"].strip()
+
+            _job_update(job, status="running", step="Polishing tone", progress=85)
+            await _save_job(job)
+
             text_out_path = OUTPUT / "text" / f"post_{job_id[:8]}.txt"
             text_out_path.parent.mkdir(parents=True, exist_ok=True)
+            text_out_path.write_text(post_text, encoding="utf-8")
 
-            await step(
-                "Writing full post", 55,
-                [str(PYTHON), str(SCRIPTS / "generate_text_post.py"),
-                 "--script", str(script_path),
-                 "--style", style,
-                 "--output", str(text_out_path)],
-            )
-
-            await step(
-                "Polishing tone", 85,
-                [str(PYTHON), str(SCRIPTS / "generate_text_post.py"),
-                 "--script", str(script_path),
-                 "--style", style,
-                 "--polish",
-                 "--output", str(text_out_path)],
-            )
-
-            output_file = str(text_out_path) if text_out_path.exists() else None
-            if text_out_path.exists():
-                output_text = text_out_path.read_text(encoding="utf-8")[:5000]
+            output_file = str(text_out_path)
+            output_text = post_text[:5000]
 
         else:
             raise RuntimeError(f"Unknown content_type: {content_type!r}")

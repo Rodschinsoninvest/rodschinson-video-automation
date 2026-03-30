@@ -593,10 +593,9 @@ export default function Library() {
       const res  = await fetch('/api/library')
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
-      setItems(data.items?.length ? data.items : MOCK)
+      setItems(data.items || [])
     } catch {
-      setItems(MOCK)
-      setError('API offline — showing demo data')
+      setError('Could not reach API — make sure the backend is running')
     } finally {
       setLoading(false)
     }

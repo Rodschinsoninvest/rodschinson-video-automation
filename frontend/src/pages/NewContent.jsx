@@ -408,6 +408,94 @@ function Spinner() {
   )
 }
 
+// ─── Live Generation Progress Panel ──────────────────────────────────────────
+function GenerationPanel({ job, typeDef, onDone, onReset }) {
+  const navigate = useNavigate()
+  const isDone    = job?.status === 'done'
+  const isError   = job?.status === 'error'
+  const isRunning = job?.status === 'running' || job?.status === 'pending'
+  const progress  = job?.progress || 0
+  const step      = job?.step || 'Queued'
+  const detail    = job?.detail || ''
+
+  return (
+    <div style={{ animation: 'fadein 0.2s ease' }}>
+      <div style={{ background: 'var(--cs-surface)', border: `1px solid ${isError ? 'rgba(239,68,68,0.3)' : isDone ? 'rgba(34,197,94,0.3)' : 'rgba(0,182,255,0.2)'}`, borderRadius: 12, padding: 28, marginBottom: 16 }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 10, background: isDone ? 'rgba(34,197,94,0.1)' : isError ? 'rgba(239,68,68,0.1)' : 'rgba(0,182,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+            {isDone ? '✅' : isError ? '❌' : typeDef.icon}
+          </div>
+          <div>
+            <div style={{ color: 'var(--cs-text)', fontSize: 15, fontWeight: 700 }}>
+              {isDone ? `${typeDef.label} ready!` : isError ? 'Generation failed' : `Generating ${typeDef.label}…`}
+            </div>
+            <div style={{ color: 'var(--cs-text-muted)', fontSize: 12, marginTop: 2 }}>
+              {isDone ? 'Your content has been added to the library.' : isError ? 'An error occurred during generation.' : `${step} · ${typeDef.estimatedTime} estimated`}
+            </div>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        {!isDone && !isError && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span style={{ color: 'var(--cs-text-sub)', fontSize: 12, fontWeight: 600 }}>{step}</span>
+              <span style={{ color: '#00B6FF', fontSize: 12, fontWeight: 700 }}>{progress}%</span>
+            </div>
+            <div style={{ height: 6, background: 'var(--cs-hover)', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg,#00B6FF,#08316F)', borderRadius: 3, transition: 'width 0.4s ease' }} />
+            </div>
+          </div>
+        )}
+
+        {/* Pipeline steps */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+          {typeDef.steps.map((s, i) => {
+            const stepProgress = (i + 1) / typeDef.steps.length * 100
+            const done    = progress >= stepProgress || isDone
+            const current = !done && progress >= (i / typeDef.steps.length * 100)
+            return (
+              <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                background: done ? 'rgba(34,197,94,0.1)' : current ? 'rgba(0,182,255,0.1)' : 'var(--cs-hover)',
+                color: done ? '#16a34a' : current ? '#00B6FF' : 'var(--cs-text-muted)',
+                border: `1px solid ${done ? 'rgba(34,197,94,0.25)' : current ? 'rgba(0,182,255,0.25)' : 'var(--cs-border)'}`,
+              }}>
+                {done ? '✓' : current ? <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</span> : `${i+1}`} {s}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Error detail */}
+        {isError && detail && (
+          <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#dc2626', fontFamily: 'monospace', whiteSpace: 'pre-wrap', maxHeight: 120, overflowY: 'auto' }}>
+            {detail}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {isDone && (
+            <button onClick={() => navigate('/library')} style={{
+              flex: 1, padding: '12px', borderRadius: 8, border: 'none', cursor: 'pointer',
+              background: 'linear-gradient(135deg,#08316F,#00B6FF)', color: '#fff', fontSize: 13, fontWeight: 700,
+            }}>View in Library →</button>
+          )}
+          <button onClick={onReset} style={{
+            flex: isDone ? '0 0 auto' : 1, padding: '12px 20px', borderRadius: 8, cursor: 'pointer',
+            border: '1px solid var(--cs-border)', background: 'var(--cs-surface)',
+            color: 'var(--cs-text-sub)', fontSize: 13, fontWeight: 600,
+          }}>
+            {isDone ? '+ New Content' : isError ? '↩ Edit & Retry' : '+ Create Another'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── AI Template Generator Modal ─────────────────────────────────────────────
 function GenerateTemplateModal({ contentType, onGenerated, onClose }) {
   const [name, setName]         = useState('')
@@ -523,7 +611,7 @@ function GenerateTemplateModal({ contentType, onGenerated, onClose }) {
 export default function NewContent() {
   useTheme()
   const navigate = useNavigate()
-  const { trackJob } = useGeneration()
+  const { trackJob, jobs } = useGeneration()
 
   const [step, setStep]   = useState(1)
   const [form, setForm]   = useState(() => {
@@ -536,7 +624,8 @@ export default function NewContent() {
     return INITIAL_FORM
   })
 
-  const [error, setError] = useState(null)
+  const [error, setError]             = useState(null)
+  const [currentJobId, setCurrentJobId] = useState(null)
   // Script preview
   const [previewLoading, setPreviewLoading] = useState(false)
   const [previewScript, setPreviewScript]   = useState(null)
@@ -648,14 +737,8 @@ export default function NewContent() {
         contentType: form.contentType,
       })
 
-      // Reset form so user can start a new one immediately
-      setForm(INITIAL_FORM)
-      setStep(1)
-      setPreviewScript(null)
-      setEditedScript('')
-
-      // Brief toast-style message — navigate to Library so they can watch progress
-      navigate('/library')
+      // Stay on this page and show live progress
+      setCurrentJobId(data.job_id)
 
     } catch (e) {
       setError(e.message)
@@ -685,6 +768,18 @@ export default function NewContent() {
     setError(null); setStep(s => s + 1)
   }
 
+  // Find the live job from GenerationContext
+  const currentJob = jobs.find(j => j.job_id === currentJobId) || null
+
+  const handleReset = () => {
+    setCurrentJobId(null)
+    setForm(INITIAL_FORM)
+    setStep(1)
+    setPreviewScript(null)
+    setEditedScript('')
+    setError(null)
+  }
+
   const handleTemplateGenerated = (tpl) => {
     const newTpl = {
       id: tpl.id,
@@ -712,8 +807,27 @@ export default function NewContent() {
         />
       )}
 
-      {/* ── Left: Form ── */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      {/* ── Generation in progress / done — replace the form ── */}
+      {currentJobId && (
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ marginBottom: 20 }}>
+            <h1 style={{ color: 'var(--cs-text)', fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>
+              {typeDef.icon} {typeDef.label}
+            </h1>
+            <p style={{ color: 'var(--cs-text-sub)', fontSize: 13, margin: 0 }}>
+              {form.subject.slice(0, 80)}{form.subject.length > 80 ? '…' : ''}
+            </p>
+          </div>
+          <GenerationPanel
+            job={currentJob}
+            typeDef={typeDef}
+            onReset={handleReset}
+          />
+        </div>
+      )}
+
+      {/* ── Left: Form (hidden while job is running) ── */}
+      {!currentJobId && <div style={{ flex: 1, minWidth: 0 }}>
 
         {/* Header row */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -1039,10 +1153,10 @@ export default function NewContent() {
             {error}
           </div>
         )}
-      </div>
+      </div>}
 
-      {/* ── Right: sticky summary panel ── */}
-      <div style={{ width: 240, flexShrink: 0, position: 'sticky', top: 0 }}>
+      {/* ── Right: sticky summary panel (only when form is visible) ── */}
+      {!currentJobId && <div style={{ width: 240, flexShrink: 0, position: 'sticky', top: 0 }}>
         <div style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 10, padding: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <span style={{ fontSize: 20 }}>{typeDef.icon}</span>
@@ -1081,7 +1195,7 @@ export default function NewContent() {
           </div>
           <div style={{ color: 'var(--cs-text-muted)', fontSize: 10, marginTop: 5 }}>Step {step} of 3</div>
         </div>
-      </div>
+      </div>}
     </div>
   )
 }
