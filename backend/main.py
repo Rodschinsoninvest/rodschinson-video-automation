@@ -200,7 +200,7 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
         _job_update(job, status="running", step=label, progress=progress)
         await _save_job(job)
         log.info("[%s] %s  (%d%%)", job_id[:8], label, progress)
-        code, out, err = await _run(cmd, cwd=cwd, job_id=job_id)
+        code, _, err = await _run(cmd, cwd=cwd, job_id=job_id)
         if code != 0:
             log.warning("[%s] %s skipped (exit %d): %s", job_id[:8], label, code, err[-300:])
         return code == 0
@@ -1829,11 +1829,23 @@ async def canva_auth(brand: str = Query("rodschinson")):
 
 
 @app.get("/api/canva/callback")
-async def canva_callback(code: str = Query(...), state: str = Query(...)):
+async def canva_callback(
+    code:              Optional[str] = Query(None),
+    state:             Optional[str] = Query(None),
+    error:             Optional[str] = Query(None),
+    error_description: Optional[str] = Query(None),
+):
     """Exchange OAuth code for access token and store it."""
+    # Canva sends ?error=... when the user denies or something goes wrong
+    if error:
+        raise HTTPException(400, f"Canva OAuth error: {error} — {error_description or 'no description'}")
+
+    if not code or not state:
+        raise HTTPException(400, "Missing code or state — start the flow at /api/canva/auth")
+
     verifier = _canva_pkce.pop(state, None)
     if not verifier:
-        raise HTTPException(400, "Invalid or expired OAuth state")
+        raise HTTPException(400, "Invalid or expired OAuth state — restart at /api/canva/auth")
 
     brand = state.split(":")[0]
 
