@@ -1083,31 +1083,41 @@ _MC_PLATFORMS = {
 }
 
 
+def _metricool_token() -> str:
+    return os.getenv("METRICOOL_API_TOKEN", os.getenv("METRICOOL_TOKEN", ""))
+
+def _metricool_blog_id(brand: str = "rodschinson") -> str:
+    if brand and "rachid" in brand.lower():
+        return os.getenv("METRICOOL_BLOG_ID_RACHID", os.getenv("METRICOOL_BLOG_ID", ""))
+    return os.getenv("METRICOOL_BLOG_ID_RODSCHINSON", os.getenv("METRICOOL_BLOG_ID", ""))
+
 async def _metricool_headers() -> dict:
-    return {"X-Mc-Auth": os.getenv("METRICOOL_TOKEN", ""), "Content-Type": "application/json"}
+    return {"X-Mc-Auth": _metricool_token(), "Content-Type": "application/json"}
 
 
 @app.post("/api/publish/{job_id}")
 async def publish_content(job_id: str):
     """
     Schedule content on all configured platforms via Metricool.
-    Requires METRICOOL_TOKEN, METRICOOL_USER_ID, METRICOOL_BLOG_ID in .env.
+    Requires METRICOOL_API_TOKEN, METRICOOL_USER_ID, METRICOOL_BLOG_ID_RODSCHINSON in .env.
     """
-    token   = os.getenv("METRICOOL_TOKEN", "")
+    token   = _metricool_token()
     user_id = os.getenv("METRICOOL_USER_ID", "")
-    blog_id = os.getenv("METRICOOL_BLOG_ID", "")
-
-    if not all([token, user_id, blog_id]):
-        raise HTTPException(
-            503,
-            "Metricool not configured — add METRICOOL_TOKEN, METRICOOL_USER_ID, "
-            "METRICOOL_BLOG_ID to your .env file",
-        )
 
     lib = await _library_load()
     entry = next((e for e in lib if e.get("job_id") == job_id), None)
     if not entry:
         raise HTTPException(404, "Library entry not found")
+
+    brand   = entry.get("brand", "rodschinson")
+    blog_id = _metricool_blog_id(brand)
+
+    if not all([token, user_id, blog_id]):
+        raise HTTPException(
+            503,
+            "Metricool not configured — add METRICOOL_API_TOKEN, METRICOOL_USER_ID, "
+            "METRICOOL_BLOG_ID_RODSCHINSON to your .env file",
+        )
 
     platforms = entry.get("platforms", [])
     if not platforms:
@@ -1594,9 +1604,10 @@ async def _metricool_analytics(token: str, user_id: str, blog_id: str) -> dict |
 @app.get("/api/analytics")
 async def get_analytics(brand: Optional[str] = None):
     lib   = await _library_load()
-    token   = os.getenv("METRICOOL_TOKEN", "")
+    token   = _metricool_token()
     user_id = os.getenv("METRICOOL_USER_ID", "")
-    blog_id = os.getenv("METRICOOL_BLOG_ID", "")
+    brand_q = brand or "rodschinson"
+    blog_id = _metricool_blog_id(brand_q)
 
     mc_data: dict | None = None
     if token and user_id and blog_id:
