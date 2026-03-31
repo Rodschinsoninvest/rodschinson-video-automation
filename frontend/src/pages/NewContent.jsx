@@ -1034,14 +1034,15 @@ export default function NewContent() {
   }
 
   // ── Generate (fires & forgets — user can navigate away) ─────────────────────
-  const handleGenerate = async () => {
-    if (!form.subject.trim())        { setError('Enter a brief subject.'); return }
+  const handleGenerate = async (overrideSubject = null) => {
+    const subject = overrideSubject || form.subject
+    if (!subject.trim())             { setError('Enter a brief subject.'); return }
     if (form.platforms.length === 0) { setError('Select at least one platform.'); return }
     setError(null)
 
     const body = new FormData()
     body.append('payload', JSON.stringify({
-      subject: form.subject, brand: form.brand, language: form.language,
+      subject, brand: form.brand, language: form.language,
       contentType: form.contentType, format: form.format,
       template: form.template, style: form.style,
       voiceStyle: form.voiceStyle, platforms: form.platforms,
@@ -1050,7 +1051,7 @@ export default function NewContent() {
       audioMode: form.audioMode,
       musicGenre: form.musicGenre,
       ...(form.canvaTemplateUrl ? { canva_template_url: form.canvaTemplateUrl } : {}),
-      ...(previewScript && editedScript ? { custom_script: editedScript } : {}),
+      ...(previewScript && editedScript && !overrideSubject ? { custom_script: editedScript } : {}),
     }))
     if (form.logo) body.append('logo', form.logo)
 
@@ -1059,18 +1060,36 @@ export default function NewContent() {
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
 
-      // Register in global tracker — polling continues even after navigation
-      trackJob(data.job_id, {
-        title: form.subject.slice(0, 60),
-        contentType: form.contentType,
-      })
+      trackJob(data.job_id, { title: subject.slice(0, 60), contentType: form.contentType })
 
-      // Stay on this page and show live progress
-      setCurrentJobId(data.job_id)
+      // Only set active job for single generates (not bulk)
+      if (!overrideSubject) setCurrentJobId(data.job_id)
 
+      return data.job_id
     } catch (e) {
       setError(e.message)
+      return null
     }
+  }
+
+  // ── Bulk generate all variations at once ─────────────────────────────────────
+  const [bulkLaunching, setBulkLaunching] = useState(false)
+  const [bulkCount, setBulkCount]         = useState(0)
+
+  const handleGenerateAll = async () => {
+    if (variations.length === 0) return
+    if (form.platforms.length === 0) { setError('Select at least one platform.'); return }
+    setBulkLaunching(true); setBulkCount(0); setError(null)
+    let launched = 0
+    for (const v of variations) {
+      const subject = v.title || v.angle || v.hook || form.subject
+      const jobId = await handleGenerate(subject)
+      if (jobId) { launched++; setBulkCount(launched) }
+      // Small gap so Railway doesn't get hammered simultaneously
+      await new Promise(r => setTimeout(r, 600))
+    }
+    setBulkLaunching(false)
+    setError(null)
   }
 
   // ── Brief template helpers ──────────────────────────────────────────────────
@@ -1285,6 +1304,37 @@ export default function NewContent() {
                       onClick={() => handlePickVariation(v)}
                     />
                   ))}
+                </div>
+              )}
+
+              {/* Bulk launch — only for carousel and text */}
+              {variations.length > 0 && (form.contentType === 'carousel' || form.contentType === 'text_only') && (
+                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, background: 'rgba(0,182,255,0.04)', border: '1px dashed rgba(0,182,255,0.2)' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: 'var(--cs-text)', fontSize: 12, fontWeight: 600 }}>
+                      Launch all {variations.length} at once
+                    </div>
+                    <div style={{ color: 'var(--cs-text-muted)', fontSize: 11, marginTop: 2 }}>
+                      {bulkLaunching
+                        ? `Launching… ${bulkCount} / ${variations.length} queued`
+                        : bulkCount > 0
+                        ? `✓ ${bulkCount} jobs queued in Library — check progress there`
+                        : 'Generates all 5 ideas in parallel using current settings'}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleGenerateAll}
+                    disabled={bulkLaunching || form.platforms.length === 0}
+                    style={{
+                      padding: '8px 16px', borderRadius: 7, flexShrink: 0,
+                      border: '1px solid rgba(0,182,255,0.4)',
+                      background: bulkLaunching ? 'rgba(0,182,255,0.04)' : 'rgba(0,182,255,0.1)',
+                      color: '#00B6FF', fontSize: 12, fontWeight: 700,
+                      cursor: bulkLaunching || form.platforms.length === 0 ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 6,
+                    }}>
+                    {bulkLaunching ? <><Spinner /> Launching…</> : `⚡ Generate All ${variations.length}`}
+                  </button>
                 </div>
               )}
             </div>
