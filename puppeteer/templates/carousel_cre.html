@@ -64,20 +64,22 @@ html, body {
   position:absolute; top:71px; bottom:38px; left:0; right:0;
   display:flex; flex-direction:column;
   padding:26px 44px 20px;
-  gap:16px; overflow:hidden;
+  gap:0; overflow:hidden;
+  justify-content: space-between;
 }
 .dk-inner {
   position:absolute; inset:0;
   display:flex; flex-direction:column;
-  padding:40px 44px; gap:18px;
-  z-index:2; overflow:hidden;
+  padding:40px 44px 50px;
+  gap:0; z-index:2; overflow:hidden;
+  justify-content: space-between;
 }
 
 /* ── SECTION LABELS ── */
 .slabel { font-family:'Montserrat',sans-serif; font-size:11px; font-weight:700; color:var(--sky-blue); letter-spacing:3px; text-transform:uppercase; }
-.stitle { font-family:'Montserrat',sans-serif; font-size:30px; font-weight:800; color:var(--dark-blue); line-height:1.1; letter-spacing:-0.4px; margin-top:5px; }
+.stitle { font-family:'Montserrat',sans-serif; font-size:34px; font-weight:800; color:var(--dark-blue); line-height:1.1; letter-spacing:-0.5px; margin-top:6px; }
 .dk-slabel { font-family:'Montserrat',sans-serif; font-size:11px; font-weight:700; color:rgba(0,182,255,0.7); letter-spacing:3px; text-transform:uppercase; }
-.dk-title { font-family:'Montserrat',sans-serif; font-size:30px; font-weight:800; color:var(--white); line-height:1.1; letter-spacing:-0.4px; margin-top:6px; }
+.dk-title { font-family:'Montserrat',sans-serif; font-size:34px; font-weight:800; color:var(--white); line-height:1.1; letter-spacing:-0.5px; margin-top:6px; }
 .dk-title .sky { color:var(--sky-blue); }
 
 /* ── GEO DECORATIONS ── */
@@ -105,54 +107,54 @@ html, body {
 .pg-sm { font-family:'Montserrat',sans-serif; font-size:11px; font-weight:700; color:rgba(255,255,255,.2); }
 
 /* ── KPI CARDS ── */
-.kpi-row { display:flex; gap:14px; }
-.kpi-card { flex:1; background:var(--dark-blue); border-radius:12px; padding:18px 16px; position:relative; overflow:hidden; }
+.kpi-row { display:flex; gap:14px; flex:1; }
+.kpi-card { flex:1; background:var(--dark-blue); border-radius:12px; padding:28px 20px; position:relative; overflow:hidden; display:flex; flex-direction:column; justify-content:center; }
 .kpi-card::before { content:''; position:absolute; top:0; left:0; width:4px; height:100%; background:var(--sky-blue); }
-.kpi-val { font-family:'Montserrat',sans-serif; font-size:30px; font-weight:900; color:var(--white); letter-spacing:-1px; line-height:1; }
-.kpi-val .ku { font-size:16px; color:var(--sky-blue); font-weight:700; }
-.kpi-lbl { font-size:10.5px; color:rgba(255,255,255,.45); margin-top:5px; line-height:1.4; }
+.kpi-val { font-family:'Montserrat',sans-serif; font-size:36px; font-weight:900; color:var(--white); letter-spacing:-1px; line-height:1; }
+.kpi-val .ku { font-size:18px; color:var(--sky-blue); font-weight:700; }
+.kpi-lbl { font-size:11px; color:rgba(255,255,255,.45); margin-top:8px; line-height:1.4; }
 
 /* ── BODY TEXT ── */
-.btext { font-size:14px; color:#3a4a6a; line-height:1.65; }
+.btext { font-size:15px; color:#3a4a6a; line-height:1.7; }
 .btext strong { color:var(--dark-blue); font-weight:700; }
-.btext-w { font-size:14px; color:rgba(255,255,255,.65); line-height:1.65; }
+.btext-w { font-size:15px; color:rgba(255,255,255,.65); line-height:1.7; }
 .btext-w strong { color:var(--sky-blue); font-weight:700; }
 
 /* ── METRIC BARS ── */
-.metric-list { display:flex; flex-direction:column; gap:12px; flex:1; }
-.metric-item { display:flex; align-items:center; gap:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:14px 16px; }
+.metric-list { display:flex; flex-direction:column; flex:1; justify-content:space-evenly; gap:0; }
+.metric-item { display:flex; align-items:center; gap:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:18px 20px; margin:5px 0; }
 .metric-bar-col { flex:1; }
-.mname { font-family:'Montserrat',sans-serif; font-size:11.5px; font-weight:600; color:rgba(255,255,255,.72); margin-bottom:6px; }
-.mbar-bg { height:5px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; }
-.mbar-fill { height:100%; background:linear-gradient(90deg,var(--sky-blue),rgba(0,182,255,.35)); border-radius:3px; }
-.mval { font-family:'Montserrat',sans-serif; font-size:18px; font-weight:800; color:var(--sky-blue); min-width:80px; text-align:right; }
+.mname { font-family:'Montserrat',sans-serif; font-size:13px; font-weight:600; color:rgba(255,255,255,.78); margin-bottom:8px; }
+.mbar-bg { height:7px; background:rgba(255,255,255,.08); border-radius:4px; overflow:hidden; }
+.mbar-fill { height:100%; background:linear-gradient(90deg,var(--sky-blue),rgba(0,182,255,.35)); border-radius:4px; }
+.mval { font-family:'Montserrat',sans-serif; font-size:22px; font-weight:800; color:var(--sky-blue); min-width:90px; text-align:right; }
 
 /* ── BULLET ITEMS ── */
-.bullet-list { display:flex; flex-direction:column; gap:12px; flex:1; }
-.bullet-item { display:flex; gap:14px; align-items:flex-start; }
-.bicon { width:32px; height:32px; border-radius:8px; background:var(--light-blue); border:1px solid rgba(0,182,255,.2); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; margin-top:1px; }
+.bullet-list { display:flex; flex-direction:column; flex:1; justify-content:space-evenly; gap:0; }
+.bullet-item { display:flex; gap:14px; align-items:flex-start; padding:8px 0; }
+.bicon { width:38px; height:38px; border-radius:10px; background:var(--light-blue); border:1px solid rgba(0,182,255,.2); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; margin-top:2px; }
 .bicon-dk { background:rgba(0,182,255,.12); border:1px solid rgba(0,182,255,.22); }
-.btitle { font-family:'Montserrat',sans-serif; font-size:13px; font-weight:700; color:var(--dark-blue); margin-bottom:2px; }
+.btitle { font-family:'Montserrat',sans-serif; font-size:14.5px; font-weight:700; color:var(--dark-blue); margin-bottom:3px; }
 .btitle-w { color:var(--white) !important; }
-.bdesc { font-size:12.5px; color:#5a6a8a; line-height:1.5; }
+.bdesc { font-size:13px; color:#5a6a8a; line-height:1.55; }
 .bdesc-w { color:rgba(255,255,255,.52) !important; }
 
 /* ── STEP TIMELINE ── */
-.steps { display:flex; flex-direction:column; gap:0; flex:1; }
+.steps { display:flex; flex-direction:column; gap:0; flex:1; justify-content:space-evenly; }
 .step { display:flex; gap:16px; position:relative; }
 .step-line-col { display:flex; flex-direction:column; align-items:center; }
-.step-dot { width:14px; height:14px; border-radius:50%; background:var(--sky-blue); flex-shrink:0; margin-top:2px; }
-.step-connector { width:2px; flex:1; background:rgba(0,182,255,.2); margin:3px 0; min-height:14px; }
+.step-dot { width:14px; height:14px; border-radius:50%; background:var(--sky-blue); flex-shrink:0; margin-top:4px; }
+.step-connector { width:2px; flex:1; background:rgba(0,182,255,.2); margin:4px 0; min-height:20px; }
 .step:last-child .step-connector { display:none; }
-.step-body { flex:1; padding-bottom:18px; }
-.step-num { font-family:'Montserrat',sans-serif; font-size:9.5px; font-weight:700; color:var(--sky-blue); letter-spacing:2px; text-transform:uppercase; }
-.step-title { font-family:'Montserrat',sans-serif; font-size:14px; font-weight:700; color:var(--dark-blue); margin:2px 0; }
-.step-desc { font-size:12.5px; color:#5a6a8a; line-height:1.45; }
+.step-body { flex:1; padding-bottom:0; }
+.step-num { font-family:'Montserrat',sans-serif; font-size:10px; font-weight:700; color:var(--sky-blue); letter-spacing:2px; text-transform:uppercase; }
+.step-title { font-family:'Montserrat',sans-serif; font-size:15px; font-weight:700; color:var(--dark-blue); margin:3px 0 4px; }
+.step-desc { font-size:13px; color:#5a6a8a; line-height:1.5; }
 
 /* ── HIGHLIGHT BOX ── */
-.hbox { background:rgba(255,255,255,.05); border:1px solid rgba(0,182,255,.15); border-radius:12px; padding:18px 20px; display:flex; align-items:center; gap:18px; }
-.bignum { font-family:'Montserrat',sans-serif; font-size:42px; font-weight:900; color:var(--sky-blue); letter-spacing:-1px; line-height:1; white-space:nowrap; }
-.bigdesc { font-size:13px; color:rgba(255,255,255,.58); line-height:1.5; }
+.hbox { background:rgba(255,255,255,.05); border:1px solid rgba(0,182,255,.15); border-radius:14px; padding:24px 26px; display:flex; align-items:center; gap:22px; }
+.bignum { font-family:'Montserrat',sans-serif; font-size:52px; font-weight:900; color:var(--sky-blue); letter-spacing:-2px; line-height:1; white-space:nowrap; }
+.bigdesc { font-size:14px; color:rgba(255,255,255,.58); line-height:1.55; }
 
 /* ── STAT STACK ── */
 .stat-stack { display:flex; flex-direction:column; gap:12px; flex:1; }
