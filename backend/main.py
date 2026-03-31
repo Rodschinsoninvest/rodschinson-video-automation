@@ -960,15 +960,37 @@ async def generate_variations(body: dict):
         raise HTTPException(502, f"Claude API error {res.status_code}: {res.text[:300]}")
 
     raw = res.json()["content"][0]["text"].strip()
-    # Extract JSON array robustly
+    # Strip markdown code fences
+    if raw.startswith("```"):
+        raw = re.sub(r"^```[a-z]*\n?", "", raw)
+        raw = re.sub(r"\n?```$", "", raw.strip())
+
+    # Extract JSON array
     m = re.search(r'\[.*\]', raw, re.DOTALL)
     if not m:
         raise HTTPException(502, "Could not parse variations JSON from Claude response")
 
+    json_str = m.group()
+
+    def _repair_json(s: str) -> str:
+        """Best-effort repair of common Claude JSON issues."""
+        # Smart/curly quotes → straight quotes
+        s = s.replace('\u201c', '"').replace('\u201d', '"')
+        s = s.replace('\u2018', "'").replace('\u2019', "'")
+        # Unescaped literal newlines inside strings → space
+        # Replace \n that appear inside quoted strings (between quotes on same "line")
+        s = re.sub(r'(?<=": ")(.*?)(?="[,}\]])', lambda m2: m2.group(0).replace('\n', ' '), s, flags=re.DOTALL)
+        # Trailing commas before ] or }
+        s = re.sub(r',\s*([}\]])', r'\1', s)
+        return s
+
     try:
-        variations = json.loads(m.group())
-    except json.JSONDecodeError as e:
-        raise HTTPException(502, f"Invalid JSON from Claude: {e}")
+        variations = json.loads(json_str)
+    except json.JSONDecodeError:
+        try:
+            variations = json.loads(_repair_json(json_str))
+        except json.JSONDecodeError as e:
+            raise HTTPException(502, f"Invalid JSON from Claude: {e}")
 
     return {"variations": variations[:count], "content_type": content_type}
 
