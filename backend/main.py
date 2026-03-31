@@ -973,16 +973,29 @@ async def generate_variations(body: dict):
     json_str = m.group()
 
     def _repair_json(s: str) -> str:
-        """Best-effort repair of common Claude JSON issues."""
-        # Smart/curly quotes → straight quotes
+        """Robust repair of common Claude JSON issues via character scan."""
+        # 1. Smart/curly quotes → straight ASCII quotes
         s = s.replace('\u201c', '"').replace('\u201d', '"')
         s = s.replace('\u2018', "'").replace('\u2019', "'")
-        # Unescaped literal newlines inside strings → space
-        # Replace \n that appear inside quoted strings (between quotes on same "line")
-        s = re.sub(r'(?<=": ")(.*?)(?="[,}\]])', lambda m2: m2.group(0).replace('\n', ' '), s, flags=re.DOTALL)
-        # Trailing commas before ] or }
+        # 2. Trailing commas before ] or }
         s = re.sub(r',\s*([}\]])', r'\1', s)
-        return s
+        # 3. Walk character-by-character: escape any bare control chars inside strings
+        out, in_str, esc = [], False, False
+        for ch in s:
+            if esc:
+                out.append(ch); esc = False
+            elif ch == '\\':
+                out.append(ch); esc = True
+            elif ch == '"':
+                out.append(ch); in_str = not in_str
+            elif in_str:
+                if ch == '\n':   out.append('\\n')
+                elif ch == '\r': out.append('\\r')
+                elif ch == '\t': out.append('\\t')
+                else:            out.append(ch)
+            else:
+                out.append(ch)
+        return ''.join(out)
 
     try:
         variations = json.loads(json_str)
