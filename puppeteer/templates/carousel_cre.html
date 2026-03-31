@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080, height=1080">
+<title>Carousel CRE — Rodschinson Investment</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --dark-blue: #08316F;
+  --sky-blue:  #00B6FF;
+  --white:     #FFFFFF;
+  --light-blue:#E8F4FD;
+  --green:     #27AE60;
+  --amber:     #F39C12;
+}
+
+html, body {
+  width: 1080px;
+  height: 1080px;
+  overflow: hidden;
+  background: var(--dark-blue);
+  font-family: 'Lato', sans-serif;
+}
+
+/* ── SHARED ROOT ── */
+#slide-root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* ── LOGO MARK ── */
+.logo-mark { display:flex; flex-direction:column; gap:3px; }
+.lm-top { font-family:'Montserrat',sans-serif; font-weight:800; letter-spacing:3px; font-size:11px; }
+.lm-line { height:1.5px; background:var(--sky-blue); width:100%; }
+.lm-bot  { font-family:'Montserrat',sans-serif; font-weight:600; color:var(--sky-blue); letter-spacing:4px; font-size:6px; }
+
+/* ── SLIDE CHROME ── */
+.slide-header {
+  background:var(--dark-blue); width:100%; height:68px;
+  display:flex; align-items:center; padding:0 44px;
+  position:relative; flex-shrink:0;
+}
+.slide-header::after { content:''; position:absolute; bottom:-3px; left:0; width:100%; height:3px; background:var(--sky-blue); }
+.snum { margin-left:auto; font-family:'Montserrat',sans-serif; font-size:30px; font-weight:900; color:rgba(255,255,255,0.1); letter-spacing:-1px; }
+
+.slide-footer {
+  position:absolute; bottom:0; left:0; right:0; height:38px;
+  display:flex; align-items:center; padding:0 44px;
+  border-top:1.5px solid rgba(0,182,255,0.15);
+  background:var(--white);
+}
+.slide-footer-dk {
+  position:absolute; bottom:0; left:0; right:0; height:38px;
+  display:flex; align-items:center; justify-content:space-between; padding:0 44px;
+}
+.pg-label { font-family:'Montserrat',sans-serif; font-size:10px; color:rgba(255,255,255,0.18); letter-spacing:2px; }
+
+/* ── CONTENT ZONES ── */
+.sinner {
+  position:absolute; top:71px; bottom:38px; left:0; right:0;
+  display:flex; flex-direction:column;
+  padding:26px 44px 20px;
+  gap:16px; overflow:hidden;
+}
+.dk-inner {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  padding:40px 44px; gap:18px;
+  z-index:2; overflow:hidden;
+}
+
+/* ── SECTION LABELS ── */
+.slabel { font-family:'Montserrat',sans-serif; font-size:11px; font-weight:700; color:var(--sky-blue); letter-spacing:3px; text-transform:uppercase; }
+.stitle { font-family:'Montserrat',sans-serif; font-size:30px; font-weight:800; color:var(--dark-blue); line-height:1.1; letter-spacing:-0.4px; margin-top:5px; }
+.dk-slabel { font-family:'Montserrat',sans-serif; font-size:11px; font-weight:700; color:rgba(0,182,255,0.7); letter-spacing:3px; text-transform:uppercase; }
+.dk-title { font-family:'Montserrat',sans-serif; font-size:30px; font-weight:800; color:var(--white); line-height:1.1; letter-spacing:-0.4px; margin-top:6px; }
+.dk-title .sky { color:var(--sky-blue); }
+
+/* ── GEO DECORATIONS ── */
+.cvr-geo { position:absolute; inset:0; pointer-events:none; z-index:1; }
+.cvr-geo::before { content:''; position:absolute; right:-80px; top:-80px; width:480px; height:480px; border:2px solid rgba(0,182,255,0.1); border-radius:50%; }
+.cvr-geo::after  { content:''; position:absolute; right:60px; top:60px; width:260px; height:260px; border:1px solid rgba(0,182,255,0.06); border-radius:50%; }
+.cvr-blob { position:absolute; bottom:-100px; left:-100px; width:400px; height:400px; background:radial-gradient(circle,rgba(0,182,255,0.13) 0%,transparent 65%); border-radius:50%; pointer-events:none; z-index:1; }
+
+.geo-circles { position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:1; }
+.geo-circles::before { content:''; position:absolute; right:-100px; bottom:-100px; width:520px; height:520px; border:1px solid rgba(0,182,255,0.06); border-radius:50%; }
+.geo-circles::after  { content:''; position:absolute; right:-30px; bottom:-30px; width:300px; height:300px; background:radial-gradient(circle,rgba(0,182,255,0.07) 0%,transparent 70%); border-radius:50%; }
+
+/* ── COVER SLIDE ── */
+.cvr-content { position:relative; z-index:2; height:100%; display:flex; flex-direction:column; justify-content:space-between; padding:44px; }
+.tag-pill { display:inline-flex; align-items:center; gap:8px; background:rgba(0,182,255,0.1); border:1px solid rgba(0,182,255,0.25); border-radius:30px; padding:6px 16px; width:fit-content; }
+.tag-pill span { font-family:'Montserrat',sans-serif; font-size:10px; font-weight:600; color:var(--sky-blue); letter-spacing:2px; text-transform:uppercase; }
+.tag-dot { width:7px; height:7px; border-radius:50%; background:var(--sky-blue); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+.cvr-title { font-family:'Montserrat',sans-serif; font-size:56px; font-weight:900; color:var(--white); line-height:1.05; letter-spacing:-1px; margin-top:14px; }
+.cvr-title .hl { color:var(--sky-blue); display:block; }
+.cvr-sub { font-size:17px; color:rgba(255,255,255,.52); line-height:1.55; max-width:480px; font-weight:300; margin-top:12px; }
+.cvr-bottom { display:flex; justify-content:space-between; align-items:flex-end; }
+.swipe-hint { display:flex; align-items:center; gap:8px; font-family:'Montserrat',sans-serif; font-size:10px; font-weight:600; color:rgba(255,255,255,.3); letter-spacing:1.5px; text-transform:uppercase; }
+.swipe-arr { display:block; width:24px; height:2px; background:var(--sky-blue); }
+.pg-sm { font-family:'Montserrat',sans-serif; font-size:11px; font-weight:700; color:rgba(255,255,255,.2); }
+
+/* ── KPI CARDS ── */
+.kpi-row { display:flex; gap:14px; }
+.kpi-card { flex:1; background:var(--dark-blue); border-radius:12px; padding:18px 16px; position:relative; overflow:hidden; }
+.kpi-card::before { content:''; position:absolute; top:0; left:0; width:4px; height:100%; background:var(--sky-blue); }
+.kpi-val { font-family:'Montserrat',sans-serif; font-size:30px; font-weight:900; color:var(--white); letter-spacing:-1px; line-height:1; }
+.kpi-val .ku { font-size:16px; color:var(--sky-blue); font-weight:700; }
+.kpi-lbl { font-size:10.5px; color:rgba(255,255,255,.45); margin-top:5px; line-height:1.4; }
+
+/* ── BODY TEXT ── */
+.btext { font-size:14px; color:#3a4a6a; line-height:1.65; }
+.btext strong { color:var(--dark-blue); font-weight:700; }
+.btext-w { font-size:14px; color:rgba(255,255,255,.65); line-height:1.65; }
+.btext-w strong { color:var(--sky-blue); font-weight:700; }
+
+/* ── METRIC BARS ── */
+.metric-list { display:flex; flex-direction:column; gap:12px; flex:1; }
+.metric-item { display:flex; align-items:center; gap:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:14px 16px; }
+.metric-bar-col { flex:1; }
+.mname { font-family:'Montserrat',sans-serif; font-size:11.5px; font-weight:600; color:rgba(255,255,255,.72); margin-bottom:6px; }
+.mbar-bg { height:5px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; }
+.mbar-fill { height:100%; background:linear-gradient(90deg,var(--sky-blue),rgba(0,182,255,.35)); border-radius:3px; }
+.mval { font-family:'Montserrat',sans-serif; font-size:18px; font-weight:800; color:var(--sky-blue); min-width:80px; text-align:right; }
+
+/* ── BULLET ITEMS ── */
+.bullet-list { display:flex; flex-direction:column; gap:12px; flex:1; }
+.bullet-item { display:flex; gap:14px; align-items:flex-start; }
+.bicon { width:32px; height:32px; border-radius:8px; background:var(--light-blue); border:1px solid rgba(0,182,255,.2); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; margin-top:1px; }
+.bicon-dk { background:rgba(0,182,255,.12); border:1px solid rgba(0,182,255,.22); }
+.btitle { font-family:'Montserrat',sans-serif; font-size:13px; font-weight:700; color:var(--dark-blue); margin-bottom:2px; }
+.btitle-w { color:var(--white) !important; }
+.bdesc { font-size:12.5px; color:#5a6a8a; line-height:1.5; }
+.bdesc-w { color:rgba(255,255,255,.52) !important; }
+
+/* ── STEP TIMELINE ── */
+.steps { display:flex; flex-direction:column; gap:0; flex:1; }
+.step { display:flex; gap:16px; position:relative; }
+.step-line-col { display:flex; flex-direction:column; align-items:center; }
+.step-dot { width:14px; height:14px; border-radius:50%; background:var(--sky-blue); flex-shrink:0; margin-top:2px; }
+.step-connector { width:2px; flex:1; background:rgba(0,182,255,.2); margin:3px 0; min-height:14px; }
+.step:last-child .step-connector { display:none; }
+.step-body { flex:1; padding-bottom:18px; }
+.step-num { font-family:'Montserrat',sans-serif; font-size:9.5px; font-weight:700; color:var(--sky-blue); letter-spacing:2px; text-transform:uppercase; }
+.step-title { font-family:'Montserrat',sans-serif; font-size:14px; font-weight:700; color:var(--dark-blue); margin:2px 0; }
+.step-desc { font-size:12.5px; color:#5a6a8a; line-height:1.45; }
+
+/* ── HIGHLIGHT BOX ── */
+.hbox { background:rgba(255,255,255,.05); border:1px solid rgba(0,182,255,.15); border-radius:12px; padding:18px 20px; display:flex; align-items:center; gap:18px; }
+.bignum { font-family:'Montserrat',sans-serif; font-size:42px; font-weight:900; color:var(--sky-blue); letter-spacing:-1px; line-height:1; white-space:nowrap; }
+.bigdesc { font-size:13px; color:rgba(255,255,255,.58); line-height:1.5; }
+
+/* ── STAT STACK ── */
+.stat-stack { display:flex; flex-direction:column; gap:12px; flex:1; }
+.stat-row { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:14px 18px; position:relative; overflow:hidden; display:flex; align-items:center; gap:14px; }
+.stat-row::after { content:''; position:absolute; bottom:0; left:0; width:100%; height:2px; background:var(--sky-blue); opacity:.3; }
+.stat-n { font-family:'Montserrat',sans-serif; font-size:32px; font-weight:900; color:var(--white); letter-spacing:-1px; line-height:1; white-space:nowrap; }
+.stat-n .u { font-size:17px; color:var(--sky-blue); }
+.stat-d { flex:1; font-size:12.5px; color:rgba(255,255,255,.45); line-height:1.4; }
+
+/* ── CTA SLIDE ── */
+.cta-bg { position:absolute; inset:0; pointer-events:none; z-index:1; }
+.cta-bg::before { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:680px; height:680px; background:radial-gradient(circle,rgba(0,182,255,.08) 0%,transparent 60%); border-radius:50%; }
+.cta-bg::after  { content:''; position:absolute; bottom:-140px; right:-140px; width:440px; height:440px; border:1px solid rgba(0,182,255,.05); border-radius:50%; }
+.cta-content { position:relative; z-index:2; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:50px; text-align:center; gap:18px; }
+.cta-eyebrow { font-family:'Montserrat',sans-serif; font-size:11px; font-weight:700; color:var(--sky-blue); letter-spacing:4px; text-transform:uppercase; }
+.cta-title { font-family:'Montserrat',sans-serif; font-size:44px; font-weight:900; color:var(--white); line-height:1.1; letter-spacing:-1px; max-width:580px; }
+.cta-title .sky { color:var(--sky-blue); }
+.cta-line { width:60px; height:3px; background:var(--sky-blue); border-radius:2px; }
+.cta-desc { font-size:15px; color:rgba(255,255,255,.48); max-width:500px; line-height:1.6; }
+.cta-btn { display:inline-flex; align-items:center; gap:9px; background:var(--sky-blue); color:var(--dark-blue); font-family:'Montserrat',sans-serif; font-size:13px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; padding:15px 34px; border-radius:50px; }
+
+/* ── BADGE ── */
+.badge { display:inline-flex; align-items:center; padding:4px 12px; border-radius:20px; font-family:'Montserrat',sans-serif; font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
+.badge-sky { background:rgba(0,182,255,.15); color:var(--sky-blue); border:1px solid rgba(0,182,255,.25); }
+.badge-green { background:rgba(39,174,96,.15); color:var(--green); border:1px solid rgba(39,174,96,.25); }
+.badge-amber { background:rgba(243,156,18,.15); color:var(--amber); border:1px solid rgba(243,156,18,.25); }
+
+/* ── ICON BOX ── */
+.icon-box { width:52px; height:52px; border-radius:13px; background:rgba(0,182,255,.12); border:1px solid rgba(0,182,255,.22); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+
+/* ── BG COLORS ── */
+.bg-dk { background:var(--dark-blue); }
+.bg-w  { background:var(--white); }
+</style>
+</head>
+<body>
+<div id="slide-root"></div>
+
+<script>
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+
+function logoMark(color, small) {
+  const sz = small ? 'font-size:8px;letter-spacing:2px' : '';
+  const lineSz = small ? 'height:1px' : '';
+  const botSz  = small ? 'font-size:5px' : '';
+  return `<div class="logo-mark">
+    <div class="lm-top" style="color:${color};${sz}">RODSCHINSON</div>
+    <div class="lm-line" style="${lineSz}"></div>
+    <div class="lm-bot" style="${botSz}">INVESTMENT</div>
+  </div>`;
+}
+
+function slideHeader(idx, total) {
+  return `<div class="slide-header">
+    ${logoMark('var(--white)')}
+    <div class="snum">${String(idx).padStart(2,'0')}</div>
+  </div>`;
+}
+
+function slideFooter(light) {
+  if (light) {
+    return `<div class="slide-footer">${logoMark('var(--dark-blue)')}</div>`;
+  }
+  return '';
+}
+
+function slideFooterDk(idx, total) {
+  return `<div class="slide-footer-dk">
+    ${logoMark('rgba(255,255,255,.25)', true)}
+    <div class="pg-label">${String(idx).padStart(2,'0')} / ${String(total).padStart(2,'0')}</div>
+  </div>`;
+}
+
+// ── SLIDE RENDERERS ───────────────────────────────────────────────────────────
+
+function renderCover(data) {
+  const tag   = data.tag || data.eyebrow || data.subheadline || '';
+  const title = data.headline || '';
+  const sub   = data.body || data.subheadline || '';
+  const parts = title.split(/\n|<br>/, 2);
+  const line1 = parts[0] || title;
+  const line2 = parts[1] || '';
+  const idx   = data.index || 1;
+  const total = data.total || 6;
+
+  return `<div class="bg-dk" style="position:absolute;inset:0;">
+    <div class="cvr-geo"></div><div class="cvr-blob"></div>
+    <div class="cvr-content">
+      ${logoMark('var(--white)')}
+      <div>
+        ${tag ? `<div class="tag-pill"><div class="tag-dot"></div><span>${tag}</span></div>` : ''}
+        <div class="cvr-title">${line1}${line2 ? `<span class="hl">${line2}</span>` : ''}</div>
+        ${sub ? `<div class="cvr-sub">${sub}</div>` : ''}
+      </div>
+      <div class="cvr-bottom">
+        <div class="swipe-hint"><span>Swipe to explore</span><div class="swipe-arr"></div></div>
+        <div class="pg-sm">${String(idx).padStart(2,'0')} / ${String(total).padStart(2,'0')}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderKpi(data) {
+  const idx   = data.index || 2;
+  const total = data.total || 6;
+  const label = data.subheadline || data.eyebrow || '';
+  const title = data.headline || '';
+  const body  = data.body || '';
+
+  // KPI items: from data.kpi[] or data.items[] or parse from data.stat
+  let kpis = data.kpi || data.items || [];
+  if (!kpis.length && data.stat) {
+    // try to parse "VAL — label | VAL — label | VAL — label"
+    kpis = data.stat.split('|').map(s => {
+      const [v, l] = s.split('—').map(x => x.trim());
+      return { value: v, label: l };
+    });
+  }
+  if (!kpis.length) kpis = [{ value: '—', label: '' }];
+
+  const kpiCards = kpis.slice(0, 3).map(k => {
+    // split value into number + unit for styling
+    const raw = String(k.value || '');
+    const m = raw.match(/^([€$£]?\s*[\d.,]+\s*[KMBkmbM]?)(.*)$/);
+    const num  = m ? m[1].trim() : raw;
+    const unit = m ? m[2].trim() : '';
+    return `<div class="kpi-card">
+      <div class="kpi-val">${num}${unit ? `<span class="ku">${unit}</span>` : ''}</div>
+      <div class="kpi-lbl">${k.label || ''}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="bg-w" style="position:absolute;inset:0;">
+    ${slideHeader(idx, total)}
+    <div class="sinner">
+      <div>
+        ${label ? `<div class="slabel">${label}</div>` : ''}
+        <div class="stitle">${title}</div>
+      </div>
+      <div class="kpi-row">${kpiCards}</div>
+      ${body ? `<div class="btext">${body}</div>` : ''}
+    </div>
+    ${slideFooter(true)}
+  </div>`;
+}
+
+function renderMetric(data) {
+  const idx   = data.index || 3;
+  const total = data.total || 6;
+  const label = data.subheadline || data.eyebrow || '';
+  const title = data.headline || '';
+  const body  = data.body || '';
+
+  // Metric items: from data.items[] or data.metrics[] or parse data.stat
+  let items = data.items || data.metrics || [];
+  if (!items.length && data.stat) {
+    items = data.stat.split('|').map(s => {
+      const [n, v] = s.split('—').map(x => x.trim());
+      return { name: n, value: v, pct: 60 };
+    });
+  }
+  if (!items.length) items = [{ name: '', value: '', pct: 50 }];
+
+  const metricRows = items.slice(0, 5).map(m => {
+    const pct = m.pct !== undefined ? m.pct : 60;
+    return `<div class="metric-item">
+      <div class="metric-bar-col">
+        <div class="mname">${m.name || m.label || ''}</div>
+        <div class="mbar-bg"><div class="mbar-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="mval">${m.value || m.val || ''}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="bg-dk" style="position:absolute;inset:0;">
+    <div class="geo-circles"></div>
+    <div class="dk-inner">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          ${label ? `<div class="dk-slabel">${label}</div>` : ''}
+          <div class="dk-title" style="margin-top:5px">${title.replace(/\n/, '<br><span class="sky">').replace(/$/, title.includes('\n') ? '</span>' : '')}</div>
+        </div>
+      </div>
+      <div class="metric-list">${metricRows}</div>
+      ${body ? `<div class="btext-w">${body}</div>` : ''}
+      ${slideFooterDk(idx, total)}
+    </div>
+  </div>`;
+}
+
+function renderBullets(data) {
+  const idx   = data.index || 4;
+  const total = data.total || 6;
+  const label = data.subheadline || data.eyebrow || '';
+  const title = data.headline || '';
+
+  // Bullet items: from data.items[] or data.bullets[] or body split by \n
+  let items = data.items || data.bullets || [];
+  if (!items.length && data.body) {
+    items = data.body.split(/\n|;/).filter(Boolean).map(s => {
+      const [t, ...rest] = s.split(':');
+      return { title: t.trim(), desc: rest.join(':').trim() };
+    });
+  }
+  if (!items.length) items = [{ title: data.body || '', desc: '' }];
+
+  const icons = ['📊','🏢','📄','🔑','💡','🎯','📈','🌍'];
+  const bullets = items.slice(0, 4).map((it, i) => {
+    const icon = it.icon || icons[i % icons.length];
+    const title_text = it.title || it.headline || '';
+    const desc_text  = it.desc  || it.body  || it.description || '';
+    return `<div class="bullet-item">
+      <div class="bicon">${icon}</div>
+      <div>
+        <div class="btitle">${title_text}</div>
+        ${desc_text ? `<div class="bdesc">${desc_text}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="bg-w" style="position:absolute;inset:0;">
+    ${slideHeader(idx, total)}
+    <div class="sinner">
+      <div>
+        ${label ? `<div class="slabel">${label}</div>` : ''}
+        <div class="stitle">${title}</div>
+      </div>
+      <div class="bullet-list">${bullets}</div>
+    </div>
+    ${slideFooter(true)}
+  </div>`;
+}
+
+function renderSteps(data) {
+  const idx   = data.index || 4;
+  const total = data.total || 6;
+  const label = data.subheadline || data.eyebrow || '';
+  const title = data.headline || '';
+
+  let items = data.items || data.steps || [];
+  if (!items.length && data.body) {
+    items = data.body.split(/\n|;/).filter(Boolean).map((s, i) => {
+      const [t, ...rest] = s.split(':');
+      return { num: i + 1, title: t.trim(), desc: rest.join(':').trim() };
+    });
+  }
+  if (!items.length) items = [{ num: 1, title: data.body || '', desc: '' }];
+
+  const stepHtml = items.slice(0, 5).map((s, i) => {
+    const n = s.num || s.step || (i + 1);
+    return `<div class="step">
+      <div class="step-line-col"><div class="step-dot"></div><div class="step-connector"></div></div>
+      <div class="step-body">
+        <div class="step-num">Step ${String(n).padStart(2,'0')}</div>
+        <div class="step-title">${s.title || s.headline || ''}</div>
+        ${(s.desc || s.body || s.description) ? `<div class="step-desc">${s.desc || s.body || s.description}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="bg-w" style="position:absolute;inset:0;">
+    ${slideHeader(idx, total)}
+    <div class="sinner">
+      <div>
+        ${label ? `<div class="slabel">${label}</div>` : ''}
+        <div class="stitle">${title}</div>
+      </div>
+      <div class="steps">${stepHtml}</div>
+    </div>
+    ${slideFooter(true)}
+  </div>`;
+}
+
+function renderHighlight(data) {
+  const idx   = data.index || 5;
+  const total = data.total || 6;
+  const label = data.subheadline || data.eyebrow || '';
+  const title = data.headline || '';
+  const body  = data.body || '';
+
+  // Big stat from data.stat or data.kpi[0]
+  let bigVal = '', bigDesc = '';
+  if (data.stat) {
+    const [v, d] = data.stat.split('—').map(s => s.trim());
+    bigVal = v; bigDesc = d || '';
+  } else if (data.kpi && data.kpi[0]) {
+    bigVal  = data.kpi[0].value || '';
+    bigDesc = data.kpi[0].label || '';
+  }
+
+  let items = data.items || data.bullets || [];
+  if (!items.length && body) {
+    items = body.split(/\n|;/).filter(Boolean).map(s => {
+      const [t, ...rest] = s.split(':');
+      return { title: t.trim(), desc: rest.join(':').trim() };
+    });
+  }
+
+  const icons = ['📈','💼','🏦','🔑','🌍','⚡'];
+  const bullets = items.slice(0, 3).map((it, i) => {
+    const icon = it.icon || icons[i % icons.length];
+    return `<div class="bullet-item">
+      <div class="bicon bicon-dk">${icon}</div>
+      <div>
+        <div class="btitle btitle-w">${it.title || it.headline || ''}</div>
+        ${(it.desc || it.body) ? `<div class="bdesc bdesc-w">${it.desc || it.body}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="bg-dk" style="position:absolute;inset:0;">
+    <div class="geo-circles"></div>
+    <div class="dk-inner">
+      <div>
+        ${label ? `<div class="dk-slabel">${label}</div>` : ''}
+        <div class="dk-title" style="margin-top:5px">${title}</div>
+      </div>
+      ${bigVal ? `<div class="hbox">
+        <div class="bignum">${bigVal}</div>
+        <div class="bigdesc">${bigDesc}</div>
+      </div>` : ''}
+      <div class="bullet-list">${bullets}</div>
+      ${slideFooterDk(idx, total)}
+    </div>
+  </div>`;
+}
+
+function renderCta(data) {
+  const idx   = data.index || 6;
+  const total = data.total || 6;
+  const title = data.headline || 'Ready to Start?';
+  const desc  = data.body || data.cta || '';
+  const btn   = data.btn || data.button || '📞 &nbsp; Book a Consultation';
+  const parts = title.split(/\n|<br>/, 2);
+  const line1 = parts[0];
+  const line2 = parts[1] || '';
+
+  return `<div class="bg-dk" style="position:absolute;inset:0;">
+    <div class="cta-bg"></div>
+    <div class="cta-content">
+      <div class="cta-eyebrow">Rodschinson Investment</div>
+      <div class="cta-title">${line1}${line2 ? `<br><span class="sky">${line2}</span>` : ''}</div>
+      <div class="cta-line"></div>
+      ${desc ? `<div class="cta-desc">${desc}</div>` : ''}
+      <div class="cta-btn">${btn}</div>
+      ${logoMark('rgba(255,255,255,.22)')}
+    </div>
+  </div>`;
+}
+
+// Fallback content slide for generic "content" type
+function renderContent(data) {
+  const idx   = data.index || 2;
+  const total = data.total || 6;
+  const label = data.subheadline || data.eyebrow || '';
+  const title = data.headline || '';
+  const body  = data.body || '';
+  const stat  = data.stat || '';
+
+  let statHtml = '';
+  if (stat) {
+    const [v, d] = stat.split('—').map(s => s.trim());
+    statHtml = `<div class="hbox" style="margin-top:auto">
+      <div class="bignum" style="font-size:36px;color:var(--sky-blue)">${v}</div>
+      <div class="bigdesc" style="color:rgba(255,255,255,.6)">${d || ''}</div>
+    </div>`;
+  }
+
+  // Is dark background preferred? Alternate based on index
+  const dark = idx % 2 === 0 ? false : false; // light by default for content
+  return `<div class="bg-w" style="position:absolute;inset:0;">
+    ${slideHeader(idx, total)}
+    <div class="sinner">
+      ${label ? `<div class="slabel">${label}</div>` : ''}
+      <div class="stitle">${title}</div>
+      ${body ? `<div class="btext" style="flex:1">${body}</div>` : ''}
+      ${statHtml}
+    </div>
+    ${slideFooter(true)}
+  </div>`;
+}
+
+// ── LOAD SCENE (public API) ───────────────────────────────────────────────────
+
+window.loadScene = function(data) {
+  if (!data) return false;
+
+  const root = document.getElementById('slide-root');
+  if (!root) return false;
+
+  // Normalise type
+  const raw  = (data.type || '').toLowerCase().replace(/[_\s-]/g, '_');
+  const idx  = data.index || 1;
+  const total = data.total || 6;
+
+  let html = '';
+
+  // Explicit type dispatch
+  if (raw === 'title' || raw === 'cover') {
+    html = renderCover(data);
+  } else if (raw === 'kpi' || raw === 'kpi_cards' || raw === 'kpis') {
+    html = renderKpi(data);
+  } else if (raw === 'metric' || raw === 'metric_bars' || raw === 'metrics') {
+    html = renderMetric(data);
+  } else if (raw === 'bullets' || raw === 'bullet_list' || raw === 'bullet') {
+    html = renderBullets(data);
+  } else if (raw === 'steps' || raw === 'process' || raw === 'timeline') {
+    html = renderSteps(data);
+  } else if (raw === 'highlight' || raw === 'stat' || raw === 'big_stat') {
+    html = renderHighlight(data);
+  } else if (raw === 'cta') {
+    html = renderCta(data);
+  } else if (raw === 'content') {
+    // Auto-detect based on data fields available
+    if (data.kpi && data.kpi.length) {
+      html = renderKpi(data);
+    } else if (data.items && data.items.length && data.items[0].value !== undefined) {
+      html = renderMetric(data);
+    } else if (data.steps && data.steps.length) {
+      html = renderSteps(data);
+    } else {
+      html = renderContent(data);
+    }
+  } else {
+    // Unknown type: generic content
+    html = renderContent(data);
+  }
+
+  root.innerHTML = html;
+  return true;
+};
+
+window.animateScene = function() {
+  // Static render — no animation needed for screenshot
+};
+</script>
+</body>
+</html>

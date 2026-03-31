@@ -32,6 +32,7 @@ const TEMPLATES = {
   carousel_clean:   'carousel_clean.html',
   carousel_minimal: 'carousel_minimal.html',
   carousel_data:    'carousel_data.html',
+  carousel_cre:     'carousel_cre.html',
 };
 
 const DEFAULT_TEMPLATE = 'carousel_bold';

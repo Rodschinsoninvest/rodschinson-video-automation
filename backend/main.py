@@ -314,7 +314,42 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
             canva_template = data.get("canva_template_url", "")
             canva_note = f"\nVisual reference: {canva_template}" if canva_template else ""
 
-            carousel_prompt = f"""Write a {num_slides}-slide LinkedIn carousel in {lang_name}.
+            # CRE template uses richer slide types with dedicated components
+            if template == "carousel_cre":
+                carousel_prompt = f"""Write a {num_slides}-slide LinkedIn carousel in {lang_name}.
+
+TOPIC: {subject}
+BRAND: {brand_display}
+STYLE: {style_hints.get(style, style_hints["educational"])}{canva_note}
+
+Return ONLY a JSON array with exactly {num_slides} objects using these EXACT types and schemas:
+
+Slide 1 — COVER (type: "title"):
+{{"index":1,"type":"title","headline":"Line 1\\nHighlighted line 2","tag":"Category · Year","body":"One-sentence description of what this carousel covers."}}
+
+Slide 2 — KPI CARDS (type: "kpi"):
+{{"index":2,"type":"kpi","headline":"Main Heading","subheadline":"Section Label","kpi":[{{"value":"€4.3B","label":"Metric description"}},{{"value":"+34%","label":"Metric description"}},{{"value":"5.0%","label":"Metric description"}}],"body":"1-2 sentence context explaining these numbers."}}
+
+Slide 3 — METRIC BARS (type: "metric"):
+{{"index":3,"type":"metric","headline":"Heading\\nSubheading","subheadline":"Section Label","items":[{{"name":"Category name","value":"5.0%","pct":60}},{{"name":"Category name","value":"4.8%","pct":57}},{{"name":"Category name","value":"3.2%","pct":38}},{{"name":"Category name","value":"~200bps","pct":25}}],"body":"Optional insight sentence."}}
+
+Slide 4 — BULLETS or STEPS (type: "bullets" or "steps"):
+For bullets: {{"index":4,"type":"bullets","headline":"Point Title","subheadline":"Section Label","items":[{{"icon":"📊","title":"Item title","desc":"2-sentence explanation."}},{{"icon":"🏢","title":"Item title","desc":"2-sentence explanation."}},{{"icon":"📄","title":"Item title","desc":"2-sentence explanation."}}]}}
+For steps: {{"index":4,"type":"steps","headline":"N Steps to X","subheadline":"Process","items":[{{"num":1,"title":"Step title","desc":"What happens here."}},{{"num":2,"title":"Step title","desc":"What happens here."}},{{"num":3,"title":"Step title","desc":"What happens here."}}]}}
+
+Slide 5 — HIGHLIGHT STAT (type: "highlight"):
+{{"index":5,"type":"highlight","headline":"Section Title","subheadline":"Key Insight","stat":"42% — investors cite X as primary driver","items":[{{"icon":"📈","title":"Bullet title","desc":"Supporting detail."}},{{"icon":"💼","title":"Bullet title","desc":"Supporting detail."}},{{"icon":"🏦","title":"Bullet title","desc":"Supporting detail."}}]}}
+
+Slide 6 — CTA (type: "cta"):
+{{"index":6,"type":"cta","headline":"Action Line\\nSecond Line","body":"One sentence inviting the reader to act.","btn":"📞 &nbsp; Book a Consultation","hashtags":["#Tag1","#Tag2","#Tag3"]}}
+
+Rules:
+- Slide 1 must be type "title". Slide {num_slides} must be type "cta".
+- Use real, specific numbers and facts relevant to the topic.
+- For metric pct values: represent the metric as a percentage of some logical maximum (0-100).
+- No markdown, no explanation — return ONLY the JSON array."""
+            else:
+                carousel_prompt = f"""Write a {num_slides}-slide LinkedIn carousel in {lang_name}.
 
 TOPIC: {subject}
 BRAND: {brand_display}
@@ -367,7 +402,7 @@ No markdown, no explanation — just the JSON array."""
             await _save_job(job)
 
             # Resolve carousel template (default to carousel_bold)
-            carousel_templates = {"carousel_bold", "carousel_clean", "carousel_minimal", "carousel_data"}
+            carousel_templates = {"carousel_bold", "carousel_clean", "carousel_minimal", "carousel_data", "carousel_cre"}
             carousel_tmpl = template if template in carousel_templates else "carousel_bold"
             # Also accept custom AI-generated carousel templates
             tmpl_file = PUPPET / "templates" / f"{carousel_tmpl}.html"

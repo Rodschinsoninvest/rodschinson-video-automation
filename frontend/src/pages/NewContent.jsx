@@ -137,10 +137,11 @@ const TEMPLATE_GROUPS = {
     { id: 'reel_gradient', label: 'Gradient', gradient: 'linear-gradient(135deg,#1a0a2e,#2d1454,#08316F)', accent: '#a855f7', desc: 'Purple gradient · social-native' },
   ],
   carousel: [
-    { id: 'carousel_clean',      label: 'Clean Slides',        gradient: 'linear-gradient(135deg,#f8f9fa,#e9ecef)', accent: '#08316F'  },
-    { id: 'carousel_bold',       label: 'Bold Deck',           gradient: 'linear-gradient(135deg,#08316F,#0a3d8a)', accent: '#C8A96E'  },
-    { id: 'carousel_minimal',    label: 'Minimal',             gradient: 'linear-gradient(135deg,#0a0a0a,#181818)', accent: '#ffffff'  },
-    { id: 'carousel_data',       label: 'Data Slides',         gradient: 'linear-gradient(135deg,#031520,#061e2e)', accent: '#00B6FF'  },
+    { id: 'carousel_cre',        label: 'CRE Navy',            gradient: 'linear-gradient(135deg,#08316F,#0a4a9e)', accent: '#00B6FF', desc: 'Navy · sky blue · KPI + metrics' },
+    { id: 'carousel_clean',      label: 'Clean Slides',        gradient: 'linear-gradient(135deg,#f8f9fa,#e9ecef)', accent: '#08316F', desc: 'Light · editorial · clean layout' },
+    { id: 'carousel_bold',       label: 'Bold Deck',           gradient: 'linear-gradient(135deg,#08316F,#0a3d8a)', accent: '#C8A96E', desc: 'Dark navy · gold · premium' },
+    { id: 'carousel_minimal',    label: 'Minimal',             gradient: 'linear-gradient(135deg,#0a0a0a,#181818)', accent: '#ffffff',  desc: 'Black · white · ultra-minimal' },
+    { id: 'carousel_data',       label: 'Data Slides',         gradient: 'linear-gradient(135deg,#031520,#061e2e)', accent: '#00B6FF', desc: 'Deep dark · cyan · data-heavy' },
   ],
   image: [
     { id: 'image_stat',          label: 'Stat Card',           gradient: 'linear-gradient(135deg,#08316F,#0a3d8a)', accent: '#C8A96E'  },
