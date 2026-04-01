@@ -2258,8 +2258,26 @@ async def publish_content(job_id: str, body: PublishRequest = PublishRequest()):
     if not platforms:
         raise HTTPException(422, f"No valid platforms. Supported: {', '.join(sorted(valid_platforms))}")
 
-    # Caption: prefer generated text post, otherwise use title
-    caption = (entry.get("output_text") or entry.get("title", ""))[:2200]
+    # Caption: text_only posts → output_text; video/reel → script meta.description + hashtags; fallback → title
+    caption = entry.get("output_text", "")
+    if not caption:
+        script_path = entry.get("script_path")
+        if script_path and os.path.isfile(script_path):
+            try:
+                with open(script_path, encoding="utf-8") as _sf:
+                    _sdata = json.load(_sf)
+                meta = _sdata.get("meta", {})
+                desc = meta.get("description", "")
+                tags = meta.get("hashtags_linkedin", [])
+                if desc:
+                    caption = desc
+                    if tags:
+                        caption += "\n\n" + " ".join(tags)
+            except Exception:
+                pass
+    if not caption:
+        caption = entry.get("title", "")
+    caption = caption[:2200]
 
     from datetime import datetime, timezone, timedelta
     delay = 0 if body.publish_now else 5
