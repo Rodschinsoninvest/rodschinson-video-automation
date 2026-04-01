@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { PlusSquare, Library, CalendarDays, BarChart3, ExternalLink, Sun, Moon, Building2 } from 'lucide-react'
+import { PlusSquare, Library, CalendarDays, BarChart3, ExternalLink, Sun, Moon, Building2, Layers } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useMobile } from '../hooks/useMobile'
 
@@ -9,7 +9,8 @@ const NAV = [
   { to: '/library',   icon: Library,      label: 'Library'     },
   { to: '/schedule',  icon: CalendarDays, label: 'Schedule'    },
   { to: '/analytics', icon: BarChart3,    label: 'Analytics'   },
-  { to: '/brands',    icon: Building2,    label: 'Brands'      },
+  { to: '/brands',     icon: Building2,    label: 'Brands'      },
+  { to: '/templates',  icon: Layers,       label: 'Templates'   },
 ]
 
 function MetricoolLink() {

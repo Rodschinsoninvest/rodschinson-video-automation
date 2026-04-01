@@ -83,6 +83,19 @@ const TEMPLATE_ALLOWED_TYPES = {
   reel_gradient:       ['title_card', 'big_number',   'text_bullets', 'bar_chart',     'cta_screen'],
 };
 
+// ── LOAD CUSTOM TEMPLATES from external registry (no code change required) ───
+// registry lives at puppeteer/template_registry.json and is managed by the API
+const REGISTRY_PATH = path.join(__dirname, 'template_registry.json');
+if (fs.existsSync(REGISTRY_PATH)) {
+  try {
+    const reg = JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'));
+    Object.assign(TEMPLATES, reg.templates || {});
+    Object.assign(TEMPLATE_ALLOWED_TYPES, reg.allowed_types || {});
+  } catch (e) {
+    console.warn('[renderer] Failed to load template_registry.json:', e.message);
+  }
+}
+
 // ── PARSE ARGS ───────────────────────────────────────────────────────────────
 function parseArgs() {
   const args = process.argv.slice(2);

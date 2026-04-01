@@ -41,9 +41,13 @@ JOBS_DIR.mkdir(parents=True, exist_ok=True)
 LIBRARY_FILE   = OUTPUT / "library.json"
 SCHEDULE_FILE  = OUTPUT / "schedule.json"
 TEMPLATES_FILE = OUTPUT / "brief_templates.json"
-BRANDS_FILE    = OUTPUT / "brands.json"
-BRAND_LOGOS    = OUTPUT / "images" / "brands"
+BRANDS_FILE          = OUTPUT / "brands.json"
+BRAND_LOGOS          = OUTPUT / "images" / "brands"
 BRAND_LOGOS.mkdir(parents=True, exist_ok=True)
+CUSTOM_TEMPLATES_FILE = OUTPUT / "custom_templates.json"
+CUSTOM_TMPL_DIR       = PUPPET / "templates" / "custom"
+CUSTOM_TMPL_DIR.mkdir(parents=True, exist_ok=True)
+TEMPLATE_REGISTRY     = PUPPET / "template_registry.json"  # consumed by renderer.js
 
 load_dotenv(ROOT / ".env", override=False)
 
@@ -228,6 +232,60 @@ async def _brand_lookup(brand_id: str) -> dict | None:
     return next((b for b in brands if b["id"] == brand_id or b.get("slug") == brand_id), None)
 
 
+# ── Custom templates storage ───────────────────────────────────────────────────
+
+async def _custom_templates_load() -> list[dict]:
+    if not CUSTOM_TEMPLATES_FILE.exists(): return []
+    async with aiofiles.open(CUSTOM_TEMPLATES_FILE) as f:
+        return json.loads(await f.read())
+
+
+async def _custom_templates_save(entries: list[dict]) -> None:
+    async with aiofiles.open(CUSTOM_TEMPLATES_FILE, "w") as f:
+        await f.write(json.dumps(entries, indent=2, default=str))
+
+
+async def _rebuild_template_registry() -> None:
+    """Re-write template_registry.json so renderer.js picks up custom templates."""
+    customs = await _custom_templates_load()
+    registry = {"templates": {}, "allowed_types": {}}
+    for t in customs:
+        key      = t["id"]
+        html_key = f"custom/{t['id']}"   # relative to templates/ dir
+        registry["templates"][key]     = f"{html_key}.html"
+        registry["allowed_types"][key] = t.get("scenes", [])
+    async with aiofiles.open(TEMPLATE_REGISTRY, "w") as f:
+        await f.write(json.dumps(registry, indent=2))
+
+
+# Built-in template metadata (mirrors VIDEO_TEMPLATES but format-agnostic for the list endpoint)
+_BUILTIN_TEMPLATE_META = [
+    # 16:9 Video
+    {"id": "educational", "label": "Premium",    "html": "rodschinson_premium", "ratio": "16:9", "w": 1920, "h": 1080, "fps": 24, "formats": ["video"], "builtin": True, "accent": "#C8A96E", "gradient": "linear-gradient(135deg,#08316F,#041d45)", "style": "Dark navy · gold · institutional", "scenes": ["title_card", "text_bullets", "process_steps", "quote_card", "cta_screen"]},
+    {"id": "data",        "label": "Data",        "html": "tech_data",           "ratio": "16:9", "w": 1920, "h": 1080, "fps": 24, "formats": ["video"], "builtin": True, "accent": "#00B6FF", "gradient": "linear-gradient(135deg,#031520,#0a2a3d)", "style": "Dark · cyan · Bloomberg terminal", "scenes": ["title_card", "big_number", "bar_chart", "text_bullets", "cta_screen"]},
+    {"id": "news",        "label": "News",        "html": "news_reel",           "ratio": "16:9", "w": 1920, "h": 1080, "fps": 24, "formats": ["video"], "builtin": True, "accent": "#CC0000", "gradient": "linear-gradient(135deg,#0a0a0a,#1a0000)", "style": "Dark · red · breaking news broadcast", "scenes": ["title_card", "big_number", "bar_chart", "text_bullets", "cta_screen"]},
+    {"id": "corporate",   "label": "Corporate",   "html": "corporate_minimal",   "ratio": "16:9", "w": 1920, "h": 1080, "fps": 24, "formats": ["video"], "builtin": True, "accent": "#08316F", "gradient": "linear-gradient(135deg,#F8F5F0,#e8e4dc)", "style": "Light · editorial · thought leadership", "scenes": ["title_card", "text_bullets", "split_screen", "process_steps", "cta_screen"]},
+    {"id": "cre",         "label": "CRE",         "html": "cre",                 "ratio": "16:9", "w": 1920, "h": 1080, "fps": 24, "formats": ["video"], "builtin": True, "accent": "#00E5C8", "gradient": "linear-gradient(135deg,#080E1A,#0C1628)", "style": "Dark · teal · CRE market terminal", "scenes": ["title_card", "big_number", "bar_chart", "text_bullets", "cta_screen"]},
+    # 9:16 Reel
+    {"id": "reel_premium",  "label": "Premium",  "html": "reel_premium",  "ratio": "9:16", "w": 1080, "h": 1920, "fps": 30, "formats": ["reel", "story"], "builtin": True, "accent": "#C8A96E", "gradient": "linear-gradient(160deg,#08316F,#041d45)", "style": "Dark navy · gold · premium vertical", "scenes": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"]},
+    {"id": "reel_data",     "label": "Data",     "html": "reel_data",     "ratio": "9:16", "w": 1080, "h": 1920, "fps": 30, "formats": ["reel", "story"], "builtin": True, "accent": "#00E5C8", "gradient": "linear-gradient(160deg,#080E1A,#0C1628)", "style": "Dark · teal · data terminal vertical", "scenes": ["title_card", "big_number", "bar_chart", "text_bullets", "cta_screen"]},
+    {"id": "reel_bold",     "label": "Bold",     "html": "reel_bold",     "ratio": "9:16", "w": 1080, "h": 1920, "fps": 30, "formats": ["reel", "story"], "builtin": True, "accent": "#FF4444", "gradient": "linear-gradient(160deg,#0a0a0a,#1a0000)", "style": "Black · red · high energy viral", "scenes": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"]},
+    {"id": "reel_minimal",  "label": "Minimal",  "html": "reel_minimal",  "ratio": "9:16", "w": 1080, "h": 1920, "fps": 30, "formats": ["reel", "story"], "builtin": True, "accent": "#08316F", "gradient": "linear-gradient(160deg,#F5F5F0,#e5e5e0)", "style": "Light · minimal · clean editorial", "scenes": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"]},
+    {"id": "reel_gradient", "label": "Gradient", "html": "reel_gradient", "ratio": "9:16", "w": 1080, "h": 1920, "fps": 30, "formats": ["reel", "story"], "builtin": True, "accent": "#9b6dff", "gradient": "linear-gradient(160deg,#1a0a2e,#08316F)", "style": "Purple-navy · glow · modern social", "scenes": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"]},
+]
+
+_SCENE_TYPE_SCHEMAS = {
+    "title_card":    {"titre_principal": "Main headline", "sous_titre": "Subtitle or hook", "eyebrow": "Category · Year"},
+    "big_number":    {"eyebrow": "Metric label", "valeur": "5.75", "unite": "%", "contexte": "One-line explanation", "formule": ""},
+    "text_bullets":  {"titre": "Section heading", "items": ["Point 1", "Point 2", "Point 3", "Point 4"]},
+    "bar_chart":     {"titre": "Chart title", "series": [{"label": "Cat A", "valeur": 5.75}, {"label": "Cat B", "valeur": 4.1}], "unite": "%", "source": "Source: CBRE / JLL"},
+    "process_steps": {"titre": "Process name", "etapes": ["Step 1", "Step 2", "Step 3", "Step 4"], "active": 0},
+    "split_screen":  {"titre": "Comparison", "colonne_gauche": {"titre": "Left", "items": ["A1", "A2", "A3"]}, "colonne_droite": {"titre": "Right", "items": ["B1", "B2", "B3"]}},
+    "quote_card":    {"citation": "Full quote text here", "auteur": "Author Name", "source": "Organisation / Role"},
+    "cta_screen":    {"eyebrow": "Brand Name", "headline": "CTA headline", "body": "One sentence invitation", "cta_text": "CTA Button Text", "url": "yoursite.com"},
+}
+
+
 # ── Pipeline ───────────────────────────────────────────────────────────────────
 
 # ── Per-content-type pipeline definitions ──────────────────────────────────────
@@ -312,6 +370,13 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 "html": "rodschinson_premium", "ratio": "16:9",
                 "w": 1920, "h": 1080, "fps": 24,
                 "style": "Dark navy #08316F, gold #C8A96E, sky blue #00B6FF. Institutional investment house. Elegant, authoritative.",
+                "narrative_guidance": (
+                    "Write like a senior partner addressing institutional investors. Use elevated, precise vocabulary. "
+                    "Lead with the thesis, then support it methodically. process_steps scenes should walk through a clear framework or decision logic. "
+                    "quote_card must carry a real, attributable insight from a credible figure — not a generic motivational quote. "
+                    "text_bullets should read as concise, high-conviction observations, not bullet-point filler. "
+                    "Narration should be measured and unhurried — this audience values clarity over hype."
+                ),
                 "scenes": ["title_card", "text_bullets", "process_steps", "quote_card", "cta_screen"],
                 "schemas": {
                     "title_card":    {"titre_principal": "Main headline", "sous_titre": "Subtitle or hook", "eyebrow": "Category · Year"},
@@ -325,6 +390,14 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 "html": "tech_data", "ratio": "16:9",
                 "w": 1920, "h": 1080, "fps": 24,
                 "style": "Very dark #031520, cyan #00B6FF accents. Bloomberg / data terminal. Every number matters.",
+                "narrative_guidance": (
+                    "Every claim must be anchored in a specific number — no vague statements. "
+                    "big_number scenes should carry the single most important metric for that moment in the story; give it sharp context. "
+                    "bar_chart scenes should compare real, sourced figures — not illustrative placeholders. "
+                    "text_bullets should be data-backed observations: 'X% of investors…', 'Returns fell by Y bps…'. "
+                    "Narration is fast, clipped, confident — like a Bloomberg anchor reading live data. "
+                    "Never use emotional language; let the numbers carry the weight."
+                ),
                 "scenes": ["title_card", "big_number", "bar_chart", "text_bullets", "cta_screen"],
                 "schemas": {
                     "title_card":   {"titre_principal": "Main headline", "sous_titre": "Market context", "eyebrow": "Sector · Year"},
@@ -338,6 +411,13 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 "html": "news_reel", "ratio": "16:9",
                 "w": 1920, "h": 1080, "fps": 24,
                 "style": "Dark red/black news broadcast. Breaking news feel, high urgency, ticker-bar style.",
+                "narrative_guidance": (
+                    "Write like a breaking-news broadcast. Open with the most urgent fact — the thing the viewer needs to know right now. "
+                    "big_number scene must carry the single most alarming or significant figure. Use 'BREAKING', 'ALERT', 'JUST IN' style eyebrows. "
+                    "bar_chart should show before/after or competitor comparisons that make the story tangible. "
+                    "text_bullets should be tight, staccato points — 5 words max per item, high impact. "
+                    "Narration is rapid and urgent. Active voice only. No hedging language."
+                ),
                 "scenes": ["title_card", "big_number", "bar_chart", "text_bullets", "cta_screen"],
                 "schemas": {
                     "title_card":   {"titre_principal": "Breaking headline", "sous_titre": "Context or location", "eyebrow": "BREAKING · Market Update"},
@@ -351,6 +431,14 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 "html": "corporate_minimal", "ratio": "16:9",
                 "w": 1920, "h": 1080, "fps": 24,
                 "style": "White/near-black, editorial magazine. Clean whitespace, thought leadership tone.",
+                "narrative_guidance": (
+                    "Write like a Harvard Business Review byline — authoritative, nuanced, forward-looking. "
+                    "split_screen scenes are ideal for contrasting two schools of thought, before/after, or market vs reality. "
+                    "process_steps should describe a methodology, not a checklist — each step should have strategic weight. "
+                    "text_bullets should be layered insights, not surface observations. Give each bullet a point-of-view. "
+                    "Narration is deliberate and confident. Long sentences are acceptable when they carry complexity. "
+                    "Avoid jargon but do not simplify — respect the audience's intelligence."
+                ),
                 "scenes": ["title_card", "text_bullets", "split_screen", "process_steps", "cta_screen"],
                 "schemas": {
                     "title_card":    {"titre_principal": "Thought leadership headline", "sous_titre": "Subtitle or thesis", "eyebrow": "Topic · Year"},
@@ -364,6 +452,13 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 "html": "cre", "ratio": "16:9",
                 "w": 1920, "h": 1080, "fps": 24,
                 "style": "Very dark background, electric cyan #00B6FF. CRE market data terminal. Professional investor audience.",
+                "narrative_guidance": (
+                    "Audience: active CRE investors and asset managers. Every scene should answer 'what does this mean for my deal or portfolio?' "
+                    "big_number should carry yield, IRR, cap rate, or vacancy — the metrics investors actually act on. "
+                    "bar_chart should compare cities, asset classes, or vintage years with sourced data (CBRE, JLL, Cushman). "
+                    "text_bullets should be investable insights — market signals, not general observations. "
+                    "Narration is direct, peer-to-peer. Speak as a fellow investor, not a salesperson."
+                ),
                 "scenes": ["title_card", "big_number", "bar_chart", "text_bullets", "cta_screen"],
                 "schemas": {
                     "title_card":   {"titre_principal": "CRE Market headline", "sous_titre": "Market or asset class context", "eyebrow": "Asset Class · Market"},
@@ -378,6 +473,14 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 "html": "reel_premium", "ratio": "9:16",
                 "w": 1080, "h": 1920, "fps": 30,
                 "style": "Dark navy #08316F, gold #C8A96E. Vertical format. Institutional, premium. Each scene is punchy and self-contained.",
+                "narrative_guidance": (
+                    "Each scene must work as a standalone punchy statement — viewers scroll fast. "
+                    "Scene 1 hook must create an immediate 'wait, what?' reaction. "
+                    "big_number should be the most surprising or counter-intuitive figure in the topic. "
+                    "text_bullets max 3 items, each 6 words or fewer. No padding. "
+                    "Narration is short bursts — 1–2 sentences per scene. Confident, premium tone. "
+                    "The brand is institutional; avoid hype language but keep energy high through precision."
+                ),
                 "scenes": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"],
                 "schemas": {
                     "title_card":   {"titre_principal": "Hook headline — bold claim", "sous_titre": "One-line context", "eyebrow": "Category"},
@@ -391,6 +494,14 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 "html": "reel_data", "ratio": "9:16",
                 "w": 1080, "h": 1920, "fps": 30,
                 "style": "Very dark, cyan #00B6FF. Data terminal vertical. Numbers dominate every scene.",
+                "narrative_guidance": (
+                    "Data is the hero of every scene — structure the script around numbers, not narrative. "
+                    "Hook with the most dramatic or unexpected stat. "
+                    "big_number must be real and sourced; include the unit and a one-line context that tells you whether it's good or bad. "
+                    "bar_chart must compare at least 3 data points with real values. "
+                    "text_bullets must start with numbers: '3 markets where…', '€2.1B in…'. "
+                    "Narration is clipped and factual — no adjectives unless they're backed by data."
+                ),
                 "scenes": ["title_card", "big_number", "bar_chart", "text_bullets", "cta_screen"],
                 "schemas": {
                     "title_card":   {"titre_principal": "Data-driven hook", "sous_titre": "Market context", "eyebrow": "Market Data"},
@@ -404,6 +515,14 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 "html": "reel_bold", "ratio": "9:16",
                 "w": 1080, "h": 1920, "fps": 30,
                 "style": "Black and red, high contrast, high energy. Bold statements. Viral / breaking news feel.",
+                "narrative_guidance": (
+                    "Write for maximum shareability. Every scene should make someone stop scrolling. "
+                    "Scene 1 must be a bold, slightly provocative claim that challenges what most people believe. "
+                    "big_number should be the 'jaw-drop' stat that makes the hook land. "
+                    "text_bullets: contrarian, first-person opinions or uncomfortable truths — not safe statements. "
+                    "bar_chart: dramatic contrasts (e.g., 40% vs 8%) that visually reinforce the controversy. "
+                    "Narration: punchy sentences, rhetorical questions, pause for effect. Energy is high throughout."
+                ),
                 "scenes": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"],
                 "schemas": {
                     "title_card":   {"titre_principal": "Provocative hook — challenge assumptions", "sous_titre": "One punchy line", "eyebrow": "BREAKING"},
@@ -417,6 +536,14 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 "html": "reel_minimal", "ratio": "9:16",
                 "w": 1080, "h": 1920, "fps": 30,
                 "style": "White/near-white, minimal. One idea per scene. Clean editorial typography.",
+                "narrative_guidance": (
+                    "One idea per scene — discipline is the aesthetic. Never crowd a scene. "
+                    "Titles and bullets should be as short as possible: think magazine cover lines. "
+                    "big_number scenes should carry a clean insight: the number, a unit, and a single explanatory sentence. "
+                    "text_bullets: 3 items max, each a short, standalone observation. No sub-bullets. "
+                    "Narration is calm and measured — confident without being aggressive. "
+                    "The whitespace IS the design; respect it with sparse, precise writing."
+                ),
                 "scenes": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"],
                 "schemas": {
                     "title_card":   {"titre_principal": "Clean, clear hook", "sous_titre": "Brief context", "eyebrow": "Insight"},
@@ -430,6 +557,14 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 "html": "reel_gradient", "ratio": "9:16",
                 "w": 1080, "h": 1920, "fps": 30,
                 "style": "Purple-to-navy gradient, modern social-native aesthetic. Young professional audience.",
+                "narrative_guidance": (
+                    "Audience: ambitious 25–35 professionals discovering investing. Tone: smart friend, not professor. "
+                    "Hook with a relatable insight ('Most people don't know that…', 'This changed how I invest'). "
+                    "big_number should feel like a discovery — something the viewer will want to share. "
+                    "text_bullets: 3 punchy takeaways framed as things to DO or think about. "
+                    "bar_chart: visual proof that makes the argument concrete — use relatable comparisons. "
+                    "Narration is warm, direct, fast-paced. First person where natural. End with a forward hook."
+                ),
                 "scenes": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"],
                 "schemas": {
                     "title_card":   {"titre_principal": "Engaging hook for social", "sous_titre": "One line tease", "eyebrow": "Trend"},
@@ -440,6 +575,51 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 },
             },
         }
+
+        # Per-scene-type content guidance used when auto-building narrative_guidance for custom templates
+        _SCENE_NARRATIVE_HINTS = {
+            "title_card":    "Scene 1 title_card must open with a strong, specific hook — a claim, stat, or question that immediately earns the viewer's attention.",
+            "big_number":    "big_number scenes: choose the single most important metric relevant to this moment in the story. Give it context — is this high, low, surprising?",
+            "bar_chart":     "bar_chart scenes: use real, sourced comparative figures (at least 2 data points). The comparison should prove or illustrate your argument.",
+            "text_bullets":  "text_bullets scenes: each bullet must be a standalone insight — no filler. Minimum 3, each concise and specific.",
+            "process_steps": "process_steps scenes: walk through a logical sequence — decision framework, methodology, or step-by-step action plan.",
+            "split_screen":  "split_screen scenes: contrast two options, viewpoints, or outcomes. Each column should make a clear, opposing case.",
+            "quote_card":    "quote_card scenes: use a real, attributable quote from a credible source. The quote should add authority or a human dimension the narration cannot.",
+            "cta_screen":    "cta_screen (final scene): close with a specific, actionable invitation — not a generic 'learn more'. Make it relevant to what was just presented.",
+        }
+
+        def _build_custom_narrative_guidance(scenes: list, style: str) -> str:
+            """Auto-generate narrative guidance for custom templates from their scene types."""
+            hints = [_SCENE_NARRATIVE_HINTS[s] for s in scenes if s in _SCENE_NARRATIVE_HINTS]
+            data_heavy = any(s in scenes for s in ("big_number", "bar_chart"))
+            narrative_heavy = any(s in scenes for s in ("quote_card", "process_steps", "split_screen"))
+            if data_heavy and not narrative_heavy:
+                tone = "Ground every scene in real data. Numbers are the story — narration supports them."
+            elif narrative_heavy and not data_heavy:
+                tone = "Build a logical argument scene by scene. Each scene advances the thesis set up in the title_card."
+            else:
+                tone = "Balance data evidence with narrative reasoning. Let numbers land before explaining their implications."
+            return f"Template style: {style}. {tone} " + " ".join(hints)
+
+        # Merge custom templates into VIDEO_TEMPLATES so they're available in the pipeline
+        for _ct in await _custom_templates_load():
+            _tid = _ct["id"]
+            if _tid not in VIDEO_TEMPLATES:
+                # Build schemas from the global schema catalogue filtered to this template's scene types
+                _schemas = {s: _SCENE_TYPE_SCHEMAS[s] for s in _ct.get("scenes", []) if s in _SCENE_TYPE_SCHEMAS}
+                _ct_scenes = _ct.get("scenes", [])
+                _ct_style  = _ct.get("style", _ct.get("label", _tid))
+                VIDEO_TEMPLATES[_tid] = {
+                    "html":               f"custom/{_tid}",
+                    "ratio":              _ct.get("ratio", "16:9"),
+                    "w":                  _ct.get("w", 1920),
+                    "h":                  _ct.get("h", 1080),
+                    "fps":                _ct.get("fps", 24),
+                    "style":              _ct_style,
+                    "narrative_guidance": _build_custom_narrative_guidance(_ct_scenes, _ct_style),
+                    "scenes":             _ct_scenes,
+                    "schemas":            _schemas,
+                }
 
         if content_type in ("video", "reel", "story"):
             duration_sec = int(data.get("duration", 60))
@@ -484,6 +664,7 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                     for t in allowed_types
                 )
 
+                narrative_guidance = vtpl.get("narrative_guidance", "")
                 video_prompt = f"""You are writing a video script for {brand_display}.
 BRAND CONTEXT: {brand_context}
 BRAND COLORS: primary {brand_primary}, accent {brand_accent}
@@ -495,6 +676,9 @@ FORMAT: {vtpl['ratio']} ({canvas_w}×{canvas_h}px)
 CONTENT STYLE: {style_hints.get(style, style_hints['educational'])}
 DURATION: approximately {duration_sec} seconds total
 NUMBER OF SCENES: exactly {n_scenes}
+
+TEMPLATE CONTENT GUIDANCE (adapt your writing specifically to this template's visual identity):
+{narrative_guidance}
 
 ALLOWED SCENE TYPES (use ONLY these — any other type will crash the renderer):
 {', '.join(allowed_types)}
@@ -1656,6 +1840,124 @@ async def download_asset(job_id: str):
     return FileResponse(path, media_type=media_type, filename=filename)
 
 
+# ── Templates ──────────────────────────────────────────────────────────────────
+
+@app.get("/api/templates/scene-types")
+async def get_scene_types():
+    return _SCENE_TYPE_SCHEMAS
+
+
+@app.get("/api/templates")
+async def list_templates():
+    customs = await _custom_templates_load()
+    return _BUILTIN_TEMPLATE_META + customs
+
+
+@app.post("/api/templates", status_code=201)
+async def create_template(data: str = Form(...), html_file: Optional[UploadFile] = File(None)):
+    try:
+        body = json.loads(data)
+    except json.JSONDecodeError:
+        raise HTTPException(422, "Invalid JSON in data field")
+    if not body.get("label", "").strip():
+        raise HTTPException(422, "label is required")
+    if not body.get("scenes"):
+        raise HTTPException(422, "at least one scene type is required")
+
+    ratio = body.get("ratio", "16:9")
+    canvas = {"16:9": (1920, 1080, 24), "9:16": (1080, 1920, 30), "1:1": (1080, 1080, 24)}.get(ratio, (1920, 1080, 24))
+
+    tmpl_id = re.sub(r"[^a-z0-9_]", "_", body["label"].lower())[:32]
+    tmpl_id = f"custom_{tmpl_id}"
+
+    customs = await _custom_templates_load()
+    if any(t["id"] == tmpl_id for t in customs):
+        raise HTTPException(409, f"Template id '{tmpl_id}' already exists")
+
+    # Save HTML file if provided
+    html_url = None
+    if html_file and html_file.filename:
+        dest = CUSTOM_TMPL_DIR / f"{tmpl_id}.html"
+        async with aiofiles.open(dest, "wb") as f:
+            await f.write(await html_file.read())
+        html_url = f"/api/templates/{tmpl_id}/html"
+
+    tmpl = {
+        "id":        tmpl_id,
+        "label":     body["label"].strip(),
+        "html":      f"custom/{tmpl_id}",
+        "ratio":     ratio,
+        "w":         canvas[0],
+        "h":         canvas[1],
+        "fps":       canvas[2],
+        "formats":   body.get("formats", ["video"]),
+        "builtin":   False,
+        "accent":    body.get("accent", "#00B6FF"),
+        "gradient":  body.get("gradient", "linear-gradient(135deg,#08316F,#00B6FF)"),
+        "style":     body.get("style", body["label"]),
+        "scenes":    body.get("scenes", []),
+        "htmlUrl":   html_url,
+        "createdAt": _now(),
+    }
+    customs.append(tmpl)
+    await _custom_templates_save(customs)
+    await _rebuild_template_registry()
+    return tmpl
+
+
+@app.put("/api/templates/{tmpl_id}")
+async def update_template(tmpl_id: str, data: str = Form(...), html_file: Optional[UploadFile] = File(None)):
+    try:
+        body = json.loads(data)
+    except json.JSONDecodeError:
+        raise HTTPException(422, "Invalid JSON in data field")
+
+    customs = await _custom_templates_load()
+    idx = next((i for i, t in enumerate(customs) if t["id"] == tmpl_id), None)
+    if idx is None:
+        raise HTTPException(404, "Template not found (built-in templates cannot be edited)")
+
+    tmpl = customs[idx]
+    for field in ("label", "style", "accent", "gradient", "formats", "scenes"):
+        if field in body:
+            tmpl[field] = body[field]
+
+    if html_file and html_file.filename:
+        dest = CUSTOM_TMPL_DIR / f"{tmpl_id}.html"
+        async with aiofiles.open(dest, "wb") as f:
+            await f.write(await html_file.read())
+        tmpl["htmlUrl"] = f"/api/templates/{tmpl_id}/html"
+
+    tmpl["updatedAt"] = _now()
+    customs[idx] = tmpl
+    await _custom_templates_save(customs)
+    await _rebuild_template_registry()
+    return tmpl
+
+
+@app.delete("/api/templates/{tmpl_id}", status_code=204)
+async def delete_template(tmpl_id: str):
+    customs = await _custom_templates_load()
+    updated = [t for t in customs if t["id"] != tmpl_id]
+    if len(updated) == len(customs):
+        raise HTTPException(404, "Template not found (built-in templates cannot be deleted)")
+    await _custom_templates_save(updated)
+    await _rebuild_template_registry()
+    # Remove HTML file
+    html_path = CUSTOM_TMPL_DIR / f"{tmpl_id}.html"
+    if html_path.exists():
+        html_path.unlink()
+
+
+@app.get("/api/templates/{tmpl_id}/html")
+async def get_template_html(tmpl_id: str):
+    from fastapi.responses import FileResponse as FR
+    p = CUSTOM_TMPL_DIR / f"{tmpl_id}.html"
+    if not p.exists():
+        raise HTTPException(404, "Template HTML not found")
+    return FR(str(p), media_type="text/html", filename=f"{tmpl_id}.html")
+
+
 # ── Library ────────────────────────────────────────────────────────────────────
 
 # ── Brands ─────────────────────────────────────────────────────────────────────
@@ -1836,33 +2138,79 @@ _MC_PLATFORM_FIELD = {
 }
 
 def _metricool_payload(caption: str, platforms: list[str], pub_dt: str,
-                       media_url: str | None = None) -> dict:
+                       media_url: str | None = None,
+                       fmt: str = "16:9",
+                       content_type: str = "video",
+                       title: str = "") -> dict:
     """Build a valid Metricool v2 ScheduledPost payload.
 
-    v2 rules:
-    - No 'caption' or 'networks' at root — text goes inside each platform's data object.
-    - linkedinData  → {"text": ...}
-    - instagramData → {"text": ..., "type": "POST"}
-    - facebookData  → {"text": ...}
-    - tiktokData    → {"text": ...}
-    - youtubeData   → {"title": ..., "description": ...}
-    - twitterData   → {"text": ...}
-    - publicationDate → {"dateTime": "YYYY-MM-DDTHH:MM:SS", "timezone": "UTC"}
-    - media (optional) → [{"url": "..."}]
+    Correct v2 structure (confirmed from Metricool's own MCP source):
+    - "text"            → top-level post copy (not inside any platformData)
+    - "providers"       → [{"network": "linkedin"}, ...] — which platforms to post to
+    - "publicationDate" → {"dateTime": "YYYY-MM-DDTHH:MM:SS", "timezone": "UTC"}
+    - "autoPublish"     → true
+    - "media"           → [{"url": "..."}] (optional)
+    - Platform data objects only hold platform-specific settings, NOT the text:
+        linkedinData  → {"type": "post"}
+        instagramData → {"type": "POST|REEL|STORY", "showReelOnFeed": bool}
+        facebookData  → {"type": "POST|REEL|STORY"}
+        youtubeData   → {"title": "...", "type": "video|short", "privacy": "public"}
+        tiktokData    → {}   (text is top-level)
+        twitterData   → {"tags": []}
     """
-    payload: dict = {
-        "publicationDate": {"dateTime": pub_dt, "timezone": "UTC"},
+    is_vertical  = fmt == "9:16"
+    is_shortform = content_type in ("reel", "story") or is_vertical
+
+    # Network keys Metricool expects in the providers array
+    _NETWORK_NAME = {
+        "linkedin":  "linkedin",
+        "instagram": "instagram",
+        "facebook":  "facebook",
+        "tiktok":    "tiktok",
+        "youtube":   "youtube",
+        "twitter":   "twitter",
     }
+
+    payload: dict = {
+        "text": caption,
+        "providers": [{"network": _NETWORK_NAME[p]} for p in platforms if p in _NETWORK_NAME],
+        "publicationDate": {"dateTime": pub_dt, "timezone": "UTC"},
+        "autoPublish": True,
+    }
+
+    # Platform-specific settings (no text here)
     for platform in platforms:
-        field = _MC_PLATFORM_FIELD.get(platform)
-        if not field:
-            continue
-        if platform == "youtube":
-            payload[field] = {"title": caption[:100], "description": caption}
+        if platform == "linkedin":
+            payload["linkedinData"] = {"type": "post", "previewIncluded": True}
+
         elif platform == "instagram":
-            payload[field] = {"text": caption, "type": "POST"}
-        else:
-            payload[field] = {"text": caption}
+            ig_type = "REEL" if is_vertical else "POST"
+            payload["instagramData"] = {
+                "type": ig_type,
+                "showReelOnFeed": True if ig_type == "REEL" else False,
+            }
+
+        elif platform == "facebook":
+            fb_type = "REEL" if is_vertical else "POST"
+            payload["facebookData"] = {"type": fb_type}
+
+        elif platform == "youtube":
+            yt_title = (title or caption)[:100]
+            payload["youtubeData"] = {
+                "title": yt_title,
+                "type": "short" if is_shortform else "video",
+                "privacy": "public",
+            }
+
+        elif platform == "tiktok":
+            payload["tiktokData"] = {
+                "disableComment": False,
+                "disableDuet": False,
+                "disableStitch": False,
+            }
+
+        elif platform == "twitter":
+            payload["twitterData"] = {"tags": []}
 
     if media_url:
         payload["media"] = [{"url": media_url}]
@@ -1870,11 +2218,16 @@ def _metricool_payload(caption: str, platforms: list[str], pub_dt: str,
     return payload
 
 
+class PublishRequest(BaseModel):
+    platforms: Optional[list[str]] = None   # override which platforms to post to
+    publish_now: bool = True                # False = schedule 5min from now, True = immediate
+
+
 @app.post("/api/publish/{job_id}")
-async def publish_content(job_id: str):
+async def publish_content(job_id: str, body: PublishRequest = PublishRequest()):
     """
-    Schedule content on all configured platforms via Metricool.
-    Requires METRICOOL_API_TOKEN, METRICOOL_USER_ID, METRICOOL_BLOG_ID_RODSCHINSON in .env.
+    Publish content to selected platforms via Metricool.
+    Requires METRICOOL_API_TOKEN, METRICOOL_USER_ID, METRICOOL_BLOG_ID_* in .env.
     """
     token   = _metricool_token()
     user_id = os.getenv("METRICOOL_USER_ID", "")
@@ -1894,22 +2247,32 @@ async def publish_content(job_id: str):
             "METRICOOL_BLOG_ID_RODSCHINSON to your .env file",
         )
 
-    platforms = entry.get("platforms", [])
+    # Use caller-supplied platforms or fall back to what's stored on the entry
+    platforms = body.platforms or entry.get("platforms", [])
     if not platforms:
-        raise HTTPException(422, "No platforms configured for this content")
+        raise HTTPException(422, "No platforms specified")
+
+    # Validate platform names
+    valid_platforms = set(_MC_PLATFORM_FIELD.keys())
+    platforms = [p for p in platforms if p in valid_platforms]
+    if not platforms:
+        raise HTTPException(422, f"No valid platforms. Supported: {', '.join(sorted(valid_platforms))}")
 
     # Caption: prefer generated text post, otherwise use title
     caption = (entry.get("output_text") or entry.get("title", ""))[:2200]
 
-    # Publish 2 minutes from now so Metricool has time to process
     from datetime import datetime, timezone, timedelta
-    pub_dt = (datetime.now(timezone.utc) + timedelta(minutes=2)).strftime("%Y-%m-%dT%H:%M:%S")
+    delay = 0 if body.publish_now else 5
+    pub_dt = (datetime.now(timezone.utc) + timedelta(minutes=delay)).strftime("%Y-%m-%dT%H:%M:%S")
 
     payload = _metricool_payload(
         caption=caption,
         platforms=platforms,
         pub_dt=pub_dt,
         media_url=entry.get("public_media_url"),
+        fmt=entry.get("format", "16:9"),
+        content_type=entry.get("content_type", "video"),
+        title=entry.get("title", ""),
     )
 
     async with httpx.AsyncClient(timeout=30) as client:
@@ -1924,7 +2287,9 @@ async def publish_content(job_id: str):
         log.error("Metricool publish error: %s %s", res.status_code, res.text[:400])
         raise HTTPException(502, f"Metricool returned {res.status_code}: {res.text[:300]}")
 
-    entry["status"] = "Published"; entry["updated_at"] = _now()
+    entry["status"] = "Published"
+    entry["published_platforms"] = platforms
+    entry["updated_at"] = _now()
     await _library_save(lib)
 
     return {"status": "published", "metricool": res.json()}
@@ -2132,13 +2497,13 @@ class TemplateCreate(BaseModel):
     form: dict
 
 
-@app.get("/api/templates")
-async def list_templates():
+@app.get("/api/brief-templates")
+async def list_brief_templates():
     return {"templates": await _templates_load()}
 
 
-@app.post("/api/templates", status_code=201)
-async def create_template(body: TemplateCreate):
+@app.post("/api/brief-templates", status_code=201)
+async def create_brief_template(body: TemplateCreate):
     templates = await _templates_load()
     tpl = {"id": str(uuid.uuid4()), "name": body.name, "form": body.form, "created_at": _now()}
     templates.insert(0, tpl)
@@ -2146,8 +2511,8 @@ async def create_template(body: TemplateCreate):
     return tpl
 
 
-@app.delete("/api/templates/{tpl_id}", status_code=204)
-async def delete_template(tpl_id: str):
+@app.delete("/api/brief-templates/{tpl_id}", status_code=204)
+async def delete_brief_template(tpl_id: str):
     templates = await _templates_load()
     updated = [t for t in templates if t.get("id") != tpl_id]
     if len(updated) == len(templates):

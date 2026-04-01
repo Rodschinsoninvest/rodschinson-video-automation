@@ -9,6 +9,7 @@ import Library from './pages/Library'
 import Schedule from './pages/Schedule'
 import Analytics from './pages/Analytics'
 import Brands from './pages/Brands'
+import Templates from './pages/Templates'
 
 export default function App() {
   return (
@@ -23,7 +24,8 @@ export default function App() {
                   <Route path="library"   element={<Library />} />
                   <Route path="schedule"  element={<Schedule />} />
                   <Route path="analytics" element={<Analytics />} />
-                  <Route path="brands"    element={<Brands />} />
+                  <Route path="brands"     element={<Brands />} />
+                  <Route path="templates" element={<Templates />} />
                 </Route>
               </Routes>
             </BrowserRouter>

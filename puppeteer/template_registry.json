@@ -1,0 +1,25 @@
+{
+  "templates": {
+    "custom_test": "custom/custom_test.html",
+    "custom_reel_new": "custom/custom_reel_new.html"
+  },
+  "allowed_types": {
+    "custom_test": [
+      "title_card",
+      "text_bullets",
+      "process_steps",
+      "split_screen",
+      "quote_card",
+      "cta_screen"
+    ],
+    "custom_reel_new": [
+      "title_card",
+      "bar_chart",
+      "text_bullets",
+      "process_steps",
+      "split_screen",
+      "quote_card",
+      "cta_screen"
+    ]
+  }
+}

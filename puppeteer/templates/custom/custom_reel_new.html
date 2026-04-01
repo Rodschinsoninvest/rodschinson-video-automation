@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080, height=1920">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  width: 1080px; height: 1920px; overflow: hidden;
+  background: #08316F;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  color: #fff;
+}
+#scene-container {
+  width: 100%; height: 100%;
+}
+.scene {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 80px 60px;
+  gap: 24px; text-align: center;
+}
+.eyebrow { font-size: 22px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7; color: #00E5C8; }
+h1 { font-size: 64px; font-weight: 800; line-height: 1.1; letter-spacing: -2px; }
+h2 { font-size: 48px; font-weight: 700; }
+.subtitle, p { font-size: 28px; opacity: 0.75; line-height: 1.4; }
+.number { font-size: 140px; font-weight: 900; line-height: 1; color: #00E5C8; }
+.unit { font-size: 0.4em; vertical-align: top; margin-top: 0.2em; }
+ul { list-style: none; width: 100%; max-width: 800px; }
+li { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 30px; text-align: left; }
+li::before { content: '→  '; color: #00E5C8; }
+.bar-row { display: flex; align-items: center; gap: 16px; margin: 8px 0; width: 100%; max-width: 900px; }
+.bar-label { width: 200px; text-align: right; font-size: 24px; }
+.bar-track { flex: 1; height: 32px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; background: #00E5C8; border-radius: 4px; }
+.bar-val { width: 80px; font-size: 24px; font-weight: 700; }
+.source { font-size: 18px; opacity: 0.4; margin-top: 16px; }
+.cta-btn { margin-top: 16px; padding: 20px 48px; border-radius: 50px; background: #00E5C8; color: #000; font-size: 28px; font-weight: 700; text-decoration: none; display: inline-block; }
+.context { opacity: 0.7; max-width: 700px; }
+.split { display: flex; gap: 40px; width: 100%; max-width: 1400px; }
+.split-col { flex: 1; }
+.split-col h3 { font-size: 32px; margin-bottom: 16px; color: #00E5C8; }
+.steps { list-style: none; counter-reset: step; width: 100%; max-width: 900px; }
+.steps li { counter-increment: step; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 30px; text-align: left; display: flex; align-items: center; gap: 20px; }
+.steps li::before { content: counter(step); width: 44px; height: 44px; border-radius: 50%; background: #00E5C8; color: #000; font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+blockquote { font-size: 40px; font-style: italic; line-height: 1.4; max-width: 1100px; border-left: 6px solid #00E5C8; padding-left: 40px; text-align: left; }
+cite { display: block; margin-top: 20px; font-size: 22px; font-style: normal; opacity: 0.6; }
+</style>
+</head>
+<body>
+<div id="scene-container"></div>
+<script>
+const SCENE_BUILDERS = {
+  title_card: (v) => `
+    <div class="scene title-card">
+      <div class="eyebrow">${v.eyebrow || ''}</div>
+      <h1>${v.titre_principal || ''}</h1>
+      <p class="subtitle">${v.sous_titre || ''}</p>
+    </div>`,
+  bar_chart: (v) => {
+    const max = Math.max(...(v.series||[]).map(s => s.valeur), 1);
+    return `<div class="scene chart">
+      <h2>${v.titre || ''}</h2>
+      ${(v.series||[]).map(s => `
+        <div class="bar-row">
+          <span class="bar-label">${s.label}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${(s.valeur/max*100).toFixed(1)}%"></div></div>
+          <span class="bar-val">${s.valeur}${v.unite||''}</span>
+        </div>`).join('')}
+      <div class="source">${v.source||''}</div>
+    </div>`;
+  },
+  text_bullets: (v) => `
+    <div class="scene bullets">
+      <h2>${v.titre || ''}</h2>
+      <ul>${(v.items||[]).map(i => `<li>${i}</li>`).join('')}</ul>
+    </div>`,
+  process_steps: (v) => `
+    <div class="scene">
+      <h2>${v.titre || ''}</h2>
+      <ol class="steps">${(v.etapes||[]).map(s => `<li>${s}</li>`).join('')}</ol>
+    </div>`,
+  split_screen: (v) => `
+    <div class="scene">
+      <h2>${v.titre || ''}</h2>
+      <div class="split">
+        <div class="split-col">
+          <h3>${v.colonne_gauche?.titre || ''}</h3>
+          <ul>${(v.colonne_gauche?.items||[]).map(i => `<li>${i}</li>`).join('')}</ul>
+        </div>
+        <div class="split-col">
+          <h3>${v.colonne_droite?.titre || ''}</h3>
+          <ul>${(v.colonne_droite?.items||[]).map(i => `<li>${i}</li>`).join('')}</ul>
+        </div>
+      </div>
+    </div>`,
+  quote_card: (v) => `
+    <div class="scene">
+      <blockquote>
+        "${v.citation || ''}"
+        <cite>— ${v.auteur || ''}${v.source ? ', ' + v.source : ''}</cite>
+      </blockquote>
+    </div>`,
+  cta_screen: (v) => `
+    <div class="scene">
+      <div class="eyebrow">${v.eyebrow || ''}</div>
+      <h1>${v.headline || ''}</h1>
+      <p>${v.body || ''}</p>
+      <a class="cta-btn">${v.cta_text || 'Learn more'}</a>
+    </div>`,
+};
+
+// ── Required interface for renderer.js ───────────────────────────────────────
+window.loadScene = function(sceneData) {
+  const container = document.getElementById('scene-container');
+  const type = sceneData.type_visuel;
+  const v = sceneData.visuel || {};
+  const builder = SCENE_BUILDERS[type];
+  if (!builder) {
+    console.error('Unknown scene type:', type);
+    return false;
+  }
+  container.innerHTML = typeof builder === 'function' ? builder(v) : String(builder);
+  return true;
+};
+
+window.animateScene = function() {
+  const scene = document.querySelector('.scene');
+  if (scene) {
+    scene.style.opacity = '0';
+    scene.style.transform = 'translateY(12px)';
+    requestAnimationFrame(() => {
+      scene.style.transition = 'opacity 0.4s, transform 0.4s';
+      scene.style.opacity = '1';
+      scene.style.transform = 'none';
+    });
+  }
+};
+
+window.isAnimationComplete = function(minDuration) {
+  return new Promise(resolve => setTimeout(resolve, minDuration || 800));
+};
+</script>
+</body>
+</html>

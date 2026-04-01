@@ -962,12 +962,21 @@ export default function NewContent() {
   const tplMenuRef = useRef()
   // AI template generator
   const [showGenTpl, setShowGenTpl]           = useState(false)
-  const [customTemplates, setCustomTemplates] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('cs-custom-templates') || '[]') } catch { return [] }
-  })
+  const [customTemplates, setCustomTemplates] = useState([])
   // Canva templates
   const [showCanvaTpl, setShowCanvaTpl]       = useState(false)
   const [canvaTemplates, setCanvaTemplates]   = useState([])
+
+  useEffect(() => {
+    fetch('/api/templates')
+      .then(r => r.json())
+      .then(d => {
+        // API returns a list directly; filter to custom-only
+        const list = Array.isArray(d) ? d : (d.templates || [])
+        setCustomTemplates(list.filter(t => !t.builtin))
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     fetch('/api/canva-templates')
@@ -979,7 +988,11 @@ export default function NewContent() {
   // Derived
   const typeDef    = CONTENT_TYPES.find(t => t.id === form.contentType) || CONTENT_TYPES[0]
   const baseTemplates = TEMPLATE_GROUPS[typeDef.templateGroup] || TEMPLATE_GROUPS.video
-  const templates  = [...baseTemplates, ...customTemplates.filter(t => t.templateGroup === typeDef.templateGroup || t.type === typeDef.templateGroup)]
+  const templates  = [...baseTemplates, ...customTemplates.filter(t =>
+    t.templateGroup === typeDef.templateGroup ||
+    t.type === typeDef.templateGroup ||
+    (Array.isArray(t.formats) && t.formats.includes(typeDef.templateGroup))
+  )]
   const platforms  = ALL_PLATFORMS.filter(p => typeDef.platforms.includes(p.id))
   const stepLabels = ['Brief', 'Format & Style', 'Review']
 

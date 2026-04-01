@@ -15,8 +15,8 @@
   --cs-border:       rgba(0,0,0,0.08);
   --cs-border-sub:   rgba(0,0,0,0.05);
   --cs-text:         #0f172a;
-  --cs-text-sub:     rgba(15,23,42,0.5);
-  --cs-text-muted:   rgba(15,23,42,0.3);
+  --cs-text-sub:     #4a5568;
+  --cs-text-muted:   #8896a8;
   --cs-hover:        rgba(0,0,0,0.035);
   --cs-input-bg:     #f8f9fb;
   --cs-glow:         rgba(0,182,255,0.12);
@@ -28,13 +28,13 @@
   --cs-bg:           #060b14;
   --cs-surface:      #0c1220;
   --cs-surface2:     #0f1929;
-  --cs-border:       rgba(255,255,255,0.07);
-  --cs-border-sub:   rgba(255,255,255,0.035);
-  --cs-text:         #e8edf5;
-  --cs-text-sub:     rgba(232,237,245,0.5);
-  --cs-text-muted:   rgba(232,237,245,0.28);
-  --cs-hover:        rgba(255,255,255,0.045);
-  --cs-input-bg:     rgba(255,255,255,0.05);
+  --cs-border:       rgba(255,255,255,0.09);
+  --cs-border-sub:   rgba(255,255,255,0.05);
+  --cs-text:         #edf1f8;
+  --cs-text-sub:     #9aaabe;
+  --cs-text-muted:   #637083;
+  --cs-hover:        rgba(255,255,255,0.055);
+  --cs-input-bg:     rgba(255,255,255,0.06);
   --cs-glow:         rgba(0,182,255,0.18);
   --cs-card-shine:   linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%);
 }
