@@ -41,6 +41,9 @@ JOBS_DIR.mkdir(parents=True, exist_ok=True)
 LIBRARY_FILE   = OUTPUT / "library.json"
 SCHEDULE_FILE  = OUTPUT / "schedule.json"
 TEMPLATES_FILE = OUTPUT / "brief_templates.json"
+BRANDS_FILE    = OUTPUT / "brands.json"
+BRAND_LOGOS    = OUTPUT / "images" / "brands"
+BRAND_LOGOS.mkdir(parents=True, exist_ok=True)
 
 load_dotenv(ROOT / ".env", override=False)
 
@@ -173,6 +176,58 @@ async def _templates_save(entries: list[dict]) -> None:
         await f.write(json.dumps(entries, indent=2, default=str))
 
 
+# ── Brands storage ─────────────────────────────────────────────────────────────
+
+_DEFAULT_BRANDS = [
+    {
+        "id": "rodschinson",
+        "name": "Rodschinson Investment",
+        "shortName": "RI",
+        "slug": "rodschinson",
+        "primaryColor": "#08316F",
+        "accentColor": "#C8A96E",
+        "textColor": "#FFFFFF",
+        "logoUrl": None,
+        "website": "rodschinson.com",
+        "tagline": "Premium CRE & M&A Advisory",
+        "context": "Rodschinson Investment — premium CRE & M&A advisory, Brussels/Dubai/Casablanca",
+        "createdAt": "2026-01-01T00:00:00+00:00",
+    },
+    {
+        "id": "rachid",
+        "name": "Rachid Chikhi",
+        "shortName": "RC",
+        "slug": "rachid",
+        "primaryColor": "#1a1a2e",
+        "accentColor": "#00B6FF",
+        "textColor": "#FFFFFF",
+        "logoUrl": None,
+        "website": "",
+        "tagline": "Entrepreneur & Investor",
+        "context": "Rachid Chikhi — personal brand, entrepreneur & investor",
+        "createdAt": "2026-01-01T00:00:00+00:00",
+    },
+]
+
+
+async def _brands_load() -> list[dict]:
+    if not BRANDS_FILE.exists():
+        await _brands_save(_DEFAULT_BRANDS)
+        return list(_DEFAULT_BRANDS)
+    async with aiofiles.open(BRANDS_FILE) as f:
+        return json.loads(await f.read())
+
+
+async def _brands_save(entries: list[dict]) -> None:
+    async with aiofiles.open(BRANDS_FILE, "w") as f:
+        await f.write(json.dumps(entries, indent=2, default=str))
+
+
+async def _brand_lookup(brand_id: str) -> dict | None:
+    brands = await _brands_load()
+    return next((b for b in brands if b["id"] == brand_id or b.get("slug") == brand_id), None)
+
+
 # ── Pipeline ───────────────────────────────────────────────────────────────────
 
 # ── Per-content-type pipeline definitions ──────────────────────────────────────
@@ -206,7 +261,7 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
         return code == 0
 
     try:
-        brand        = data.get("brand", "investment")
+        brand        = data.get("brand", "rodschinson")
         language     = data.get("language", "EN")
         subject      = data["subject"]
         fmt          = data.get("format", "16:9")
@@ -214,6 +269,17 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
         content_type = data.get("contentType", "video")
         brand_arg    = "rachid" if brand == "rachid" else "rodschinson"
         style        = data.get("style", "viral_hook")
+        # Resolve brand metadata — used throughout pipeline for prompts + rendering
+        _brand_meta   = await _brand_lookup(brand) or {}
+        brand_display = _brand_meta.get("name") or ("Rachid Chikhi" if brand == "rachid" else "Rodschinson Investment")
+        brand_context = _brand_meta.get("context") or brand_display
+        brand_primary = _brand_meta.get("primaryColor", "#08316F")
+        brand_accent  = _brand_meta.get("accentColor",  "#C8A96E")
+        # Auto-use brand's saved logo if none uploaded with this request
+        if logo_path is None:
+            _candidate = BRAND_LOGOS / f"{brand}.png"
+            if _candidate.exists():
+                logo_path = _candidate
         audio_mode   = data.get("audioMode", "voice")   # "voice" | "music"
         music_genre  = data.get("musicGenre", "corporate")
 
@@ -403,7 +469,6 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
 
                 lang_map  = {"EN": "English", "FR": "French", "NL": "Dutch"}
                 lang_name = lang_map.get(language.upper(), "English")
-                brand_display = "Rodschinson Investment" if brand_arg == "rodschinson" else "Rachid Chikhi"
 
                 style_hints = {
                     "viral_hook":  "Hook-first, bold claim, curiosity gap. Scene 1 must grab immediately.",
@@ -420,6 +485,8 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 )
 
                 video_prompt = f"""You are writing a video script for {brand_display}.
+BRAND CONTEXT: {brand_context}
+BRAND COLORS: primary {brand_primary}, accent {brand_accent}
 
 TOPIC: {subject}
 LANGUAGE: {lang_name}
@@ -604,7 +671,6 @@ Hard rules — violations will crash the render pipeline with no recovery:
 
             lang_map = {"EN": "English", "FR": "French", "NL": "Dutch"}
             lang_name = lang_map.get(language.upper(), "English")
-            brand_display = "Rodschinson Investment" if brand_arg == "rodschinson" else "Rachid Chikhi"
             style_hints = {
                 "viral_hook":   "Hook-first, bold statements, curiosity gap.",
                 "educational":  "Teach one clear concept per slide. Use data.",
@@ -808,7 +874,6 @@ Rules:
                     _job_update(job, status="running", step="Writing copy", progress=20)
                     await _save_job(job)
                     api_key = os.getenv("ANTHROPIC_API_KEY", "")
-                    brand_display = "Rodschinson Investment" if brand_arg == "rodschinson" else "Rachid Chikhi"
                     copy_prompt = f"""Write a branded image post for {brand_display}.
 Topic: {subject}
 Return ONLY a JSON object:
@@ -1071,7 +1136,9 @@ async def preview_script(body: PreviewRequest):
     # OR do a synchronous Claude call here for the preview.
     # We do it synchronously since this endpoint is explicitly for previewing.
     brand_arg     = "rachid" if body.brand == "rachid" else "rodschinson"
-    brand_display = "Rodschinson Investment" if brand_arg == "rodschinson" else "Rachid Chikhi"
+    _bm           = await _brand_lookup(body.brand) or {}
+    brand_display = _bm.get("name") or ("Rachid Chikhi" if brand_arg == "rachid" else "Rodschinson Investment")
+    brand_context = _bm.get("context") or brand_display
     lang_map      = {"EN": "English", "FR": "French", "NL": "Dutch"}
     lang_name     = lang_map.get(body.language.upper(), "English")
     meta          = _PREVIEW_TEMPLATES[tpl_key]
@@ -1090,6 +1157,7 @@ async def preview_script(body: PreviewRequest):
 
     allowed_types = meta["scenes"]
     prompt = f"""You are writing a {n_scenes}-scene video script for {brand_display}.
+BRAND CONTEXT: {brand_context}
 TOPIC: {body.subject}
 LANGUAGE: {lang_name}
 TEMPLATE: {tpl_key} ({meta['ratio']}, {meta['w']}×{meta['h']}px)
@@ -1143,7 +1211,9 @@ async def preview_carousel(body: dict):
     if not subject:
         raise HTTPException(422, "subject is required")
 
-    brand_display = "Rodschinson Investment" if brand != "rachid" else "Rachid Chikhi"
+    _bm2          = await _brand_lookup(brand) or {}
+    brand_display = _bm2.get("name") or ("Rachid Chikhi" if brand == "rachid" else "Rodschinson Investment")
+    brand_context = _bm2.get("context") or brand_display
     lang_map = {"EN": "English", "FR": "French", "NL": "Dutch"}
     lang_name = lang_map.get(language.upper(), "English")
     style_hints = {
@@ -1158,6 +1228,7 @@ async def preview_carousel(body: dict):
     prompt = f"""Write a {num_slides}-slide LinkedIn carousel in {lang_name}.
 TOPIC: {subject}
 BRAND: {brand_display}
+BRAND CONTEXT: {brand_context}
 STYLE: {style_hints.get(style, style_hints["educational"])}
 
 Return ONLY a JSON array with exactly {num_slides} objects:
@@ -1586,6 +1657,110 @@ async def download_asset(job_id: str):
 
 
 # ── Library ────────────────────────────────────────────────────────────────────
+
+# ── Brands ─────────────────────────────────────────────────────────────────────
+
+@app.get("/api/brands")
+async def list_brands():
+    return await _brands_load()
+
+
+@app.post("/api/brands", status_code=201)
+async def create_brand(data: str = Form(...), logo: Optional[UploadFile] = File(None)):
+    try:
+        body = json.loads(data)
+    except json.JSONDecodeError:
+        raise HTTPException(422, "Invalid JSON in data field")
+    if not body.get("name", "").strip():
+        raise HTTPException(422, "name is required")
+
+    brand_id = body.get("id") or re.sub(r"[^a-z0-9_-]", "_", body["name"].lower())[:32]
+    brands   = await _brands_load()
+    if any(b["id"] == brand_id for b in brands):
+        raise HTTPException(409, f"Brand id '{brand_id}' already exists")
+
+    logo_url = None
+    if logo and logo.filename:
+        ext  = Path(logo.filename).suffix.lower() or ".png"
+        dest = BRAND_LOGOS / f"{brand_id}{ext}"
+        async with aiofiles.open(dest, "wb") as f:
+            await f.write(await logo.read())
+        logo_url = f"/api/brands/{brand_id}/logo"
+
+    brand = {
+        "id":           brand_id,
+        "name":         body["name"].strip(),
+        "shortName":    body.get("shortName", body["name"][:2].upper()),
+        "slug":         brand_id,
+        "primaryColor": body.get("primaryColor", "#08316F"),
+        "accentColor":  body.get("accentColor",  "#C8A96E"),
+        "textColor":    body.get("textColor",     "#FFFFFF"),
+        "logoUrl":      logo_url,
+        "website":      body.get("website",  ""),
+        "tagline":      body.get("tagline",  ""),
+        "context":      body.get("context",  body["name"].strip()),
+        "createdAt":    _now(),
+    }
+    brands.append(brand)
+    await _brands_save(brands)
+    return brand
+
+
+@app.put("/api/brands/{brand_id}")
+async def update_brand(brand_id: str, data: str = Form(...), logo: Optional[UploadFile] = File(None)):
+    try:
+        body = json.loads(data)
+    except json.JSONDecodeError:
+        raise HTTPException(422, "Invalid JSON in data field")
+
+    brands = await _brands_load()
+    idx    = next((i for i, b in enumerate(brands) if b["id"] == brand_id), None)
+    if idx is None:
+        raise HTTPException(404, "Brand not found")
+
+    brand = brands[idx]
+    for field in ("name", "shortName", "primaryColor", "accentColor", "textColor", "website", "tagline", "context"):
+        if field in body:
+            brand[field] = body[field]
+
+    if logo and logo.filename:
+        ext  = Path(logo.filename).suffix.lower() or ".png"
+        dest = BRAND_LOGOS / f"{brand_id}{ext}"
+        async with aiofiles.open(dest, "wb") as f:
+            await f.write(await logo.read())
+        brand["logoUrl"] = f"/api/brands/{brand_id}/logo"
+
+    brand["updatedAt"] = _now()
+    brands[idx] = brand
+    await _brands_save(brands)
+    return brand
+
+
+@app.delete("/api/brands/{brand_id}", status_code=204)
+async def delete_brand(brand_id: str):
+    brands = await _brands_load()
+    updated = [b for b in brands if b["id"] != brand_id]
+    if len(updated) == len(brands):
+        raise HTTPException(404, "Brand not found")
+    await _brands_save(updated)
+    # Remove logo file if present
+    for ext in (".png", ".jpg", ".jpeg", ".webp", ".svg"):
+        p = BRAND_LOGOS / f"{brand_id}{ext}"
+        if p.exists():
+            p.unlink()
+
+
+@app.get("/api/brands/{brand_id}/logo")
+async def get_brand_logo(brand_id: str):
+    from fastapi.responses import FileResponse
+    for ext in (".png", ".jpg", ".jpeg", ".webp", ".svg"):
+        p = BRAND_LOGOS / f"{brand_id}{ext}"
+        if p.exists():
+            return FileResponse(str(p))
+    raise HTTPException(404, "Logo not found")
+
+
+# ── Library ─────────────────────────────────────────────────────────────────────
 
 @app.get("/api/library")
 async def get_library(brand: Optional[str] = None, status: Optional[str] = None, language: Optional[str] = None):

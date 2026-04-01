@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useGeneration } from '../contexts/GenerationContext'
 import { useToast } from '../contexts/ToastContext'
+import { useBrands } from '../contexts/BrandContext'
 import { CarouselSlidePreview } from '../components/CarouselPreview'
 
 // ─── Content-type definitions ─────────────────────────────────────────────────
@@ -183,10 +184,6 @@ const TEMPLATE_GROUPS = {
 }
 
 // ─── Other static data ────────────────────────────────────────────────────────
-const BRANDS = [
-  { id: 'investment', name: 'Rodschinson Investment', initials: 'RI', color: '#C8A96E' },
-  { id: 'rachid',     name: 'Rachid Chikhi',          initials: 'RC', color: '#00B6FF' },
-]
 const LANGUAGES = ['EN', 'FR', 'NL']
 const STYLES = [
   { id: 'viral_hook',  label: 'Viral Hook'  },
@@ -927,6 +924,7 @@ export default function NewContent() {
   const navigate = useNavigate()
   const { trackJob, jobs } = useGeneration()
   const { success, error: toastError, info } = useToast()
+  const { brands: apiBrands } = useBrands()
 
   const [step, setStep]   = useState(1)
   const [form, setForm]   = useState(() => {
@@ -1433,21 +1431,28 @@ export default function NewContent() {
 
             {/* Brand + Language */}
             <Section title="Brand">
-              <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-                {BRANDS.map(b => (
-                  <div key={b.id} onClick={() => set('brand', b.id)} style={{
-                    flex: 1, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-                    borderRadius: 8, cursor: 'pointer',
-                    border: form.brand === b.id ? `1px solid ${b.color}` : '1px solid var(--cs-border)',
-                    background: form.brand === b.id
-                      ? `rgba(${b.color === '#C8A96E' ? '200,169,110' : '0,182,255'},0.06)`
-                      : 'var(--cs-input-bg)',
-                    transition: 'all 0.15s',
-                  }}>
-                    <div style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: `linear-gradient(135deg,#08316F,${b.color})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 11 }}>{b.initials}</div>
-                    <span style={{ color: form.brand === b.id ? 'var(--cs-text)' : 'var(--cs-text-sub)', fontSize: 13, fontWeight: form.brand === b.id ? 600 : 400 }}>{b.name}</span>
-                  </div>
-                ))}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+                {apiBrands.map(b => {
+                  const active = form.brand === b.id
+                  const logoSrc = b.logoUrl ? `${b.logoUrl}?t=1` : null
+                  return (
+                    <div key={b.id} onClick={() => set('brand', b.id)} style={{
+                      flex: '1 1 160px', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                      borderRadius: 8, cursor: 'pointer',
+                      border: active ? `1px solid ${b.accentColor}` : '1px solid var(--cs-border)',
+                      background: active ? `${b.accentColor}12` : 'var(--cs-input-bg)',
+                      transition: 'all 0.15s',
+                    }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 7, flexShrink: 0, background: `linear-gradient(135deg, ${b.primaryColor}, ${b.accentColor})`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        {logoSrc
+                          ? <img src={logoSrc} alt={b.shortName} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 3 }} />
+                          : <span style={{ color: b.textColor || '#fff', fontWeight: 800, fontSize: 10 }}>{b.shortName}</span>
+                        }
+                      </div>
+                      <span style={{ color: active ? 'var(--cs-text)' : 'var(--cs-text-sub)', fontSize: 13, fontWeight: active ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
+                    </div>
+                  )
+                })}
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 {LANGUAGES.map(l => (
@@ -1721,7 +1726,7 @@ export default function NewContent() {
               </div>
               <SummaryRow label="Type"      value={`${typeDef.icon} ${typeDef.label}`} />
               <SummaryRow label="Brief"     value={form.subject ? form.subject.slice(0, 60) + (form.subject.length > 60 ? '…' : '') : '—'} />
-              <SummaryRow label="Brand"     value={BRANDS.find(b => b.id === form.brand)?.name} />
+              <SummaryRow label="Brand"     value={apiBrands.find(b => b.id === form.brand)?.name} />
               <SummaryRow label="Language"  value={form.language} />
               {form.contentType !== 'text_only' && <SummaryRow label="Format"    value={form.format} />}
               {form.contentType === 'carousel' && <SummaryRow label="Slides" value={`${form.slides} slides`} />}
@@ -1796,7 +1801,7 @@ export default function NewContent() {
             </div>
           </div>
 
-          <SummaryRow label="Brand"     value={BRANDS.find(b => b.id === form.brand)?.name} />
+          <SummaryRow label="Brand"     value={apiBrands.find(b => b.id === form.brand)?.name} />
           <SummaryRow label="Language"  value={form.language} />
           {form.contentType !== 'text_only' && <SummaryRow label="Format" value={form.format} />}
           {typeDef.showTemplate && <SummaryRow label="Template" value={templates.find(t => t.id === form.template)?.label} />}
