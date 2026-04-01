@@ -21,12 +21,19 @@ const PLATFORM_COLORS = {
   Facebook:  '#1877F2',
 }
 
+const DATE_RANGES = [
+  { id: '7d',  label: '7d'  },
+  { id: '30d', label: '30d' },
+  { id: '90d', label: '90d' },
+]
+
 // ─── Mock ────────────────────────────────────────────────────────────────────
 
-function buildMock(brand) {
+function buildMock(brand, range = '30d') {
+  const days = range === '7d' ? 7 : range === '90d' ? 90 : 30
   const mul = brand === 'rodschinson' ? 0.62 : brand === 'rachid' ? 0.38 : 1
-  const views30 = Array.from({ length: 30 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (29 - i))
+  const views30 = Array.from({ length: days }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (days - 1 - i))
     const base = 1200 + Math.sin(i * 0.4) * 600 + Math.random() * 400
     return {
       date: d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
@@ -234,27 +241,30 @@ function LoadingSkeleton() {
 export default function Analytics() {
   useTheme()
   const navigate = useNavigate()
-  const [brand, setBrand]     = useState('both')
-  const [data, setData]       = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [brand, setBrand]       = useState('both')
+  const [range, setRange]       = useState('30d')
+  const [data, setData]         = useState(null)
+  const [loading, setLoading]   = useState(true)
   const [apiError, setApiError] = useState(false)
 
-  const load = useCallback(async (b) => {
+  const load = useCallback(async (b, r) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/analytics?brand=${b}`)
+      const res = await fetch(`/api/analytics?brand=${b}&range=${r}`)
       if (!res.ok) throw new Error()
       setData(await res.json()); setApiError(false)
     } catch {
-      setData(buildMock(b)); setApiError(true)
+      setData(buildMock(b, r)); setApiError(true)
     } finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { load(brand) }, [brand, load])
+  useEffect(() => { load(brand, range) }, [brand, range, load])
 
   // Drill-down handlers
   const goLibrary = (filter) => navigate(`/library?filter=${filter}`)
   const goPlatformLibrary = (platform) => navigate(`/library?platform=${platform.toLowerCase()}`)
+
+  const rangeLabel = DATE_RANGES.find(r => r.id === range)?.label || range
 
   return (
     <div style={{ maxWidth: 1060 }}>
@@ -264,7 +274,7 @@ export default function Analytics() {
         <div>
           <h1 style={{ color: 'var(--cs-text)', fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>Analytics</h1>
           <p style={{ color: 'var(--cs-text-muted)', fontSize: 13, margin: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            Last 30 days · updated hourly
+            Last {rangeLabel} · updated hourly
             {data?.source === 'metricool' && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(0,182,255,0.08)', border: '1px solid rgba(0,182,255,0.2)', borderRadius: 10, padding: '1px 8px', fontSize: 11, color: '#00B6FF', fontWeight: 600 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00B6FF', display: 'inline-block' }} />
@@ -277,7 +287,22 @@ export default function Analytics() {
             {apiError && <span style={{ color: 'rgba(200,169,110,0.6)', fontSize: 11 }}>· API offline</span>}
           </p>
         </div>
-        <BrandFilter active={brand} onChange={b => { setBrand(b); load(b) }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+          {/* Date range pills */}
+          <div style={{ display: 'flex', background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 7, overflow: 'hidden' }}>
+            {DATE_RANGES.map(({ id, label }) => (
+              <button key={id} onClick={() => setRange(id)} style={{
+                padding: '5px 14px', border: 'none', cursor: 'pointer', fontSize: 12,
+                background: range === id ? 'rgba(0,182,255,0.1)' : 'transparent',
+                color: range === id ? '#00B6FF' : 'var(--cs-text-sub)',
+                fontWeight: range === id ? 600 : 400,
+                borderRight: id !== '90d' ? '1px solid var(--cs-border)' : 'none',
+                transition: 'all 0.12s',
+              }}>{label}</button>
+            ))}
+          </div>
+          <BrandFilter active={brand} onChange={b => setBrand(b)} />
+        </div>
       </div>
 
       {/* Metricool setup banner */}
@@ -326,7 +351,7 @@ export default function Analytics() {
           <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16 }}>
 
             <ChartCard
-              title="Views — Last 30 Days"
+              title={`Views — Last ${rangeLabel}`}
               action={brand === 'both' ? (
                 <div style={{ display: 'flex', gap: 12 }}>
                   {[['Rodschinson', '#C8A96E'], ['Rachid', '#00B6FF']].map(([l, c]) => (

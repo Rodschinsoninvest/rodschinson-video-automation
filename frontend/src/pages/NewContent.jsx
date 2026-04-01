@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useGeneration } from '../contexts/GenerationContext'
+import { useToast } from '../contexts/ToastContext'
 import { CarouselSlidePreview } from '../components/CarouselPreview'
 
 // ─── Content-type definitions ─────────────────────────────────────────────────
@@ -623,63 +624,66 @@ function AddCanvaTemplateModal({ contentType, onAdded, onClose }) {
   )
 }
 
-// ─── Variation Card ───────────────────────────────────────────────────────────
+// ─── Variation Card (compact, expands on click) ───────────────────────────────
 function VariationCard({ v, active, onClick, index }) {
+  const [expanded, setExpanded] = useState(false)
+  const title = v.title || v.angle || `Concept ${index + 1}`
+  const hook = v.hook || ''
+
+  const handleClick = () => {
+    onClick()
+    setExpanded(e => !e)
+  }
+
   return (
-    <div onClick={onClick} style={{
-      padding: '16px 18px', borderRadius: 10, cursor: 'pointer',
+    <div onClick={handleClick} style={{
+      borderRadius: 8, cursor: 'pointer',
       border: active ? '2px solid #00B6FF' : '1px solid var(--cs-border)',
-      background: active ? 'rgba(0,182,255,0.06)' : 'var(--cs-surface)',
-      transition: 'all 0.15s',
+      background: active ? 'rgba(0,182,255,0.05)' : 'var(--cs-surface)',
+      transition: 'all 0.15s', overflow: 'hidden',
     }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+      {/* Collapsed row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px' }}>
         <div style={{
-          width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+          width: 22, height: 22, borderRadius: 5, flexShrink: 0,
           background: active ? 'rgba(0,182,255,0.15)' : 'var(--cs-hover)',
-          border: active ? '1px solid rgba(0,182,255,0.4)' : '1px solid var(--cs-border)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: active ? '#00B6FF' : 'var(--cs-text-muted)', fontSize: 11, fontWeight: 700,
+          color: active ? '#00B6FF' : 'var(--cs-text-muted)', fontSize: 10, fontWeight: 700,
         }}>{index + 1}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: active ? '#00B6FF' : 'var(--cs-text)', marginBottom: 4, lineHeight: 1.3 }}>
-            {v.title || v.angle || 'Concept ' + (index + 1)}
+          <div style={{ fontSize: 12, fontWeight: 600, color: active ? '#00B6FF' : 'var(--cs-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {title}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--cs-text-muted)', marginBottom: 6, fontStyle: 'italic' }}>
-            {v.angle || ''}
-          </div>
-          <div style={{
-            fontSize: 12, color: 'var(--cs-text-sub)', lineHeight: 1.5,
-            padding: '8px 10px', borderRadius: 6,
-            background: active ? 'rgba(0,182,255,0.04)' : 'var(--cs-hover)',
-            borderLeft: `2px solid ${active ? '#00B6FF' : 'var(--cs-border)'}`,
-          }}>
-            "{v.hook || ''}"
-          </div>
-          {v.scenes && v.scenes.length > 0 && (
-            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-              {v.scenes.slice(0, 3).map((s, i) => (
-                <span key={i} style={{
-                  padding: '2px 8px', borderRadius: 10, fontSize: 10,
-                  background: 'var(--cs-hover)', color: 'var(--cs-text-muted)',
-                  border: '1px solid var(--cs-border)',
-                }}>{typeof s === 'string' ? s.replace(/^Scene \d+:\s*/i, '').slice(0, 40) : ''}</span>
-              ))}
-              {v.scenes.length > 3 && <span style={{ fontSize: 10, color: 'var(--cs-text-muted)' }}>+{v.scenes.length - 3} more</span>}
+          {!expanded && hook && (
+            <div style={{ fontSize: 11, color: 'var(--cs-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
+              "{hook.slice(0, 70)}{hook.length > 70 ? '…' : ''}"
             </div>
           )}
-          {v.slides && v.slides.length > 0 && (
-            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-              {v.slides.slice(0, 3).map((s, i) => (
-                <span key={i} style={{
-                  padding: '2px 8px', borderRadius: 10, fontSize: 10,
-                  background: 'var(--cs-hover)', color: 'var(--cs-text-muted)',
-                  border: '1px solid var(--cs-border)',
-                }}>{s.headline ? s.headline.slice(0, 40) : `Slide ${i+1}`}</span>
+        </div>
+        <span style={{ color: 'var(--cs-text-muted)', fontSize: 11, flexShrink: 0 }}>{expanded ? '▲' : '▼'}</span>
+      </div>
+      {/* Expanded detail */}
+      {expanded && (
+        <div style={{ padding: '0 14px 12px', borderTop: '1px solid var(--cs-border-sub)' }}>
+          {hook && (
+            <div style={{ fontSize: 12, color: 'var(--cs-text-sub)', lineHeight: 1.5, marginTop: 8, padding: '7px 10px', borderRadius: 6, background: 'var(--cs-hover)', borderLeft: `2px solid ${active ? '#00B6FF' : 'var(--cs-border)'}`, fontStyle: 'italic' }}>
+              "{hook}"
+            </div>
+          )}
+          {v.angle && v.angle !== title && (
+            <div style={{ fontSize: 11, color: 'var(--cs-text-muted)', marginTop: 6 }}>{v.angle}</div>
+          )}
+          {(v.scenes?.length > 0 || v.slides?.length > 0) && (
+            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+              {(v.scenes || v.slides || []).slice(0, 4).map((s, i) => (
+                <span key={i} style={{ padding: '2px 7px', borderRadius: 10, fontSize: 10, background: 'var(--cs-hover)', color: 'var(--cs-text-muted)', border: '1px solid var(--cs-border)' }}>
+                  {typeof s === 'string' ? s.replace(/^Scene \d+:\s*/i, '').slice(0, 35) : (s.headline?.slice(0, 35) || `Slide ${i+1}`)}
+                </span>
               ))}
             </div>
           )}
         </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -916,10 +920,13 @@ function GenerateTemplateModal({ contentType, onGenerated, onClose }) {
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
+const AUTOSAVE_KEY = 'cs-draft-form'
+
 export default function NewContent() {
   useTheme()
   const navigate = useNavigate()
   const { trackJob, jobs } = useGeneration()
+  const { success, error: toastError, info } = useToast()
 
   const [step, setStep]   = useState(1)
   const [form, setForm]   = useState(() => {
@@ -929,6 +936,11 @@ export default function NewContent() {
       sessionStorage.removeItem('cs-regenerate')
       try { return { ...INITIAL_FORM, ...JSON.parse(regen) } } catch {}
     }
+    // Restore autosaved draft
+    try {
+      const saved = localStorage.getItem(AUTOSAVE_KEY)
+      if (saved) return { ...INITIAL_FORM, ...JSON.parse(saved) }
+    } catch {}
     return INITIAL_FORM
   })
 
@@ -1000,6 +1012,16 @@ export default function NewContent() {
     setCarouselSlides([]); setCarouselActiveSlide(0)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.contentType])
+
+  // Autosave form to localStorage (debounced 800ms)
+  const autosaveTimerRef = useRef(null)
+  useEffect(() => {
+    clearTimeout(autosaveTimerRef.current)
+    autosaveTimerRef.current = setTimeout(() => {
+      try { localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ ...form, logo: null })) } catch {}
+    }, 800)
+    return () => clearTimeout(autosaveTimerRef.current)
+  }, [form])
 
   // Close template menu on outside click
   useEffect(() => {
@@ -1121,11 +1143,15 @@ export default function NewContent() {
       trackJob(data.job_id, { title: subject.slice(0, 60), contentType: form.contentType })
 
       // Only set active job for single generates (not bulk)
-      if (!overrideSubject) setCurrentJobId(data.job_id)
+      if (!overrideSubject) {
+        setCurrentJobId(data.job_id)
+        info('Generation queued — you can track progress above or in the queue.')
+      }
 
       return data.job_id
     } catch (e) {
       setError(e.message)
+      toastError('Generation failed: ' + e.message.slice(0, 120))
       return null
     }
   }
@@ -1183,6 +1209,7 @@ export default function NewContent() {
     setPreviewScript(null)
     setEditedScript('')
     setError(null)
+    try { localStorage.removeItem(AUTOSAVE_KEY) } catch {}
   }
 
   const handleTemplateGenerated = (tpl) => {
@@ -1245,9 +1272,16 @@ export default function NewContent() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
             <h1 style={{ color: 'var(--cs-text)', fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>New Content</h1>
-            <p style={{ color: 'var(--cs-text-sub)', fontSize: 13, margin: 0 }}>
+            <p style={{ color: 'var(--cs-text-sub)', fontSize: 13, margin: '0 0 0' }}>
               Generate and send to queue — you can start another while this one processes.
             </p>
+            {form.subject && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+                <span style={{ fontSize: 10, color: 'var(--cs-text-muted)' }}>Draft autosaved</span>
+                <button onClick={handleReset} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 10, padding: 0, textDecoration: 'underline' }}>Clear</button>
+              </div>
+            )}
           </div>
           {/* Brief templates dropdown */}
           <div ref={tplMenuRef} style={{ position: 'relative' }}>

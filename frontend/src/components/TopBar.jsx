@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useGeneration } from '../contexts/GenerationContext'
+import { useMobile } from '../hooks/useMobile'
 
 // ─── Content type icons ───────────────────────────────────────────────────────
 const TYPE_ICONS = {
@@ -89,10 +90,11 @@ function JobRow({ job, onViewInLibrary, onClear }) {
 }
 
 // ─── Main TopBar ──────────────────────────────────────────────────────────────
-export default function TopBar() {
+export default function TopBar({ onMenuClick }) {
   const { isDark, toggle } = useTheme()
   const { jobs, badgeCount, markAllSeen, clearJob } = useGeneration()
   const navigate = useNavigate()
+  const isMobile = useMobile()
 
   const [open, setOpen] = useState(false)
   const dropRef = useRef()
@@ -128,15 +130,32 @@ export default function TopBar() {
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '0 24px', flexShrink: 0, position: 'relative', zIndex: 40,
     }}>
-      {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-        <span style={{ color: '#08316F', fontWeight: 700, fontSize: 16, letterSpacing: '-0.3px' }}>
-          Rodschinson
-        </span>
-        <span style={{ color: 'var(--cs-text-muted)', fontSize: 14 }}>/</span>
-        <span style={{ color: 'var(--cs-text-sub)', fontWeight: 400, fontSize: 14 }}>
-          Content Studio
-        </span>
+      {/* Logo + hamburger on mobile */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {isMobile && (
+          <button
+            onClick={onMenuClick}
+            style={{
+              width: 34, height: 34, borderRadius: 8, border: '1px solid var(--cs-border)',
+              background: 'var(--cs-surface)', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+              padding: 0, flexShrink: 0,
+            }}
+          >
+            <span style={{ width: 14, height: 1.5, background: 'var(--cs-text-sub)', borderRadius: 1, display: 'block' }} />
+            <span style={{ width: 14, height: 1.5, background: 'var(--cs-text-sub)', borderRadius: 1, display: 'block' }} />
+            <span style={{ width: 14, height: 1.5, background: 'var(--cs-text-sub)', borderRadius: 1, display: 'block' }} />
+          </button>
+        )}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <span style={{ color: '#08316F', fontWeight: 700, fontSize: 16, letterSpacing: '-0.3px' }}>
+            Rodschinson
+          </span>
+          <span style={{ color: 'var(--cs-text-muted)', fontSize: 14 }}>/</span>
+          <span style={{ color: 'var(--cs-text-sub)', fontWeight: 400, fontSize: 14 }}>
+            Content Studio
+          </span>
+        </div>
       </div>
 
       {/* Right side */}

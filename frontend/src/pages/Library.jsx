@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useGeneration } from '../contexts/GenerationContext'
+import { useToast } from '../contexts/ToastContext'
 import { CarouselSlidePreview } from '../components/CarouselPreview'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -122,12 +123,20 @@ function TypeBadge({ type }) {
   )
 }
 
-function PlatformDots({ platforms = [] }) {
-  const COLORS = { linkedin: '#0077B5', youtube: '#FF0000', instagram: '#E1306C', tiktok: '#00b4b4', facebook: '#1877F2' }
+const PLATFORM_ABBR = { linkedin: 'LI', youtube: 'YT', instagram: 'IG', tiktok: 'TT', facebook: 'FB', twitter: 'X' }
+const PLATFORM_CLR  = { linkedin: '#0077B5', youtube: '#FF0000', instagram: '#E1306C', tiktok: '#00b4b4', facebook: '#1877F2', twitter: '#1DA1F2' }
+
+function PlatformBadges({ platforms = [] }) {
   return (
-    <div style={{ display: 'flex', gap: 4 }}>
+    <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
       {platforms.slice(0, 4).map(p => (
-        <span key={p} title={p} style={{ width: 6, height: 6, borderRadius: '50%', background: COLORS[p] || '#999' }} />
+        <span key={p} title={p} style={{
+          padding: '1px 5px', borderRadius: 3, fontSize: 9, fontWeight: 700,
+          background: `${PLATFORM_CLR[p] || '#999'}18`,
+          color: PLATFORM_CLR[p] || '#999',
+          border: `1px solid ${PLATFORM_CLR[p] || '#999'}40`,
+          letterSpacing: '0.03em',
+        }}>{PLATFORM_ABBR[p] || p.slice(0,2).toUpperCase()}</span>
       ))}
     </div>
   )
@@ -157,22 +166,31 @@ const VIDEO_TYPES  = new Set(['video','reel','story'])
 const IMAGE_TYPES  = new Set(['image_post','carousel'])
 const TEXT_TYPES   = new Set(['text_only'])
 
-function StatusStepper({ status }) {
+function StatusStepper({ status, onChangeStatus }) {
+  const [hovered, setHovered] = useState(null)
   return (
     <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
       {STATUS_FLOW.map((s, i) => {
         const idx = STATUS_FLOW.indexOf(status)
         const done = i <= idx; const current = i === idx
+        const isHov = hovered === s
         return (
           <div key={s} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+            <div
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, cursor: onChangeStatus ? 'pointer' : 'default' }}
+              onMouseEnter={() => onChangeStatus && setHovered(s)}
+              onMouseLeave={() => setHovered(null)}
+              onClick={() => onChangeStatus && s !== status && onChangeStatus(s)}
+              title={onChangeStatus && s !== status ? `Set to ${s}` : s}
+            >
               <div style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: current ? '#00B6FF' : done ? 'rgba(0,182,255,0.4)' : 'rgba(0,0,0,0.12)',
-                border: current ? '2px solid #00B6FF' : 'none',
+                width: current ? 10 : 8, height: current ? 10 : 8, borderRadius: '50%',
+                background: isHov ? '#00B6FF' : current ? '#00B6FF' : done ? 'rgba(0,182,255,0.4)' : 'var(--cs-border)',
+                border: current ? '2px solid #00B6FF' : isHov ? '2px solid #00B6FF' : 'none',
                 boxShadow: current ? '0 0 6px #00B6FF80' : 'none',
+                transition: 'all 0.15s',
               }} />
-              <span style={{ fontSize: 9, color: done ? 'var(--cs-text-sub)' : 'var(--cs-text-muted)', whiteSpace: 'nowrap' }}>{s}</span>
+              <span style={{ fontSize: 9, color: done ? 'var(--cs-text-sub)' : 'var(--cs-text-muted)', whiteSpace: 'nowrap', fontWeight: current ? 700 : 400 }}>{s}</span>
             </div>
             {i < STATUS_FLOW.length - 1 && (
               <div style={{ flex: 1, height: 1, background: done && i < idx ? 'rgba(0,182,255,0.3)' : 'var(--cs-border)', marginBottom: 16 }} />
@@ -275,7 +293,9 @@ function ScheduleInline({ item, onScheduled, onClose }) {
 }
 
 function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose }) {
-  const nextStatus = STATUS_FLOW[STATUS_FLOW.indexOf(item.status) + 1]
+  const currentIdx = STATUS_FLOW.indexOf(item.status)
+  const nextStatus = STATUS_FLOW[currentIdx + 1]
+  const prevStatus = STATUS_FLOW[currentIdx - 1]
   const [showSchedule, setShowSchedule] = useState(false)
 
   return (
@@ -293,6 +313,13 @@ function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose })
           <button onClick={onRegenerate} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 12 }}>↻ Regenerate</button>
           {item.output_file && (
             <button onClick={() => window.open(`/api/download/${item.job_id}`, '_blank')} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.06)', color: '#16a34a', fontSize: 12, fontWeight: 600 }}>⬇ Download</button>
+          )}
+          {prevStatus && (
+            <button onClick={() => { onStatusChange(item.job_id, prevStatus); onClose() }} style={{
+              padding: '7px 14px', borderRadius: 6, cursor: 'pointer',
+              border: '1px solid var(--cs-border)', background: 'transparent',
+              color: 'var(--cs-text-muted)', fontSize: 12,
+            }}>← {prevStatus}</button>
           )}
           <button onClick={onDelete} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 12 }}>🗑 Delete</button>
           {!showSchedule && item.status !== 'Scheduled' && item.status !== 'Published' && (
@@ -724,7 +751,7 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
         {/* Body */}
         <div style={{ padding: 22, overflowY: 'auto', flex: 1 }}>
           <ModalHeader item={item} onClose={onClose} />
-          <StatusStepper status={item.status} />
+          <StatusStepper status={item.status} onChangeStatus={(s) => onStatusChange(item.job_id, s)} />
 
           {/* Text content body — for text_only show editable area */}
           {isText && item.output_text && (
@@ -753,13 +780,48 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
 
 // ─── Content Card ─────────────────────────────────────────────────────────────
 
-function ContentCard({ item, onStatusChange, onRegenerate, onDelete }) {
+function CardThumbnail({ item, gradient, height = 130 }) {
+  const [thumbUrl, setThumbUrl] = useState(null)
+  const type = TYPE_META[item.content_type] || { icon: '📄' }
+  const isPortrait = item.format === '9:16'
+  const isVideoType = ['video','reel','story'].includes(item.content_type)
+
+  // Lazy-load carousel first slide
+  useEffect(() => {
+    if (item.content_type === 'carousel' && item.output_file) {
+      fetch(`/api/carousel-slides/${item.job_id}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.slides?.[0]?.png_url) setThumbUrl(d.slides[0].png_url) })
+        .catch(() => {})
+    }
+  }, [item.job_id, item.content_type, item.output_file])
+
+  if (thumbUrl) {
+    return <img src={thumbUrl} alt="" style={{ width: '100%', height, objectFit: 'cover', display: 'block' }} />
+  }
+  if (isVideoType && item.output_file) {
+    return (
+      <div style={{ width: '100%', height, background: gradient, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>▶</div>
+      </div>
+    )
+  }
+  if (item.content_type === 'image_post' && item.output_file) {
+    return <img src={`/api/image/${item.job_id}`} alt="" style={{ width: '100%', height, objectFit: 'cover', display: 'block' }} />
+  }
+  return (
+    <div style={{ width: '100%', height, background: gradient, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: isPortrait ? 46 : 72, height: isPortrait ? 72 : 46, border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontSize: 20 }}>{type.icon}</span>
+      </div>
+    </div>
+  )
+}
+
+function ContentCard({ item, onStatusChange, onRegenerate, onDelete, selected, onSelect }) {
   const [preview, setPreview] = useState(false)
   const gradient    = TEMPLATE_GRADIENTS[item.template] || 'linear-gradient(135deg,#08316F,#0d1a30)'
-  const type        = TYPE_META[item.content_type] || { icon: '📄', label: item.content_type }
-  const isPortrait  = item.format === '9:16'
   const nextStatus  = STATUS_FLOW[STATUS_FLOW.indexOf(item.status) + 1]
-  const isVideoType = ['video','reel','story'].includes(item.content_type)
 
   return (
     <>
@@ -773,54 +835,56 @@ function ContentCard({ item, onStatusChange, onRegenerate, onDelete }) {
         />
       )}
       <div
-        style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 10, overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'box-shadow 0.15s, transform 0.15s' }}
+        style={{
+          background: 'var(--cs-surface)', borderRadius: 10, overflow: 'hidden',
+          display: 'flex', flexDirection: 'column', transition: 'box-shadow 0.15s, transform 0.15s',
+          border: selected ? '2px solid #00B6FF' : '1px solid var(--cs-border)',
+        }}
         onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
         onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
       >
         {/* Thumbnail */}
-        <div onClick={() => setPreview(true)} style={{ background: gradient, height: 130, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0 }}>
-          <div style={{ width: isPortrait ? 46 : 80, height: isPortrait ? 80 : 46, border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: 20 }}>{type.icon}</span>
-          </div>
-          {/* Play button overlay for video types with output */}
-          {item.output_file && isVideoType && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.25)' }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>▶</div>
-            </div>
+        <div onClick={() => setPreview(true)} style={{ height: 130, cursor: 'pointer', position: 'relative', flexShrink: 0, overflow: 'hidden' }}>
+          <CardThumbnail item={item} gradient={gradient} height={130} />
+          {/* Selection checkbox */}
+          {onSelect && (
+            <div
+              onClick={e => { e.stopPropagation(); onSelect(item.job_id) }}
+              style={{ position: 'absolute', top: 8, left: 8, width: 18, height: 18, borderRadius: 4, cursor: 'pointer', zIndex: 2,
+                background: selected ? '#00B6FF' : 'rgba(0,0,0,0.4)',
+                border: selected ? '2px solid #00B6FF' : '2px solid rgba(255,255,255,0.5)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >{selected && <span style={{ color: '#fff', fontSize: 10, lineHeight: 1 }}>✓</span>}</div>
           )}
-          <div style={{ position: 'absolute', top: 8, left: 8 }}><TypeBadge type={item.content_type} /></div>
           <div style={{ position: 'absolute', top: 8, right: 8 }}><StatusBadge status={item.status} /></div>
           <div style={{ position: 'absolute', bottom: 8, left: 8, width: 22, height: 22, borderRadius: '50%', background: `linear-gradient(135deg,#08316F,${brandColor(item.brand)})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 8, fontWeight: 700 }}>{initials(item.brand)}</div>
-          <div style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.45)', borderRadius: 3, padding: '1px 5px', fontSize: 10, color: 'rgba(255,255,255,0.8)' }}>{item.format}</div>
+          <div style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.55)', borderRadius: 3, padding: '1px 5px', fontSize: 10, color: 'rgba(255,255,255,0.85)' }}>{item.format}</div>
         </div>
 
         {/* Body */}
-        <div style={{ padding: '12px 14px 10px', flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ color: 'var(--cs-text)', fontSize: 13, fontWeight: 600, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+        <div style={{ padding: '10px 12px 8px', flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ color: 'var(--cs-text)', fontSize: 12, fontWeight: 600, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
             {item.title}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--cs-text-muted)', fontSize: 11 }}>{fmtDate(item.created_at)}</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ padding: '1px 6px', borderRadius: 3, background: 'rgba(0,0,0,0.05)', color: 'rgba(0,0,0,0.4)', fontSize: 10 }}>{item.language}</span>
-              <PlatformDots platforms={item.platforms} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+            <span style={{ color: 'var(--cs-text-muted)', fontSize: 10 }}>{fmtDate(item.created_at)}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ padding: '1px 5px', borderRadius: 3, background: 'var(--cs-hover)', color: 'var(--cs-text-muted)', fontSize: 9, fontWeight: 600 }}>{item.language}</span>
+              <PlatformBadges platforms={item.platforms} />
             </div>
           </div>
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: 4, padding: '8px 10px', borderTop: '1px solid var(--cs-border-sub)', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 4, padding: '6px 8px', borderTop: '1px solid var(--cs-border-sub)', flexWrap: 'wrap' }}>
           <ActionBtn label="Preview" onClick={() => setPreview(true)} color="#0284c7" />
           <ActionBtn label="↻" onClick={() => onRegenerate(item)} color="#b45309" />
           {item.output_file && (
             <ActionBtn label="⬇" onClick={() => window.open(`/api/download/${item.job_id}`, '_blank')} color="#16a34a" />
           )}
           {nextStatus && nextStatus !== 'Scheduled' && (
-            <ActionBtn
-              label={`→ ${nextStatus}`}
-              onClick={() => onStatusChange(item.job_id, nextStatus)}
-              color={STATUS_META[nextStatus]?.color}
-            />
+            <ActionBtn label={`→ ${nextStatus}`} onClick={() => onStatusChange(item.job_id, nextStatus)} color={STATUS_META[nextStatus]?.color} />
           )}
           {item.status !== 'Scheduled' && item.status !== 'Published' && (
             <ActionBtn label="📅" onClick={() => setPreview(true)} color="#6d28d9" />
@@ -834,21 +898,25 @@ function ContentCard({ item, onStatusChange, onRegenerate, onDelete }) {
 
 // ─── Filter Bar ──────────────────────────────────────────────────────────────
 
-function FilterBar({ active, onSelect, search, onSearch, total }) {
+function FilterBar({ active, onSelect, search, onSearch, total, counts }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flex: 1 }}>
         {FILTERS.map(f => {
           const on = active === f.id
+          const cnt = counts?.[f.id]
           return (
             <button key={f.id} onClick={() => onSelect(f.id)} style={{
-              padding: '6px 13px', borderRadius: 20, border: 'none', cursor: 'pointer',
+              padding: '6px 12px', borderRadius: 20, border: 'none', cursor: 'pointer',
               background: on ? 'rgba(0,182,255,0.1)' : 'var(--cs-hover)',
               color: on ? '#0284c7' : 'var(--cs-text-sub)',
               fontSize: 12, fontWeight: on ? 600 : 400,
               outline: on ? '1px solid rgba(0,182,255,0.3)' : '1px solid var(--cs-border)',
-              transition: 'all 0.12s',
-            }}>{f.label}</button>
+              transition: 'all 0.12s', display: 'flex', alignItems: 'center', gap: 5,
+            }}>
+              {f.label}
+              {cnt > 0 && <span style={{ fontSize: 10, fontWeight: 700, opacity: 0.7 }}>{cnt}</span>}
+            </button>
           )
         })}
       </div>
@@ -861,6 +929,42 @@ function FilterBar({ active, onSelect, search, onSearch, total }) {
         }} />
       </div>
       <span style={{ color: 'var(--cs-text-muted)', fontSize: 12, whiteSpace: 'nowrap' }}>{total} {total === 1 ? 'item' : 'items'}</span>
+    </div>
+  )
+}
+
+// ─── Bulk Action Bar ─────────────────────────────────────────────────────────
+
+function BulkBar({ selected, total, onSelectAll, onClear, onDelete, onStatus }) {
+  const [showStatus, setShowStatus] = useState(false)
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+      background: 'rgba(0,182,255,0.06)', border: '1px solid rgba(0,182,255,0.2)',
+      borderRadius: 8, padding: '8px 14px', marginBottom: 14,
+      animation: 'fadein 0.15s ease',
+    }}>
+      <span style={{ color: '#00B6FF', fontSize: 12, fontWeight: 700 }}>{selected} selected</span>
+      <button onClick={onSelectAll} style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 11, cursor: 'pointer' }}>Select all ({total})</button>
+      <button onClick={onClear} style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 11, cursor: 'pointer' }}>Clear</button>
+      <div style={{ flex: 1 }} />
+      <div style={{ position: 'relative' }}>
+        <button onClick={() => setShowStatus(s => !s)} style={{ padding: '5px 12px', borderRadius: 5, border: '1px solid var(--cs-border)', background: 'var(--cs-surface)', color: 'var(--cs-text-sub)', fontSize: 11, cursor: 'pointer' }}>
+          Set status ▾
+        </button>
+        {showStatus && (
+          <div style={{ position: 'absolute', top: 30, left: 0, zIndex: 50, background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.12)', minWidth: 130, animation: 'fadein 0.1s ease' }}>
+            {STATUS_FLOW.map(s => (
+              <button key={s} onClick={() => { onStatus(s); setShowStatus(false) }} style={{ display: 'block', width: '100%', padding: '8px 14px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontSize: 12, color: STATUS_META[s]?.color, fontWeight: 600 }}>
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <button onClick={onDelete} style={{ padding: '5px 12px', borderRadius: 5, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+        🗑 Delete {selected}
+      </button>
     </div>
   )
 }
@@ -906,12 +1010,14 @@ export default function Library() {
   useTheme()
   const navigate  = useNavigate()
   const { jobs }  = useGeneration()
+  const { success, error: toastError, info } = useToast()
   const [items, setItems]     = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
   const [filter, setFilter]   = useState('all')
   const [search, setSearch]   = useState('')
-  const [newBanner, setNewBanner] = useState(null) // job_id of newly done job
+  const [newBanner, setNewBanner] = useState(null)
+  const [selected, setSelected] = useState(new Set()) // bulk selection
   const prevJobsRef = useRef([])
 
   // Auto-refresh when a background job transitions to 'done'
@@ -924,6 +1030,7 @@ export default function Library() {
     if (justDone.length > 0) {
       load()
       setNewBanner(justDone[0].job_id)
+      success('Content ready! Your generation has been added to your library.')
       setTimeout(() => setNewBanner(null), 5000)
     }
     prevJobsRef.current = jobs
@@ -951,20 +1058,47 @@ export default function Library() {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       })
+      info(`Status updated to ${newStatus}`)
     } catch { load() }
-  }, [load])
+  }, [load, info])
 
   const handleDelete = useCallback(async (jobId) => {
     if (!window.confirm('Delete this content? This cannot be undone.')) return
     setItems(prev => prev.filter(i => i.job_id !== jobId))
+    setSelected(prev => { const s = new Set(prev); s.delete(jobId); return s })
     try {
       await fetch(`/api/library/${jobId}`, { method: 'DELETE' })
+      success('Content deleted.')
     } catch { load() }
-  }, [load])
+  }, [load, success])
+
+  // Bulk actions
+  const handleBulkDelete = useCallback(async () => {
+    const ids = [...selected]
+    if (!window.confirm(`Delete ${ids.length} items? This cannot be undone.`)) return
+    setItems(prev => prev.filter(i => !selected.has(i.job_id)))
+    setSelected(new Set())
+    await Promise.allSettled(ids.map(id => fetch(`/api/library/${id}`, { method: 'DELETE' })))
+    success(`Deleted ${ids.length} items.`)
+  }, [selected, success])
+
+  const handleBulkStatus = useCallback(async (newStatus) => {
+    const ids = [...selected]
+    setItems(prev => prev.map(i => selected.has(i.job_id) ? { ...i, status: newStatus } : i))
+    setSelected(new Set())
+    await Promise.allSettled(ids.map(id => fetch(`/api/library/${id}/status`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    })))
+    success(`${ids.length} items set to ${newStatus}.`)
+  }, [selected, success])
+
+  const toggleSelect = useCallback((jobId) => {
+    setSelected(prev => { const s = new Set(prev); s.has(jobId) ? s.delete(jobId) : s.add(jobId); return s })
+  }, [])
 
   // Navigate to New Content with pre-filled brief for regeneration
   const handleRegenerate = useCallback((item) => {
-    // Store the item in sessionStorage so NewContent can pick it up
     sessionStorage.setItem('cs-regenerate', JSON.stringify({
       subject: item.title,
       brand: item.brand === 'rodschinson' ? 'investment' : 'rachid',
@@ -986,6 +1120,17 @@ export default function Library() {
     }
     return true
   })
+
+  // Filter counts for filter bar
+  const filterCounts = {
+    all: items.length,
+    video: items.filter(i => i.content_type === 'video').length,
+    carousel: items.filter(i => i.content_type === 'carousel').length,
+    image_post: items.filter(i => i.content_type === 'image_post').length,
+    reel: items.filter(i => i.content_type === 'reel').length,
+    pending: items.filter(i => ['Draft','Ready','Approved'].includes(i.status)).length,
+    published: items.filter(i => i.status === 'Published').length,
+  }
 
   const counts = STATUS_FLOW.reduce((acc, s) => { acc[s] = items.filter(i => i.status === s).length; return acc }, {})
 
@@ -1044,7 +1189,18 @@ export default function Library() {
         </div>
       )}
 
-      <FilterBar active={filter} onSelect={setFilter} search={search} onSearch={setSearch} total={filtered.length} />
+      <FilterBar active={filter} onSelect={setFilter} search={search} onSearch={setSearch} total={filtered.length} counts={filterCounts} />
+
+      {selected.size > 0 && (
+        <BulkBar
+          selected={selected.size}
+          total={filtered.length}
+          onSelectAll={() => setSelected(new Set(filtered.map(i => i.job_id)))}
+          onClear={() => setSelected(new Set())}
+          onDelete={handleBulkDelete}
+          onStatus={handleBulkStatus}
+        />
+      )}
 
       {error && (
         <div style={{ background: 'rgba(180,83,9,0.06)', border: '1px solid rgba(180,83,9,0.15)', borderRadius: 7, padding: '8px 14px', marginBottom: 16, color: '#b45309', fontSize: 12 }}>
@@ -1073,6 +1229,8 @@ export default function Library() {
               onStatusChange={handleStatusChange}
               onRegenerate={handleRegenerate}
               onDelete={handleDelete}
+              selected={selected.has(item.job_id)}
+              onSelect={toggleSelect}
             />
           ))}
         </div>
