@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { PlusSquare, Library, CalendarDays, BarChart3, ExternalLink } from 'lucide-react'
+import { PlusSquare, Library, CalendarDays, BarChart3, ExternalLink, Sun, Moon } from 'lucide-react'
+import { useTheme } from '../contexts/ThemeContext'
+import { useMobile } from '../hooks/useMobile'
 
 const NAV = [
   { to: '/',          icon: PlusSquare,   label: 'New Content' },
@@ -46,7 +48,10 @@ function MetricoolLink() {
   )
 }
 
-export default function Sidebar() {
+function SidebarContent({ onClose }) {
+  const { isDark, toggle } = useTheme()
+  const isMobile = useMobile()
+
   return (
     <aside style={{
       width: 220,
@@ -58,12 +63,29 @@ export default function Sidebar() {
       padding: '24px 0',
       gap: 2,
       transition: 'background 0.2s',
+      height: '100%',
     }}>
+      {/* Mobile close button */}
+      {isMobile && (
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute', top: 16, right: 16,
+            width: 28, height: 28, borderRadius: 6,
+            border: '1px solid var(--cs-border)',
+            background: 'var(--cs-hover)', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--cs-text-sub)', fontSize: 16, lineHeight: 1,
+          }}
+        >×</button>
+      )}
+
       {NAV.map(({ to, icon: Icon, label }) => (
         <NavLink
           key={to}
           to={to}
           end={to === '/'}
+          onClick={isMobile ? onClose : undefined}
           style={({ isActive }) => ({
             display: 'flex',
             alignItems: 'center',
@@ -87,6 +109,60 @@ export default function Sidebar() {
       <div style={{ margin: '10px 20px', borderTop: '1px solid var(--cs-border)' }} />
 
       <MetricoolLink />
+
+      {/* Spacer */}
+      <div style={{ flex: 1 }} />
+
+      {/* Theme toggle at bottom */}
+      <button
+        onClick={toggle}
+        title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 20px', border: 'none', cursor: 'pointer',
+          background: 'transparent', width: '100%', textAlign: 'left',
+          color: 'var(--cs-text-muted)', fontSize: 13,
+          transition: 'color 0.15s',
+        }}
+      >
+        {isDark ? <Sun size={15} /> : <Moon size={15} />}
+        {isDark ? 'Light mode' : 'Dark mode'}
+      </button>
     </aside>
+  )
+}
+
+export default function Sidebar({ mobileOpen, onClose }) {
+  const isMobile = useMobile()
+
+  if (!isMobile) {
+    return <SidebarContent onClose={onClose} />
+  }
+
+  // Mobile: render as slide-out drawer with backdrop
+  return (
+    <>
+      {/* Backdrop */}
+      {mobileOpen && (
+        <div
+          onClick={onClose}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 50,
+            background: 'rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(2px)',
+            animation: 'fadein 0.15s ease',
+          }}
+        />
+      )}
+      {/* Drawer */}
+      <div style={{
+        position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 51,
+        transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
+        boxShadow: mobileOpen ? '4px 0 24px rgba(0,0,0,0.25)' : 'none',
+      }}>
+        <SidebarContent onClose={onClose} />
+      </div>
+    </>
   )
 }
