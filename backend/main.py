@@ -2138,7 +2138,7 @@ _MC_PLATFORM_FIELD = {
 }
 
 def _metricool_payload(caption: str, platforms: list[str], pub_dt: str,
-                       media_url: str | None = None,
+                       media_urls: list[str] | None = None,
                        fmt: str = "16:9",
                        content_type: str = "video",
                        title: str = "") -> dict:
@@ -2149,7 +2149,7 @@ def _metricool_payload(caption: str, platforms: list[str], pub_dt: str,
     - "providers"       → [{"network": "linkedin"}, ...] — which platforms to post to
     - "publicationDate" → {"dateTime": "YYYY-MM-DDTHH:MM:SS", "timezone": "UTC"}
     - "autoPublish"     → true
-    - "media"           → [{"url": "..."}] (optional)
+    - "media"           → [{"url": "..."}] — one video or multiple images for carousel
     - Platform data objects only hold platform-specific settings, NOT the text:
         linkedinData  → {"type": "post"}
         instagramData → {"type": "POST|REEL|STORY", "showReelOnFeed": bool}
@@ -2212,8 +2212,8 @@ def _metricool_payload(caption: str, platforms: list[str], pub_dt: str,
         elif platform == "twitter":
             payload["twitterData"] = {"tags": []}
 
-    if media_url:
-        payload["media"] = [{"url": media_url}]
+    if media_urls:
+        payload["media"] = [{"url": u} for u in media_urls]
 
     return payload
 
@@ -2258,26 +2258,74 @@ async def publish_content(job_id: str, body: PublishRequest = PublishRequest()):
     if not platforms:
         raise HTTPException(422, f"No valid platforms. Supported: {', '.join(sorted(valid_platforms))}")
 
-    # Caption: text_only posts → output_text; video/reel → script meta.description + hashtags; fallback → title
+    ctype = entry.get("content_type", "video")
+    backend_url = os.getenv("BACKEND_PUBLIC_URL", "").rstrip("/")
+
+    # ── Caption ───────────────────────────────────────────────────────────────
     caption = entry.get("output_text", "")
     if not caption:
-        script_path = entry.get("script_path")
-        if script_path and os.path.isfile(script_path):
-            try:
-                with open(script_path, encoding="utf-8") as _sf:
-                    _sdata = json.load(_sf)
-                meta = _sdata.get("meta", {})
-                desc = meta.get("description", "")
-                tags = meta.get("hashtags_linkedin", [])
-                if desc:
-                    caption = desc
-                    if tags:
-                        caption += "\n\n" + " ".join(tags)
-            except Exception:
-                pass
+        if ctype == "carousel":
+            # Build caption from slides: cover body → content headlines → CTA body + hashtags
+            output_file = entry.get("output_file", "")
+            if output_file and os.path.isfile(output_file):
+                try:
+                    slides = json.loads(open(output_file, encoding="utf-8").read())
+                    parts: list[str] = []
+                    hashtags: list[str] = []
+                    for s in slides:
+                        stype = s.get("type", "")
+                        if stype == "title" and s.get("body"):
+                            parts.append(s["body"])
+                        elif stype == "content":
+                            if s.get("headline"):
+                                parts.append(f"▸ {s['headline']}")
+                            if s.get("body"):
+                                parts.append(s["body"])
+                        elif stype in ("kpi", "metric"):
+                            if s.get("body"):
+                                parts.append(s["body"])
+                        elif stype == "cta":
+                            if s.get("body"):
+                                parts.append(s["body"])
+                            hashtags = s.get("hashtags", [])
+                    caption = "\n\n".join(p for p in parts if p)
+                    if hashtags:
+                        caption += "\n\n" + " ".join(hashtags)
+                except Exception:
+                    pass
+        else:
+            script_path = entry.get("script_path")
+            if script_path and os.path.isfile(script_path):
+                try:
+                    _sdata = json.loads(open(script_path, encoding="utf-8").read())
+                    meta = _sdata.get("meta", {})
+                    desc = meta.get("description", "")
+                    tags = meta.get("hashtags_linkedin", [])
+                    if desc:
+                        caption = desc
+                        if tags:
+                            caption += "\n\n" + " ".join(tags)
+                except Exception:
+                    pass
     if not caption:
         caption = entry.get("title", "")
     caption = caption[:2200]
+
+    # ── Media URLs ────────────────────────────────────────────────────────────
+    media_urls: list[str] = []
+    if backend_url:
+        if ctype == "carousel":
+            slide_images = entry.get("slide_images", [])
+            media_urls = [
+                f"{backend_url}/api/carousel-png/{job_id}/{i}"
+                for i in range(len(slide_images))
+            ]
+        elif ctype in ("video", "reel"):
+            media_urls = [f"{backend_url}/api/video/{job_id}"]
+        elif ctype == "image_post":
+            media_urls = [f"{backend_url}/api/image/{job_id}"]
+    elif entry.get("public_media_url"):
+        media_urls = [entry["public_media_url"]]
 
     from datetime import datetime, timezone, timedelta
     delay = 0 if body.publish_now else 5
@@ -2287,9 +2335,9 @@ async def publish_content(job_id: str, body: PublishRequest = PublishRequest()):
         caption=caption,
         platforms=platforms,
         pub_dt=pub_dt,
-        media_url=entry.get("public_media_url"),
+        media_urls=media_urls or None,
         fmt=entry.get("format", "16:9"),
-        content_type=entry.get("content_type", "video"),
+        content_type=ctype,
         title=entry.get("title", ""),
     )
 
@@ -2406,15 +2454,78 @@ async def publish_schedule_entry(entry_id: str, request: Request):
         pub_dt_obj = datetime.now(timezone.utc)
     pub_dt = pub_dt_obj.strftime("%Y-%m-%dT%H:%M:%S")
 
-    caption  = (lib_entry.get("output_text") or lib_entry.get("title", "") if lib_entry else entry.get("title", ""))[:2200]
     platform = entry.get("platform", "linkedin")
-    media_url = lib_entry.get("public_media_url") if lib_entry else None
+    backend_url = os.getenv("BACKEND_PUBLIC_URL", "").rstrip("/")
+
+    if lib_entry:
+        _ctype = lib_entry.get("content_type", "video")
+        caption = lib_entry.get("output_text", "")
+        if not caption and _ctype == "carousel":
+            _of = lib_entry.get("output_file", "")
+            if _of and os.path.isfile(_of):
+                try:
+                    _slides = json.loads(open(_of, encoding="utf-8").read())
+                    _parts: list[str] = []
+                    _tags: list[str] = []
+                    for _s in _slides:
+                        _st = _s.get("type", "")
+                        if _st == "title" and _s.get("body"):
+                            _parts.append(_s["body"])
+                        elif _st == "content":
+                            if _s.get("headline"): _parts.append(f"▸ {_s['headline']}")
+                            if _s.get("body"): _parts.append(_s["body"])
+                        elif _st in ("kpi", "metric") and _s.get("body"):
+                            _parts.append(_s["body"])
+                        elif _st == "cta":
+                            if _s.get("body"): _parts.append(_s["body"])
+                            _tags = _s.get("hashtags", [])
+                    caption = "\n\n".join(p for p in _parts if p)
+                    if _tags: caption += "\n\n" + " ".join(_tags)
+                except Exception:
+                    pass
+        if not caption:
+            _sp = lib_entry.get("script_path")
+            if _sp and os.path.isfile(_sp):
+                try:
+                    _m = json.loads(open(_sp, encoding="utf-8").read()).get("meta", {})
+                    caption = _m.get("description", "")
+                    if caption and _m.get("hashtags_linkedin"):
+                        caption += "\n\n" + " ".join(_m["hashtags_linkedin"])
+                except Exception:
+                    pass
+        if not caption:
+            caption = lib_entry.get("title", "")
+        # Build media URLs
+        _jid = lib_entry.get("job_id", job_id)
+        if backend_url:
+            if _ctype == "carousel":
+                _nimgs = len(lib_entry.get("slide_images", []))
+                _sched_media = [f"{backend_url}/api/carousel-png/{_jid}/{i}" for i in range(_nimgs)] or None
+            elif _ctype in ("video", "reel"):
+                _sched_media = [f"{backend_url}/api/video/{_jid}"]
+            elif _ctype == "image_post":
+                _sched_media = [f"{backend_url}/api/image/{_jid}"]
+            else:
+                _sched_media = None
+        elif lib_entry.get("public_media_url"):
+            _sched_media = [lib_entry["public_media_url"]]
+        else:
+            _sched_media = None
+        fmt_val = lib_entry.get("format", "16:9")
+    else:
+        caption = entry.get("title", "")
+        _ctype = "video"
+        _sched_media = None
+        fmt_val = "16:9"
+    caption = caption[:2200]
 
     payload = _metricool_payload(
         caption=caption,
         platforms=[platform],
         pub_dt=pub_dt,
-        media_url=media_url,
+        media_urls=_sched_media,
+        fmt=fmt_val,
+        content_type=_ctype,
     )
 
     async with httpx.AsyncClient(timeout=30) as client:
