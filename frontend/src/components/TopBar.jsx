@@ -21,10 +21,13 @@ function Spin({ size = 12, color = '#00B6FF' }) {
 }
 
 // ─── Job row inside dropdown ──────────────────────────────────────────────────
-function JobRow({ job, onViewInLibrary, onClear }) {
-  const isRunning = job.status === 'pending' || job.status === 'running'
-  const isDone    = job.status === 'done'
-  const isError   = job.status === 'error'
+function JobRow({ job, onViewInLibrary, onClear, onCancel }) {
+  const isRunning  = job.status === 'pending' || job.status === 'running'
+  const isDone     = job.status === 'done'
+  const isError    = job.status === 'error'
+  const isAborted  = job.status === 'aborted'
+
+  const age = job.startedAt ? Math.floor((Date.now() - job.startedAt) / 60000) : null
 
   return (
     <div style={{
@@ -34,13 +37,21 @@ function JobRow({ job, onViewInLibrary, onClear }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 14, flexShrink: 0 }}>{TYPE_ICONS[job.contentType] || '📄'}</span>
-        <span style={{
-          flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--cs-text)',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{job.title || 'Untitled'}</span>
-        {isRunning && <Spin />}
-        {isDone    && <span style={{ fontSize: 14 }}>✅</span>}
-        {isError   && <span style={{ fontSize: 14 }}>❌</span>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span style={{
+            display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--cs-text)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{job.title || 'Untitled'}</span>
+          {age !== null && age > 0 && (
+            <span style={{ fontSize: 10, color: 'var(--cs-text-muted)' }}>
+              {age < 60 ? `${age}m ago` : `${Math.floor(age/60)}h ago`}
+            </span>
+          )}
+        </div>
+        {isRunning  && <Spin />}
+        {isDone     && <span style={{ fontSize: 14 }}>✅</span>}
+        {isError    && <span style={{ fontSize: 14 }}>❌</span>}
+        {isAborted  && <span style={{ fontSize: 14 }}>⛔</span>}
       </div>
 
       {/* Progress bar */}
@@ -56,6 +67,14 @@ function JobRow({ job, onViewInLibrary, onClear }) {
               background: 'linear-gradient(90deg,#08316F,#00B6FF)',
               width: `${job.progress}%`, transition: 'width 0.5s ease',
             }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+            <button onClick={onCancel} style={{
+              padding: '2px 8px', borderRadius: 4,
+              border: '1px solid rgba(239,68,68,0.3)',
+              background: 'rgba(239,68,68,0.06)', color: '#f87171',
+              fontSize: 10, fontWeight: 600, cursor: 'pointer',
+            }}>Cancel</button>
           </div>
         </div>
       )}
@@ -75,9 +94,11 @@ function JobRow({ job, onViewInLibrary, onClear }) {
         </div>
       )}
 
-      {isError && (
-        <div style={{ display: 'flex', gap: 6 }}>
-          <span style={{ flex: 1, fontSize: 11, color: '#f87171' }}>Generation failed</span>
+      {(isError || isAborted) && (
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <span style={{ flex: 1, fontSize: 11, color: isAborted ? 'var(--cs-text-muted)' : '#f87171' }}>
+            {job.detail || (isAborted ? 'Cancelled' : 'Generation failed')}
+          </span>
           <button onClick={onClear} style={{
             padding: '4px 8px', borderRadius: 5, border: '1px solid var(--cs-border)',
             background: 'transparent', color: 'var(--cs-text-muted)',
@@ -92,7 +113,7 @@ function JobRow({ job, onViewInLibrary, onClear }) {
 // ─── Main TopBar ──────────────────────────────────────────────────────────────
 export default function TopBar({ onMenuClick }) {
   const { isDark, toggle } = useTheme()
-  const { jobs, badgeCount, markAllSeen, clearJob } = useGeneration()
+  const { jobs, badgeCount, markAllSeen, clearJob, cancelJob, clearAllDone } = useGeneration()
   const navigate = useNavigate()
   const isMobile = useMobile()
 
@@ -129,6 +150,7 @@ export default function TopBar({ onMenuClick }) {
       borderBottom: '1px solid var(--cs-border)',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '0 24px', flexShrink: 0, position: 'relative', zIndex: 40,
+      boxShadow: '0 1px 0 var(--cs-border), 0 2px 12px rgba(0,0,0,0.06)',
     }}>
       {/* Logo + hamburger on mobile */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -217,14 +239,21 @@ export default function TopBar({ onMenuClick }) {
                     </span>
                   )}
                 </span>
-                {hasJobs && (
-                  <button
-                    onClick={() => { navigate('/library'); setOpen(false) }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#00B6FF', fontSize: 11 }}
-                  >
-                    Library →
-                  </button>
-                )}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  {jobs.some(j => j.status === 'done' || j.status === 'error' || j.status === 'aborted') && (
+                    <button onClick={clearAllDone} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 11 }}>
+                      Clear done
+                    </button>
+                  )}
+                  {hasJobs && (
+                    <button
+                      onClick={() => { navigate('/library'); setOpen(false) }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#00B6FF', fontSize: 11 }}
+                    >
+                      Library →
+                    </button>
+                  )}
+                </div>
               </div>
 
               {!hasJobs ? (
@@ -239,6 +268,7 @@ export default function TopBar({ onMenuClick }) {
                       job={job}
                       onViewInLibrary={() => handleViewInLibrary(job)}
                       onClear={() => clearJob(job.job_id)}
+                      onCancel={() => cancelJob(job.job_id)}
                     />
                   ))}
                 </div>

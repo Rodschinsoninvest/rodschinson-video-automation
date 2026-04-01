@@ -11,9 +11,20 @@ const MAX_JOBS       = 6
 const POLL_MS        = 2000
 const MAX_NET_ERRORS = 5    // after this many consecutive failures, mark job as connection-lost
 const TERMINAL       = new Set(['done', 'error', 'aborted'])
+const STALE_MS       = 2 * 60 * 60 * 1000  // 2 hours — jobs stuck pending longer than this are stale
 
 function loadPersistedJobs() {
-  try { return JSON.parse(sessionStorage.getItem('cs-active-jobs') || '[]') } catch { return [] }
+  try {
+    const jobs = JSON.parse(sessionStorage.getItem('cs-active-jobs') || '[]')
+    const now = Date.now()
+    // Mark old non-terminal jobs as stale so they don't pollute the queue forever
+    return jobs.map(j => {
+      if (!TERMINAL.has(j.status) && j.startedAt && now - j.startedAt > STALE_MS) {
+        return { ...j, status: 'error', step: 'Timed out', detail: 'Job was still queued from a previous session.' }
+      }
+      return j
+    })
+  } catch { return [] }
 }
 
 function persistJobs(jobs) {
@@ -131,6 +142,29 @@ export function GenerationProvider({ children }) {
     })
   }, [])
 
+  const cancelJob = useCallback(async (job_id) => {
+    // Optimistically mark as aborted in UI immediately
+    setJobs(prev => {
+      const updated = prev.map(j =>
+        j.job_id === job_id ? { ...j, status: 'aborted', step: 'Cancelled', detail: 'Cancelled by user.' } : j
+      )
+      persistJobs(updated)
+      return updated
+    })
+    clearInterval(intervalsRef.current[job_id])
+    delete intervalsRef.current[job_id]
+    // Fire and forget — backend abort
+    try { await fetch(`/api/jobs/${job_id}/abort`, { method: 'POST' }) } catch { /* ignore */ }
+  }, [])
+
+  const clearAllDone = useCallback(() => {
+    setJobs(prev => {
+      const updated = prev.filter(j => j.status === 'pending' || j.status === 'running')
+      persistJobs(updated)
+      return updated
+    })
+  }, [])
+
   // ── Derived ─────────────────────────────────────────────────────────────────
   const activeJobs  = jobs.filter(j => j.status === 'pending' || j.status === 'running')
   const doneJobs    = jobs.filter(j => j.status === 'done')
@@ -142,7 +176,7 @@ export function GenerationProvider({ children }) {
     <GenerationContext.Provider value={{
       jobs, activeJobs, doneJobs, unseenDone,
       hasActive, badgeCount,
-      trackJob, markSeen, markAllSeen, clearJob,
+      trackJob, markSeen, markAllSeen, clearJob, cancelJob, clearAllDone,
     }}>
       {children}
     </GenerationContext.Provider>

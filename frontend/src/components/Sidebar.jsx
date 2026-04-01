@@ -60,26 +60,54 @@ function SidebarContent({ onClose }) {
       borderRight: '1px solid var(--cs-border)',
       display: 'flex',
       flexDirection: 'column',
-      padding: '24px 0',
-      gap: 2,
-      transition: 'background 0.2s',
+      gap: 0,
+      transition: 'background 0.25s',
       height: '100%',
+      position: 'relative',
     }}>
-      {/* Mobile close button */}
-      {isMobile && (
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute', top: 16, right: 16,
-            width: 28, height: 28, borderRadius: 6,
-            border: '1px solid var(--cs-border)',
-            background: 'var(--cs-hover)', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--cs-text-sub)', fontSize: 16, lineHeight: 1,
-          }}
-        >×</button>
-      )}
 
+      {/* Brand header */}
+      <div style={{
+        padding: '22px 20px 18px',
+        borderBottom: '1px solid var(--cs-border)',
+        background: 'linear-gradient(160deg, rgba(8,49,111,0.08) 0%, transparent 100%)',
+        flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <div style={{
+            width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+            background: 'linear-gradient(135deg, #08316F 0%, #00B6FF 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(0,182,255,0.35)',
+          }}>
+            <span style={{ color: '#fff', fontWeight: 800, fontSize: 13, letterSpacing: '-0.5px' }}>R</span>
+          </div>
+          <div>
+            <div style={{ color: 'var(--cs-text)', fontWeight: 700, fontSize: 13, lineHeight: 1.2, letterSpacing: '-0.2px' }}>
+              Rodschinson
+            </div>
+            <div style={{ color: 'var(--cs-text-muted)', fontSize: 10, fontWeight: 500, letterSpacing: '0.04em' }}>
+              CONTENT STUDIO
+            </div>
+          </div>
+        </div>
+        {isMobile && (
+          <button
+            onClick={onClose}
+            style={{
+              position: 'absolute', top: 16, right: 14,
+              width: 26, height: 26, borderRadius: 6,
+              border: '1px solid var(--cs-border)',
+              background: 'var(--cs-hover)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--cs-text-sub)', fontSize: 14, lineHeight: 1,
+            }}
+          >×</button>
+        )}
+      </div>
+
+      {/* Nav section */}
+      <div style={{ padding: '10px 0', flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
       {NAV.map(({ to, icon: Icon, label }) => (
         <NavLink
           key={to}
@@ -106,12 +134,10 @@ function SidebarContent({ onClose }) {
       ))}
 
       {/* Divider */}
-      <div style={{ margin: '10px 20px', borderTop: '1px solid var(--cs-border)' }} />
+      <div style={{ margin: '6px 20px', borderTop: '1px solid var(--cs-border)' }} />
 
       <MetricoolLink />
-
-      {/* Spacer */}
-      <div style={{ flex: 1 }} />
+      </div>
 
       {/* Theme toggle at bottom */}
       <button

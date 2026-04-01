@@ -6,51 +6,148 @@
   --color-brand-cyan:  #00B6FF;
 }
 
-/* ── Light theme (default) ─────────────────────────────────────────────────── */
+/* ── Light theme ───────────────────────────────────────────────────────────── */
 :root,
 [data-theme="light"] {
-  --cs-bg:         #f5f7fa;
-  --cs-surface:    #ffffff;
-  --cs-surface2:   #f8f9fa;
-  --cs-border:     rgba(0,0,0,0.08);
-  --cs-border-sub: rgba(0,0,0,0.05);
-  --cs-text:       #1e293b;
-  --cs-text-sub:   rgba(0,0,0,0.45);
-  --cs-text-muted: rgba(0,0,0,0.25);
-  --cs-hover:      rgba(0,0,0,0.04);
-  --cs-input-bg:   #f8f9fa;
+  --cs-bg:           #f0f4f8;
+  --cs-surface:      #ffffff;
+  --cs-surface2:     #f8f9fb;
+  --cs-border:       rgba(0,0,0,0.08);
+  --cs-border-sub:   rgba(0,0,0,0.05);
+  --cs-text:         #0f172a;
+  --cs-text-sub:     rgba(15,23,42,0.5);
+  --cs-text-muted:   rgba(15,23,42,0.3);
+  --cs-hover:        rgba(0,0,0,0.035);
+  --cs-input-bg:     #f8f9fb;
+  --cs-glow:         rgba(0,182,255,0.12);
+  --cs-card-shine:   linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.4) 100%);
 }
 
 /* ── Dark theme ────────────────────────────────────────────────────────────── */
 [data-theme="dark"] {
-  --cs-bg:         #080d17;
-  --cs-surface:    #0d1420;
-  --cs-surface2:   #111827;
-  --cs-border:     rgba(255,255,255,0.08);
-  --cs-border-sub: rgba(255,255,255,0.04);
-  --cs-text:       #e2e8f0;
-  --cs-text-sub:   rgba(255,255,255,0.45);
-  --cs-text-muted: rgba(255,255,255,0.25);
-  --cs-hover:      rgba(255,255,255,0.05);
-  --cs-input-bg:   rgba(255,255,255,0.05);
+  --cs-bg:           #060b14;
+  --cs-surface:      #0c1220;
+  --cs-surface2:     #0f1929;
+  --cs-border:       rgba(255,255,255,0.07);
+  --cs-border-sub:   rgba(255,255,255,0.035);
+  --cs-text:         #e8edf5;
+  --cs-text-sub:     rgba(232,237,245,0.5);
+  --cs-text-muted:   rgba(232,237,245,0.28);
+  --cs-hover:        rgba(255,255,255,0.045);
+  --cs-input-bg:     rgba(255,255,255,0.05);
+  --cs-glow:         rgba(0,182,255,0.18);
+  --cs-card-shine:   linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
   background: var(--cs-bg);
   color: var(--cs-text);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
-  transition: background 0.2s, color 0.2s;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.25s, color 0.25s;
 }
 
-@keyframes pulse   { 0%,100%{opacity:.4} 50%{opacity:.8} }
-@keyframes spin    { to { transform: rotate(360deg) } }
-@keyframes fadein  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+/* Subtle dot-grid on dark, clean gradient on light */
+[data-theme="dark"] body {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,100,200,0.12), transparent),
+    radial-gradient(rgba(255,255,255,0.028) 1px, transparent 1px);
+  background-size: 100% 100%, 28px 28px;
+}
+
+[data-theme="light"] body {
+  background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(0,182,255,0.06), transparent);
+}
+
+/* ── Scrollbars ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar          { width: 5px; height: 5px; }
+::-webkit-scrollbar-track    { background: transparent; }
+::-webkit-scrollbar-thumb    { background: var(--cs-border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,182,255,0.35); }
+
+/* ── Typography ────────────────────────────────────────────────────────────── */
+h1, h2, h3 { letter-spacing: -0.4px; }
+
+/* ── Glass card utility ────────────────────────────────────────────────────── */
+.cs-card {
+  background: var(--cs-surface);
+  border: 1px solid var(--cs-border);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shimmer top-edge highlight */
+.cs-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--cs-card-shine);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ── Gradient text utility ─────────────────────────────────────────────────── */
+.cs-gradient-text {
+  background: linear-gradient(135deg, #00B6FF, #C8A96E);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Button base ───────────────────────────────────────────────────────────── */
+button { font-family: inherit; }
+
+/* ── Focus rings ───────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid rgba(0,182,255,0.5);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Animations ────────────────────────────────────────────────────────────── */
+@keyframes pulse    { 0%,100%{opacity:.35} 50%{opacity:.65} }
+@keyframes spin     { to { transform: rotate(360deg) } }
+@keyframes fadein   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+@keyframes fadeup   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+@keyframes scalein  { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:scale(1)} }
+@keyframes shimmer  {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--cs-glow); }
+  50%       { box-shadow: 0 0 18px 4px var(--cs-glow); }
+}
+
+/* ── Skeleton shimmer ──────────────────────────────────────────────────────── */
+.cs-skeleton {
+  background: linear-gradient(90deg,
+    var(--cs-hover) 25%,
+    rgba(0,182,255,0.06) 50%,
+    var(--cs-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease infinite;
+  border-radius: 6px;
+}
+
+/* ── Sidebar nav active glow ───────────────────────────────────────────────── */
+.cs-nav-active {
+  box-shadow: inset 3px 0 0 #00B6FF, inset 0 0 20px rgba(0,182,255,0.04);
+}
 
 /* ── Responsive helpers ────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .hide-mobile { display: none !important; }
+  main { padding: 16px !important; }
 }
+
+/* ── Inter font (system fallback, loaded from Google Fonts in index.html) ── */
