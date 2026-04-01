@@ -129,9 +129,19 @@ from starlette.responses import JSONResponse as _JSONResponse
 class _AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        # Skip auth for: non-api routes, auth endpoints, OPTIONS preflight
+        # Skip auth for: non-api routes, auth endpoints, OPTIONS preflight,
+        # and media-serving routes (browsers can't send Authorization on <video>/<img> src)
+        _MEDIA_PREFIXES = (
+            "/api/auth/",
+            "/api/video/",
+            "/api/image/",
+            "/api/carousel-png/",
+            "/api/carousel-slides/",
+            "/api/download/",
+            "/api/jobs/",        # job status polling during generation
+        )
         if (not path.startswith("/api/")
-                or path.startswith("/api/auth/")
+                or any(path.startswith(p) for p in _MEDIA_PREFIXES)
                 or request.method == "OPTIONS"
                 or not _AUTH_ENABLED):
             return await call_next(request)
