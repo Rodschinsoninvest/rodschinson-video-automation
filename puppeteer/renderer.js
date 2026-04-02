@@ -96,15 +96,27 @@ if (fs.existsSync(REGISTRY_PATH)) {
   }
 }
 
+// ── BRAND HELPERS ────────────────────────────────────────────────────────────
+function contrastText(hex) {
+  try {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return (0.299*r + 0.587*g + 0.114*b)/255 > 0.5 ? '#0a0a0a' : '#ffffff';
+  } catch { return '#ffffff'; }
+}
+
 // ── PARSE ARGS ───────────────────────────────────────────────────────────────
 function parseArgs() {
   const args = process.argv.slice(2);
   const get  = (f) => { const i = args.indexOf(f); return i !== -1 && args[i+1] ? args[i+1] : null; };
   return {
-    script:   get('--script'),
-    template: get('--template') || 'rodschinson_premium',
-    scene:    get('--scene') ? parseInt(get('--scene')) : null,
-    quality:  get('--quality') || 'h',
+    script:       get('--script'),
+    template:     get('--template') || 'rodschinson_premium',
+    scene:        get('--scene') ? parseInt(get('--scene')) : null,
+    quality:      get('--quality') || 'h',
+    brandPrimary: get('--brand-primary') || null,
+    brandAccent:  get('--brand-accent')  || null,
+    brandName:    get('--brand-name')    || null,
+    brandLogo:    get('--brand-logo')    || null,
   };
 }
 
@@ -253,7 +265,7 @@ function normalizeScene(scene) {
 
 // ── RENDER ONE SCENE ─────────────────────────────────────────────────────────
 async function renderScene(browser, rawScene, opts) {
-  const { width, height, fps, templatePath, outputPath } = opts;
+  const { width, height, fps, templatePath, outputPath, brand } = opts;
 
   const scene  = normalizeScene(rawScene);
   const sid    = scene.id;
@@ -276,11 +288,48 @@ async function renderScene(browser, rawScene, opts) {
     // Brief pause so inline scripts run and CSS is applied
     await new Promise(r => setTimeout(r, 300));
 
+    // ── Inject brand colours + identity before loadScene() ──────────────────
+    if (brand) {
+      await page.evaluate((b) => {
+        const root = document.documentElement;
+        const pairs = [
+          ['--brand-primary', b.primary], ['--brand-accent', b.accent],
+          ['--brand-text',    b.text],
+          ['--blue',          b.primary], ['--dark-blue',   b.primary],
+          ['--blue2',         b.primary], ['--bg',          b.primary],
+          ['--sky',           b.accent],  ['--sky-blue',    b.accent],
+          ['--gold',          b.accent],  ['--accent',      b.accent],
+        ];
+        pairs.forEach(([k,v]) => root.style.setProperty(k, v));
+        document.body.style.background = b.primary;
+        document.body.style.color      = b.text;
+        window.__brand = b;
+      }, brand);
+    }
+
     // Inject scene data
     const loaded = await page.evaluate((sd) => {
       if (typeof window.loadScene !== 'function') return false;
       return window.loadScene(sd);
     }, scene);
+
+    // ── Update brand name / logo after loadScene() ───────────────────────────
+    if (brand) {
+      await page.evaluate((b) => {
+        const mono = document.querySelector('.logo-monogram, .brand-monogram');
+        if (mono) mono.textContent = b.initial;
+        const lt = document.querySelector('.logo-text, .brand-text');
+        if (lt) lt.innerHTML = `<span style="display:block;">${b.name}</span>`;
+        ['.brand-tag','#frame-brand','.brand-name','.brand-watermark','.eyebrow-brand'].forEach(sel => {
+          const el = document.querySelector(sel); if (el) el.textContent = b.name;
+        });
+        if (b.logo) {
+          const img = document.querySelector('.logo-img, .brand-logo, img.logo');
+          if (img) { img.src = b.logo; img.style.display = 'block'; }
+          if (mono) mono.style.display = 'none';
+        }
+      }, brand);
+    }
 
     if (!loaded) {
       // loadScene returned false — the template does not handle this scene type.
@@ -438,8 +487,22 @@ async function main() {
   }
 
   console.log('\n' + '═'.repeat(62));
+  // Build brand object — prefer CLI args, fall back to script meta
+  const brandPrimary = args.brandPrimary || meta.brand_primary || '#08316F';
+  const brandAccent  = args.brandAccent  || meta.brand_accent  || '#C8A96E';
+  const brandName    = args.brandName    || meta.brand_name    || meta.brand || 'Rodschinson';
+  const brand = {
+    primary: brandPrimary,
+    accent:  brandAccent,
+    text:    contrastText(brandPrimary),
+    name:    brandName,
+    initial: brandName.charAt(0).toUpperCase(),
+    logo:    args.brandLogo || meta.brand_logo || null,
+  };
+
   console.log(`  🎬  ${meta.titre || 'Rodschinson Video'}`);
-  console.log(`  Brand : ${meta.brand || ''}  |  ${qual.width}×${qual.height}@${qual.fps}fps`);
+  console.log(`  Brand : ${brand.name}  |  ${qual.width}×${qual.height}@${qual.fps}fps`);
+  console.log(`  Colors: ${brand.primary} / ${brand.accent}  text: ${brand.text}`);
   console.log(`  Template : ${tmplName}  |  ${scenes.length} scène(s)`);
   console.log('═'.repeat(62) + '\n');
 
@@ -471,6 +534,7 @@ async function main() {
         width: qual.width, height: qual.height, fps: qual.fps,
         templatePath: tmplPath,
         outputPath:   fpath,
+        brand,
       });
       if (res) ok.push(res); else err.push(scene.id);
     }

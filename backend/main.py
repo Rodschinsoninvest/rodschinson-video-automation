@@ -776,6 +776,9 @@ Return ONLY a valid JSON object with this structure:
   "meta": {{
     "titre": "Video title (max 80 chars)",
     "brand": "{brand_display}",
+    "brand_primary": "{brand_primary}",
+    "brand_accent": "{brand_accent}",
+    "brand_name": "{brand_display}",
     "template": "{html_template}",
     "largeur": {canvas_w}, "hauteur": {canvas_h}, "fps": {canvas_fps},
     "duree_totale_sec": {duration_sec},
@@ -897,9 +900,12 @@ Hard rules — violations will crash the render pipeline with no recovery:
             await _save_job(job)
 
             node_cmd = ["node", str(PUPPET / "renderer.js"),
-                        "--script", str(script_path), "--template", template]
+                        "--script", str(script_path), "--template", template,
+                        "--brand-primary", brand_primary,
+                        "--brand-accent",  brand_accent,
+                        "--brand-name",    brand_display]
             if logo_path:
-                node_cmd += ["--logo", str(logo_path)]
+                node_cmd += ["--logo", str(logo_path), "--brand-logo", str(logo_path)]
             await step("Rendering scenes", 35, node_cmd, cwd=PUPPET)
 
             if audio_mode == "music":
@@ -1101,15 +1107,19 @@ Rules:
             # Render slides via Puppeteer carousel renderer
             # Semaphore limits concurrent Chrome instances to prevent Railway OOM.
             async with _render_semaphore:
-                await step(
-                    "Rendering slides", 70,
-                    ["node", str(PUPPET / "carousel_renderer.js"),
-                     "--slides", str(carousel_out),
-                     "--template", carousel_tmpl,
-                     "--out", str(carousel_dir),
-                     "--prefix", job_prefix],
-                    cwd=PUPPET,
-                )
+                _carousel_cmd = [
+                    "node", str(PUPPET / "carousel_renderer.js"),
+                    "--slides", str(carousel_out),
+                    "--template", carousel_tmpl,
+                    "--out", str(carousel_dir),
+                    "--prefix", job_prefix,
+                    "--brand-primary", brand_primary,
+                    "--brand-accent",  brand_accent,
+                    "--brand-name",    brand_display,
+                ]
+                if logo_path:
+                    _carousel_cmd += ["--brand-logo", str(logo_path)]
+                await step("Rendering slides", 70, _carousel_cmd, cwd=PUPPET)
 
             # Collect rendered PNGs — renderer outputs {prefix}_01.png … {prefix}_NN.png
             slide_pngs = sorted(carousel_dir.glob(f"{job_prefix}_*.png"))
@@ -2866,38 +2876,95 @@ async def generate_template(body: TemplateGenRequest):
   window.animateScene() triggers CSS enter transitions."""
         extra_design = "16:9 widescreen 1920×1080px. Cinematic layout. This template must match the premium Rodschinson brand."
 
-    prompt = f"""You are an expert Puppeteer HTML template developer for Rodschinson Content Studio.
+    # Compute text colour based on background luminance
+    def _luminance(hex_color: str) -> float:
+        h = hex_color.lstrip("#")
+        r, g, b = int(h[0:2],16)/255, int(h[2:4],16)/255, int(h[4:6],16)/255
+        return 0.299*r + 0.587*g + 0.114*b
+    text_color = "#0a0a0a" if _luminance(body.bg_color) > 0.5 else "#ffffff"
+    text_sub   = "rgba(0,0,0,0.55)" if text_color == "#0a0a0a" else "rgba(255,255,255,0.65)"
 
-Generate a complete, self-contained HTML file for a branded content template.
+    prompt = f"""You are a world-class creative director and senior front-end engineer specialising in Puppeteer-rendered branded content templates. Generate a VISUALLY STUNNING, production-ready HTML file.
 
-Name: {body.name}
-Description: {body.description}
-Type: {body.type}
-Background color: {body.bg_color}
-Accent color: {body.accent_color}
-Canvas size: {width}x{height}px
+═══════════════════════════════════════════
+BRIEF
+═══════════════════════════════════════════
+Name        : {body.name}
+Description : {body.description}
+Type        : {body.type}
+Canvas      : {width} × {height} px
+Background  : {body.bg_color}
+Accent      : {body.accent_color}
+Text        : {text_color}
 
-VISUAL DESIGN REQUIREMENTS:
-1. The HTML must work as a standalone Puppeteer screenshot target (no external scripts except Google Fonts).
-2. Use Google Fonts via @import (Cormorant Garamond + Space Grotesk preferred, or suitable alternatives).
-3. CSS custom properties in :root: --bg ({body.bg_color}), --accent ({body.accent_color}), --text, --serif, --sans.
-4. html/body: exactly {width}px × {height}px, overflow hidden, background: var(--bg).
-5. Brand watermark at bottom: small "RODSCHINSON" text in accent color, low opacity.
-6. CSS entry animations: opacity + translateX/Y transitions on key elements.
-7. .scene class: position absolute, inset 0, display none. .scene.active: display flex.
-8. .scene.anim class triggers all animated elements to their final visible state.
-9. Include rich decorative background elements: SVG geometry (circles, lines, polygons), subtle grid or noise texture, diagonal accents. Make it visually stunning.
-10. {extra_design}
+═══════════════════════════════════════════
+MANDATORY VISUAL REQUIREMENTS — every item is non-negotiable
+═══════════════════════════════════════════
 
-JAVASCRIPT CONTRACT (CRITICAL — Puppeteer calls these functions):
+TYPOGRAPHY
+- Google Fonts via @import (choose 2 complementary families that match the brand mood)
+- Minimum 3 typographic sizes: eyebrow/label (10-14px), body (18-26px), headline (40-90px)
+- Use font-weight variation (300, 400, 700, 900) to create hierarchy
+
+COLOUR SYSTEM — CSS custom properties in :root:
+  --bg      : {body.bg_color}
+  --accent  : {body.accent_color}
+  --text    : {text_color}
+  --text-sub: {text_sub}
+  --sans    : (your chosen sans font)
+  --serif   : (your chosen serif font, or same as sans)
+- html/body: exactly {width}px × {height}px, overflow hidden, background: var(--bg), color: var(--text)
+
+DECORATIVE BACKGROUND (CRITICAL — this is what makes it look premium):
+- Full-canvas inline SVG positioned absolute, pointer-events:none, z-index 0:
+  • At minimum 3 geometric shapes: large circle/arc, diagonal line cluster, polygon/grid
+  • Use accent colour at 8-20% opacity for subtle depth
+  • Add a radial or mesh gradient overlay
+- Optional: CSS grid dots pattern, diagonal stripe, or noise texture overlay
+- Top accent bar: 4-6px gradient strip across full width using accent colour
+
+BRAND BLOCK (top-left or top-right):
+- .logo-block div: contains .logo-monogram (36-44px square, accent bg, brand initial letter) + .logo-text (brand name — injected dynamically at render time)
+- IMPORTANT: .logo-text should say the brand name as a placeholder; it will be replaced at render
+- Do NOT hardcode "RODSCHINSON" or "Investment" anywhere — use a placeholder that JS replaces
+
+LAYOUT — at minimum implement these 3 scene types with dramatically different layouts:
+  1. "title" / "title_card" — full-canvas hero: giant headline, eyebrow label, subtitle, visual impact
+  2. "content" / "text_bullets" — data/points layout: numbered list or bullet grid with icon placeholders
+  3. "cta" / "cta_screen" — call-to-action: strong closing line, supporting text, styled CTA button/badge
+Each scene must fill the ENTIRE canvas with purposeful whitespace, never feel empty.
+
+ANIMATIONS — every element enters with CSS transitions:
+  - Stagger: eyebrow → headline → body → accent line (50-80ms delay between each)
+  - Use opacity 0 → 1 + translateY(12px) → translateY(0) or translateX
+  - .scene.anim class triggers all elements to their final state
+  - Disable all transition delays when .anim is applied so Puppeteer screenshots are immediate
+
+SLIDE COUNTER (for carousel type): bottom-right, "01 / 06" format, small, low opacity
+{extra_design}
+
+═══════════════════════════════════════════
+JAVASCRIPT CONTRACT — Puppeteer calls EXACTLY these functions
+═══════════════════════════════════════════
 {data_contract}
 
-REQUIRED JS FUNCTIONS:
-- window.loadScene(data) → populates #scene-container, returns true on success / false if unknown type
-- window.animateScene() → adds .active then .anim to #scene after a requestAnimationFrame
-- window.isAnimationComplete(ms) → returns Promise that resolves after ms milliseconds
+REQUIRED window functions:
+```
+window.loadScene(data)         → populates <div id="scene-container">, returns true/false
+window.animateScene()          → adds .active + .anim to #scene after one requestAnimationFrame
+window.isAnimationComplete(ms) → returns Promise that resolves after ms milliseconds
+```
 
-OUTPUT: Return ONLY the complete HTML file content. No explanation, no markdown code fences."""
+CRITICAL RULES:
+- <div id="scene-container"> must exist in body
+- loadScene MUST return true for every supported type, false for unknown
+- All scene HTML must be injected inside #scene-container
+- Never use external JS libraries (no jQuery, no GSAP, no React)
+- Template must render identically in Puppeteer headless Chrome (no WebGL, no canvas needed)
+- Text must be fully readable: ensure contrast between text color and background at every scene type
+- Brand name in logo block will be replaced at render time — design for variable-length names
+
+OUTPUT: Return ONLY the complete HTML file. No explanation. No markdown fences. Start with <!DOCTYPE html>"""
 
     async with httpx.AsyncClient(timeout=300) as client:
         res = await client.post(
@@ -2909,7 +2976,7 @@ OUTPUT: Return ONLY the complete HTML file content. No explanation, no markdown 
             },
             json={
                 "model": "claude-sonnet-4-6",
-                "max_tokens": 8000,
+                "max_tokens": 16000,
                 "messages": [{"role": "user", "content": prompt}],
             },
         )

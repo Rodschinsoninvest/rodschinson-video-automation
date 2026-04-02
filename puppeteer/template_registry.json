@@ -1,7 +1,8 @@
 {
   "templates": {
     "custom_test": "custom/custom_test.html",
-    "custom_reel_new": "custom/custom_reel_new.html"
+    "custom_reel_new": "custom/custom_reel_new.html",
+    "custom_cofoundies": "custom/custom_cofoundies.html"
   },
   "allowed_types": {
     "custom_test": [
@@ -19,6 +20,16 @@
       "process_steps",
       "split_screen",
       "quote_card",
+      "cta_screen"
+    ],
+    "custom_cofoundies": [
+      "title_card",
+      "text_bullets",
+      "process_steps",
+      "quote_card",
+      "big_number",
+      "bar_chart",
+      "split_screen",
       "cta_screen"
     ]
   }

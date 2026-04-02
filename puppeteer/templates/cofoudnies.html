@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cofoudnies – Tech Founders Startup Theme</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #ffffff;
+  --accent: #f49b48;
+  --accent-dark: #d4782a;
+  --accent-light: #fde8d0;
+  --text: #0f0f0f;
+  --text-muted: #5a5a5a;
+  --text-light: #9a9a9a;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans: 'Space Grotesk', 'Helvetica Neue', sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 1080px;
+  height: 1080px;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: var(--sans);
+  color: var(--text);
+}
+
+#scene-container {
+  position: relative;
+  width: 1080px;
+  height: 1080px;
+  overflow: hidden;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  width: 1080px;
+  height: 1080px;
+  overflow: hidden;
+}
+
+.scene.active {
+  display: flex;
+}
+
+/* ─── WATERMARK ─────────────────────────────────────────── */
+.watermark {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  color: var(--accent);
+  opacity: 0.28;
+  z-index: 100;
+  text-transform: uppercase;
+}
+
+/* ─── DECORATIVE SVG LAYER ──────────────────────────────── */
+.deco-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── ANIMATED ELEMENTS BASE ────────────────────────────── */
+.anim-fade-up {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.anim-fade-down {
+  opacity: 0;
+  transform: translateY(-40px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.anim-fade-left {
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.anim-fade-right {
+  opacity: 0;
+  transform: translateX(50px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.anim-scale {
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.anim-line {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.delay-1 { transition-delay: 0.08s; }
+.delay-2 { transition-delay: 0.18s; }
+.delay-3 { transition-delay: 0.30s; }
+.delay-4 { transition-delay: 0.44s; }
+.delay-5 { transition-delay: 0.58s; }
+.delay-6 { transition-delay: 0.72s; }
+
+.scene.anim .anim-fade-up,
+.scene.anim .anim-fade-down,
+.scene.anim .anim-fade-left,
+.scene.anim .anim-fade-right,
+.scene.anim .anim-scale {
+  opacity: 1;
+  transform: translate(0, 0) scale(1);
+}
+.scene.anim .anim-line {
+  transform: scaleX(1);
+}
+
+/* ════════════════════════════════════════════════════════════
+   TITLE SLIDE
+═══════════════════════════════════════════════════════════ */
+.slide-title {
+  background: var(--bg);
+  position: relative;
+}
+
+.slide-title .bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(244,155,72,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(244,155,72,0.06) 1px, transparent 1px);
+  background-size: 54px 54px;
+  z-index: 0;
+}
+
+.slide-title .content-area {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100%;
+  padding: 90px 96px 100px;
+}
+
+.slide-title .eyebrow {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.slide-title .eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 32px;
+  height: 2px;
+  background: var(--accent);
+}
+
+.slide-title .main-headline {
+  font-family: var(--serif);
+  font-size: 102px;
+  font-weight: 700;
+  line-height: 0.92;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  margin-bottom: 36px;
+  max-width: 820px;
+}
+
+.slide-title .main-headline em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.slide-title .subheadline {
+  font-family: var(--sans);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--text-muted);
+  max-width: 580px;
+  margin-bottom: 60px;
+}
+
+.slide-title .divider-line {
+  width: 260px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  margin-bottom: 56px;
+  border-radius: 2px;
+}
+
+.slide-title .brand-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.slide-title .brand-badge {
+  background: var(--text);
+  color: var(--bg);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 10px 22px;
+  border-radius: 3px;
+}
+
+.slide-title .swipe-hint {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-light);
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slide-title .swipe-hint::after {
+  content: '→';
+  color: var(--accent);
+  font-size: 18px;
+}
+
+.slide-title .big-number {
+  position: absolute;
+  right: 60px;
+  bottom: 90px;
+  font-family: var(--serif);
+  font-size: 320px;
+  font-weight: 700;
+  color: var(--accent);
+  opacity: 0.06;
+  line-height: 1;
+  z-index: 1;
+  user-select: none;
+  letter-spacing: -0.05em;
+}
+
+.slide-title .accent-bar {
+  position: absolute;
+  top: 0;
+  right: 200px;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--accent) 0%, transparent 100%);
+  opacity: 0.15;
+  z-index: 1;
+}
+
+.slide-title .corner-mark {
+  position: absolute;
+  top: 72px;
+  right: 72px;
+  width: 80px;
+  height: 80px;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  opacity: 0.2;
+  z-index: 1;
+}
+
+.slide-title .corner-mark::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+}
+
+/* ════════════════════════════════════════════════════════════
+   CONTENT SLIDE
+═══════════════════════════════════════════════════════════ */
+.slide-content {
+  background: var(--bg);
+  position: relative;
+}
+
+.slide-content .side-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dark) 100%);
+  z-index: 5;
+}
+
+.slide-content .top-bar {
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--accent) 0%, transparent 80%);
+  opacity: 0.5;
+  z-index: 5;
+}
+
+.slide-content .bg-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(244,155,72,0.12) 1px, transparent 1px);
+  background-size: 36px 36px;
+  z-index: 0;
+}
+
+.slide-content .content-area {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  padding: 80px 88px 100px 108px;
+}
+
+.slide-content .point-label {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 42px;
+}
+
+.slide-content .point-number {
+  font-family: var(--serif);
+  font-size: 80px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.slide-content .point-tag {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding-top: 8px;
+}
+
+.slide-content .content-headline {
+  font-family: var(--serif);
+  font-size: 76px;
+  font-weight: 700;
+  line-height: 0.95;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  margin-bottom: 38px;
+  max-width: 820px;
+}
+
+.slide-content .content-headline em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.slide-content .divider-accent {
+  width: 80px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 2px;
+  margin-bottom: 38px;
+}
+
+.slide-content .body-text {
+  font-family: var(--sans);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.62;
+  color: var(--text-muted);
+  max-width: 760px;
+  margin-bottom: 50px;
+}
+
+.slide-content .stat-block {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  max-width: 560px;
+}
+
+.slide-content .stat-accent-line {
+  width: 5px;
+  background: var(--accent);
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.slide-content .stat-inner {
+  background: linear-gradient(135deg, #fff9f3 0%, #fde8d0 100%);
+  padding: 28px 36px;
+  flex: 1;
+}
+
+.slide-content .stat-value {
+  font-family: var(--serif);
+  font-size: 64px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.slide-content .stat-value span {
+  color: var(--accent);
+}
+
+.slide-content .stat-label {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.slide-content .slide-counter {
+  position: absolute;
+  bottom: 72px;
+  right: 80px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--text-light);
+  z-index: 10;
+}
+
+.slide-content .slide-counter strong {
+  color: var(--accent);
+}
+
+.slide-content .bg-circle-large {
+  position: absolute;
+  right: -120px;
+  bottom: -120px;
+  width: 560px;
+  height: 560px;
+  border: 2px solid rgba(244,155,72,0.1);
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.slide-content .bg-circle-medium {
+  position: absolute;
+  right: -40px;
+  bottom: -40px;
+  width: 360px;
+  height: 360px;
+  border: 2px solid rgba(244,155,72,0.12);
+  border-radius: 50%;
+  z-index: 1;
+}
+
+/* ════════════════════════════════════════════════════════════
+   CTA SLIDE
+═══════════════════════════════════════════════════════════ */
+.slide-cta {
+  background: var(--text);
+  position: relative;
+}
+
+.slide-cta .bg-grid-dark {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(244,155,72,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(244,155,72,0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+  z-index: 0;
+}
+
+.slide-cta .accent-slash {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 400px 400px 0;
+  border-color: transparent rgba(244,155,72,0.08) transparent transparent;
+  z-index: 1;
+}
+
+.slide-cta .content-area {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100%;
+  padding: 90px 96px 110px;
+}
+
+.slide-cta .cta-eyebrow {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 28px;
+  opacity: 0.9;
+}
+
+.slide-cta .cta-headline {
+  font-family: var(--serif);
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 0.92;
+  color: #ffffff;
+  letter-spacing: -0.025em;
+  margin-bottom: 40px;
+  max-width: 860px;
+}
+
+.slide-cta .cta-headline em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.slide-cta .cta-divider {
+  width: 120px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+  margin-bottom: 44px;
+}
+
+.slide-cta .cta-body {
+  font-family: var(--sans);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.65);
+  max-width: 620px;
+  margin-bottom: 52px;
+}
+
+.slide-cta .hashtag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 60px;
+}
+
+.slide-cta .hashtag-pill {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  background: rgba(244,155,72,0.12);
+  border: 1px solid rgba(244,155,72,0.3);
+  padding: 10px 22px;
+  border-radius: 100px;
+  transition: background 0.3s;
+}
+
+.slide-cta .cta-button {
+  background: var(--accent);
+  color: #ffffff;
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 20px 48px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.slide-cta .cta-button::after {
+  content: '→';
+  font-size: 20px;
+}
+
+.slide-cta .bottom-brand {
+  position: absolute;
+  bottom: 72px;
+  right: 80px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.2);
+  z-index: 10;
+}
+
+.slide-cta .deco-rings {
+  position: absolute;
+  right: 100px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  opacity: 0.15;
+}
+
+.slide-cta .watermark {
+  color: var(--accent);
+  opacity: 0.2;
+}
+</style>
+</head>
+<body>
+<div id="scene-container"></div>
+
+<script>
+(function() {
+
+  /* ─── SVG DECORATIONS ─────────────────────────────────── */
+  function titleDecoSVG() {
+    return `
+    <svg class="deco-layer" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="tg1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#f49b48" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#f49b48" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <!-- Large background circle -->
+      <circle cx="900" cy="200" r="340" fill="none" stroke="#f49b48" stroke-width="1.5" opacity="0.08"/>
+      <circle cx="900" cy="200" r="240" fill="none" stroke="#f49b48" stroke-width="1" opacity="0.1"/>
+      <circle cx="900" cy="200" r="140" fill="url(#tg1)" opacity="0.5"/>
+      <!-- Corner polygon -->
+      <polygon points="980,0 1080,0 1080,120" fill="#f49b48" opacity="0.06"/>
+      <polygon points="0,940 0,1080 160,1080" fill="#f49b48" opacity="0.05"/>
+      <!-- Diagonal lines -->
+      <line x1="600" y1="0" x2="1080" y2="480" stroke="#f49b48" stroke-width="1" opacity="0.07"/>
+      <line x1="640" y1="0" x2="1080" y2="440" stroke="#f49b48" stroke-width="0.5" opacity="0.05"/>
+      <!-- Small dots scatter -->
+      <circle cx="120" cy="900" r="4" fill="#f49b48" opacity="0.15"/>
+      <circle cx="160" cy="870" r="2.5" fill="#f49b48" opacity="0.1"/>
+      <circle cx="200" cy="920" r="3" fill="#f49b48" opacity="0.12"/>
+      <circle cx="80" cy="950" r="2" fill="#f49b48" opacity="0.08"/>
+      <!-- Grid accent top-right -->
+      <line x1="700" y1="40" x2="700" y2="340" stroke="#f49b48" stroke-width="0.5" opacity="0.08"/>
+      <line x1="740" y1="40" x2="740" y2="340" stroke="#f49b48" stroke-width="0.5" opacity="0.08"/>
+      <line x1="780" y1="40" x2="780" y2="340" stroke="#f49b48" stroke-width="0.5" opacity="0.08"/>
+      <line x1="660" y1="80" x2="860" y2="80" stroke="#f49b48" stroke-width="0.5" opacity="0.08"/>
+      <line x1="660" y1="120" x2="860" y2="120" stroke="#f49b48" stroke-width="0.5" opacity="0.08"/>
+      <line x1="660" y1="160" x2="860" y2="160" stroke="#f49b48" stroke-width="0.5" opacity="0.08"/>
+      <!-- Accent cross mark -->
+      <line x1="88" y1="180" x2="108" y2="200" stroke="#f49b48" stroke-width="2" opacity="0.2"/>
+      <line x1="108" y1="180" x2="88" y2="200" stroke="#f49b48" stroke-width="2" opacity="0.2"/>
+      <line x1="948" y1="820" x2="968" y2="840" stroke="#f49b48" stroke-width="2" opacity="0.15"/>
+      <line x1="968" y1="820" x2="948" y2="840" stroke="#f49b48" stroke-width="2" opacity="0.15"/>
+    </svg>`;
+  }
+
+  function contentDecoSVG() {
+    return `
+    <svg class="deco-layer" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="cg1" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#f49b48" stop-opacity="0.1"/>
+          <stop offset="100%" stop-color="#f49b48" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <!-- Top stripe pattern -->
+      <rect x="0" y="0" width="1080" height="3" fill="#f49b48" opacity="0.4"/>
+      <!-- Scattered geometric -->
+      <rect x="900" y="80" width="60" height="60" fill="none" stroke="#f49b48" stroke-width="1.5" opacity="0.1" transform="rotate(20, 930, 110)"/>
+      <rect x="930" y="100" width="40" height="40" fill="none" stroke="#f49b48" stroke-width="1" opacity="0.08" transform="rotate(20, 950, 120)"/>
+      <!-- Diagonal accent stripe -->
+      <line x1="1000" y1="200" x2="1080" y2="120" stroke="#f49b48" stroke-width="2" opacity="0.1"/>
+      <line x1="1020" y1="240" x2="1080" y2="180" stroke="#f49b48" stroke-width="1" opacity="0.07"/>
+      <!-- Bottom right radial -->
+      <circle cx="960" cy="960" r="280" fill="url(#cg1)"/>
+      <!-- Dotted line vertical -->
+      <line x1="1050" y1="300" x2="1050" y2="780" stroke="#f49b48" stroke-width="1" stroke-dasharray="4,8" opacity="0.12"/>
+      <!-- Small triangles -->
+      <polygon points="60,140 80,170 40,170" fill="#f49b48" opacity="0.07"/>
+      <polygon points="1020,480 1040,510 1000,510" fill="#f49b48" opacity="0.06"/>
+    </svg>`;
+  }
+
+  function ctaDecoSVG() {
+    return `
+    <svg class="deco-layer" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="ctag1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#f49b48" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="#f49b48" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <!-- Large rings top right -->
+      <circle cx="940" cy="180" r="420" fill="none" stroke="#f49b48" stroke-width="1" opacity="0.08"/>
+      <circle cx="940" cy="180" r="320" fill="none" stroke="#f49b48" stroke-width="1.5" opacity="0.1"/>
+      <circle cx="940" cy="180" r="220" fill="none" stroke="#f49b48" stroke-width="1" opacity="0.12"/>
+      <circle cx="940" cy="180" r="120" fill="url(#ctag1)"/>
+      <!-- Bottom left triangle shape -->
+      <polygon points="0,800 260,1080 0,1080" fill="#f49b48" opacity="0.05"/>
+      <polygon points="0,900 160,1080 0,1080" fill="#f49b48" opacity="0.06"/>
+      <!-- Horizontal scan lines -->
+      <line x1="0" y1="800" x2="400" y2="800" stroke="#f49b48" stroke-width="0.5" opacity="0.1"/>
+      <line x1="0" y1="820" x2="350" y2="820" stroke="#f49b48" stroke-width="0.5" opacity="0.07"/>
+      <line x1="0" y1="840" x2="300" y2="840" stroke="#f49b48" stroke-width="0.5" opacity="0.05"/>
+      <!-- Grid bottom right -->
+      <line x1="820" y1="820" x2="1080" y2="820" stroke="#f49b48" stroke-width="0.5" opacity="0.07"/>
+      <line x1="820" y1="860" x2="1080" y2="860" stroke="#f49b48" stroke-width="0.5" opacity="0.07"/>
+      <line x1="820" y1="900" x2="1080" y2="900" stroke="#f49b48" stroke-width="0.5" opacity="0.07"/>
+      <line x1="820" y1="820" x2="820" y2="1080" stroke="#f49b48" stroke-width="0.5" opacity="0.07"/>
+      <line x1="860" y1="820" x2="860" y2="1080" stroke="#f49b48" stroke-width="0.5" opacity="0.07"/>
+      <line x1="900" y1="820" x2="900" y2="1080" stroke="#

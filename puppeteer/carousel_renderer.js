@@ -37,20 +37,33 @@ const TEMPLATES = {
 
 const DEFAULT_TEMPLATE = 'carousel_bold';
 
+// ── BRAND HELPERS ────────────────────────────────────────────────────────────
+/** Compute luminance-based text colour for a hex background. */
+function contrastText(hex) {
+  try {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return (0.299*r + 0.587*g + 0.114*b)/255 > 0.5 ? '#0a0a0a' : '#ffffff';
+  } catch { return '#ffffff'; }
+}
+
 // ── PARSE ARGS ───────────────────────────────────────────────────────────────
 function parseArgs() {
   const args = process.argv.slice(2);
   const get  = (f) => { const i = args.indexOf(f); return i !== -1 && args[i+1] ? args[i+1] : null; };
   return {
-    slides:   get('--slides'),
-    template: get('--template') || DEFAULT_TEMPLATE,
-    out:      get('--out'),
-    prefix:   get('--prefix') || 'slide',
+    slides:        get('--slides'),
+    template:      get('--template') || DEFAULT_TEMPLATE,
+    out:           get('--out'),
+    prefix:        get('--prefix') || 'slide',
+    brandPrimary:  get('--brand-primary') || '#08316F',
+    brandAccent:   get('--brand-accent')  || '#C8A96E',
+    brandName:     get('--brand-name')    || 'Rodschinson',
+    brandLogo:     get('--brand-logo')    || null,
   };
 }
 
 // ── RENDER ONE SLIDE ─────────────────────────────────────────────────────────
-async function renderSlide(browser, slideData, templatePath, outputPath) {
+async function renderSlide(browser, slideData, templatePath, outputPath, brand) {
   const page = await browser.newPage();
   await page.setViewport({ width: 1080, height: 1080, deviceScaleFactor: 1 });
 
@@ -58,10 +71,54 @@ async function renderSlide(browser, slideData, templatePath, outputPath) {
     await page.goto(`file://${templatePath}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
     await new Promise(r => setTimeout(r, 300));
 
+    // ── Inject brand colours + identity before loadScene() ──────────────────
+    await page.evaluate((b) => {
+      const root = document.documentElement;
+      // Override all common colour variable names used across templates
+      const pairs = [
+        ['--brand-primary', b.primary], ['--brand-accent', b.accent],
+        ['--brand-text',    b.text],
+        // Template-specific aliases
+        ['--blue',          b.primary], ['--dark-blue',   b.primary],
+        ['--blue2',         b.primary], ['--bg',          b.primary],
+        ['--sky',           b.accent],  ['--sky-blue',    b.accent],
+        ['--gold',          b.accent],  ['--accent',      b.accent],
+      ];
+      pairs.forEach(([k,v]) => root.style.setProperty(k, v));
+      document.body.style.background = b.primary;
+      document.body.style.color      = b.text;
+      window.__brand = b;
+    }, brand);
+
     const loaded = await page.evaluate((sd) => {
       if (typeof window.loadScene !== 'function') return false;
       return window.loadScene(sd);
     }, slideData);
+
+    // ── Update logo / brand name after loadScene() inserts DOM ──────────────
+    await page.evaluate((b) => {
+      // Logo monogram letter
+      const mono = document.querySelector('.logo-monogram');
+      if (mono) mono.textContent = b.initial;
+
+      // Brand text block — show name only, no hardcoded "Investment" sub-line
+      const lt = document.querySelector('.logo-text');
+      if (lt) lt.innerHTML = `<span style="display:block;font-size:inherit;color:inherit;">${b.name}</span>`;
+
+      // Any generic brand-tag / brand-name element
+      ['.brand-tag','#frame-brand','.brand-name','.brand-watermark'].forEach(sel => {
+        const el = document.querySelector(sel);
+        if (el) el.textContent = b.name;
+      });
+
+      // Replace logo img src if brand has a logo
+      if (b.logo) {
+        const img = document.querySelector('.logo-img, .brand-logo, img.logo');
+        if (img) { img.src = b.logo; img.style.display = 'block'; }
+        // Hide monogram if there's a real logo
+        if (mono) mono.style.display = 'none';
+      }
+    }, brand);
 
     if (!loaded) {
       console.error(`  ❌ loadScene failed for slide ${slideData.index}`);
@@ -146,13 +203,24 @@ async function main() {
   const outDir = args.out || OUT_DIR;
   fs.mkdirSync(outDir, { recursive: true });
 
+  // Build brand object — read from args, compute text contrast
+  const brand = {
+    primary: args.brandPrimary,
+    accent:  args.brandAccent,
+    text:    contrastText(args.brandPrimary),
+    name:    args.brandName,
+    initial: (args.brandName || 'R').charAt(0).toUpperCase(),
+    logo:    args.brandLogo || null,
+  };
+
   const total = slides.length;
-  // Inject total into each slide for the counter
-  const enrichedSlides = slides.map(s => ({ ...s, total }));
+  // Enrich every slide: inject brand + total so all slides know brand context
+  const enrichedSlides = slides.map(s => ({ ...s, total, brand: args.brandName }));
 
   console.log('\n' + '═'.repeat(58));
   console.log(`  🖼️  Carousel Renderer — ${total} slides`);
-  console.log(`  Template : ${tmplName}`);
+  console.log(`  Template : ${tmplName}  |  Brand: ${brand.name}`);
+  console.log(`  Colors   : ${brand.primary} / ${brand.accent}  text: ${brand.text}`);
   console.log('═'.repeat(58) + '\n');
 
   const browser = await puppeteer.launch({
@@ -173,7 +241,7 @@ async function main() {
     for (const slide of enrichedSlides) {
       const fname = `${args.prefix}_${String(slide.index).padStart(2,'0')}.png`;
       const fpath = path.join(outDir, fname);
-      const res   = await renderSlide(browser, slide, tmplPath, fpath);
+      const res   = await renderSlide(browser, slide, tmplPath, fpath, brand);
       if (res) { ok.push(res); outPaths.push(res); }
       else err.push(slide.index);
     }
