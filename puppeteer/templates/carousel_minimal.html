@@ -321,7 +321,7 @@ html, body {
 <div class="frame">
   <div class="corner-tl"></div>
   <div class="corner-br"></div>
-  <div class="brand-tag" id="frame-brand">RODSCHINSON INVESTMENT</div>
+  <div class="brand-tag" id="frame-brand"></div>
   <div class="slide-counter" id="frame-counter"></div>
 </div>
 
@@ -340,10 +340,14 @@ window.loadScene = function(slideData) {
   document.getElementById('frame-counter').textContent =
     total ? `${String(idx).padStart(2,'0')} / ${String(total).padStart(2,'0')}` : '';
 
+  const _bname = (window.__brand && window.__brand.name) || slideData.brand || '';
+  const fb = document.getElementById('frame-brand');
+  if (fb) fb.textContent = _bname ? _bname.toUpperCase() : '';
+
   let html = '';
   if (type === 'title') {
     html = `<div class="scene slide-title" id="scene">
-      <div class="label">${esc(slideData.brand || 'Rodschinson')}</div>
+      <div class="label">${esc(_bname)}</div>
       <div class="headline">${fmt(slideData.headline || '')}</div>
       <div class="rule"></div>
       <div class="subheadline">${esc(slideData.subheadline || '')}</div>

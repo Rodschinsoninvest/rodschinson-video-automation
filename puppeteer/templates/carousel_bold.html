@@ -333,8 +333,8 @@ html, body {
 
 <!-- LOGO -->
 <div class="logo-block" id="logo-block">
-  <div class="logo-monogram">R</div>
-  <div class="logo-text">Rodschinson<span>Investment</span></div>
+  <div class="logo-monogram" id="logo-monogram">R</div>
+  <div class="logo-text" id="logo-text">Brand</div>
 </div>
 
 <!-- COUNTER -->
@@ -392,10 +392,13 @@ window.loadScene = function(slideData) {
   document.getElementById('frame-counter').textContent =
     total ? `${String(idx).padStart(2,'0')} / ${String(total).padStart(2,'0')}` : '';
 
-  // Update logo brand name if provided
-  if (slideData.brand) {
-    const lt = document.querySelector('.logo-text');
-    if (lt) lt.innerHTML = esc(slideData.brand) + '<span>Investment</span>';
+  // Update logo brand name — use window.__brand injected by renderer, or slideData.brand
+  const _bname = (window.__brand && window.__brand.name) || slideData.brand || '';
+  if (_bname) {
+    const lt = document.getElementById('logo-text');
+    if (lt) lt.textContent = _bname;
+    const lm = document.getElementById('logo-monogram');
+    if (lm) lm.textContent = _bname.charAt(0).toUpperCase();
   }
 
   let html = '';
