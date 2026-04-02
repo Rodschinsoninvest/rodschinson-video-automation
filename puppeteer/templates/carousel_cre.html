@@ -199,11 +199,10 @@ html, body {
 function logoMark(color, small) {
   const sz = small ? 'font-size:10px;letter-spacing:2px' : '';
   const lineSz = small ? 'height:1.5px' : '';
-  const botSz  = small ? 'font-size:6.5px' : '';
+  const _bn = (window.__brand && window.__brand.name) || 'Brand';
   return `<div class="logo-mark">
-    <div class="lm-top" style="color:${color};${sz}">RODSCHINSON</div>
+    <div class="lm-top" style="color:${color};${sz}">${_bn.toUpperCase()}</div>
     <div class="lm-line" style="${lineSz}"></div>
-    <div class="lm-bot" style="${botSz}">INVESTMENT</div>
   </div>`;
 }
 
@@ -495,7 +494,7 @@ function renderCta(data) {
   return `<div class="bg-dk" style="position:absolute;inset:0;">
     <div class="cta-bg"></div>
     <div class="cta-content">
-      <div class="cta-eyebrow">Rodschinson Investment</div>
+      <div class="cta-eyebrow">${(window.__brand && window.__brand.name) || ''}</div>
       <div class="cta-title">${line1}${line2 ? `<br><span class="sky">${line2}</span>` : ''}</div>
       <div class="cta-line"></div>
       ${desc ? `<div class="cta-desc">${desc}</div>` : ''}
@@ -544,6 +543,11 @@ window.loadScene = function(data) {
 
   const root = document.getElementById('slide-root');
   if (!root) return false;
+
+  // Update brand tag with dynamic brand name
+  const _bname = (window.__brand && window.__brand.name) || data.brand || '';
+  const fb = document.getElementById('frame-brand');
+  if (fb) fb.textContent = _bname;
 
   // Normalise type
   const raw  = (data.type || '').toLowerCase().replace(/[_\s-]/g, '_');
