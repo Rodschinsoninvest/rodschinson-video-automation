@@ -147,14 +147,15 @@ def concat_scenes(scene_files: list, output: Path,
     for i in range(1, n):
         cumulative += durations[i - 1] - td
         offset = round(cumulative, 4)
-        out_tag = f"xf{i}"
+        # Last xfade outputs directly to [outv] so we can -map it without a null filter
+        out_tag = "outv" if i == n - 1 else f"xf{i}"
         xfade_parts.append(
             f"[{prev_tag}][sv{i}]xfade=transition={xfade_type}:"
             f"duration={td}:offset={offset}[{out_tag}]"
         )
         prev_tag = out_tag
 
-    filter_str = ";".join(filter_parts + xfade_parts) + f";[{prev_tag}]null[outv]"
+    filter_str = ";".join(filter_parts + xfade_parts)
 
     cmd = ["ffmpeg", "-y", *inputs,
            "-filter_complex", filter_str,
