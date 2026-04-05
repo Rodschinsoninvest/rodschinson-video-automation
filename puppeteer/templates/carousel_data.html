@@ -3,417 +3,260 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1080, height=1080">
+<title>Carousel — Data Premium</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg:   #031520;
-  --bg2:  #061e2e;
-  --sky:  #00B6FF;
-  --gold: #C8A96E;
-  --grn:  #00E5A0;
-  --dim:  rgba(255,255,255,0.5);
-  --sans: 'Space Grotesk', sans-serif;
-  --mono: 'Space Mono', monospace;
-}
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root { --dark-blue:#08316F; --sky-blue:#00B6FF; }
 
 html, body {
-  width: 1080px;
-  height: 1080px;
-  overflow: hidden;
-  background: var(--bg);
-  font-family: var(--sans);
+  width:1080px; height:1080px; overflow:hidden;
+  font-family:'Outfit', sans-serif;
+  background:var(--dark-blue); color:#fff;
 }
+#scene-container { width:1080px; height:1080px; position:relative; }
 
-.frame {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 10;
-}
-
-.scan-line {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--sky) 30%, var(--grn) 70%, transparent);
-  opacity: 0.8;
-}
-
-.grid-lines {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(0,182,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,182,255,0.04) 1px, transparent 1px);
-  background-size: 60px 60px;
-}
-
-.brand-tag {
-  position: absolute;
-  bottom: 28px;
-  left: 40px;
-  font-family: var(--mono);
-  font-size: 9px;
-  color: rgba(0,182,255,0.3);
-  letter-spacing: 0.2em;
-}
-
-.slide-counter {
-  position: absolute;
-  bottom: 28px;
-  right: 40px;
-  font-family: var(--mono);
-  font-size: 10px;
-  color: rgba(0,182,255,0.4);
-  letter-spacing: 0.18em;
-}
-
-/* ── DATA BARS DECORATION ── */
-.data-bars {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 4px;
-  display: flex;
-  gap: 2px;
-  overflow: hidden;
-  opacity: 0.4;
-}
-
-.data-bars span {
-  flex: 1;
-  background: var(--sky);
-  height: 100%;
-}
-.data-bars span:nth-child(2n) { background: var(--gold); height: 60%; }
-.data-bars span:nth-child(3n) { background: var(--grn);  height: 80%; }
-
+/* ── SCENE ── */
 .scene {
-  position: absolute;
-  inset: 0;
-  display: none;
-  flex-direction: column;
-  padding: 64px 52px 78px;
+  position:absolute; inset:0; display:none;
+  flex-direction:column; overflow:hidden;
+  background:var(--dark-blue);
 }
-.scene.active { display: flex; }
+.scene.active { display:flex; }
 
-/* ── TITLE ── */
-.slide-title .ticker {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--sky);
-  letter-spacing: 0.25em;
-  margin-bottom: 32px;
-  opacity: 0;
-  transition: opacity 0.4s ease;
+/* Diagonal accent overlay */
+.scene::before {
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(
+    148deg,
+    color-mix(in srgb, var(--sky-blue) 18%, transparent) 0%,
+    transparent 50%
+  );
+  pointer-events:none; z-index:0;
 }
-
-.slide-title .ticker span {
-  color: var(--grn);
-  margin-left: 12px;
-}
-
-.slide-title .headline {
-  font-size: 74px;
-  font-weight: 700;
-  color: #fff;
-  line-height: 1.05;
-  margin-bottom: 24px;
-  opacity: 0;
-  transform: translateY(12px);
-  transition: all 0.6s ease 0.1s;
+/* Bottom-right glow */
+.scene::after {
+  content:''; position:absolute;
+  bottom:-100px; right:-100px;
+  width:400px; height:400px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--sky-blue) 20%, transparent) 0%, transparent 70%);
+  pointer-events:none; z-index:0;
 }
 
-.slide-title .headline em {
-  font-style: normal;
-  color: var(--sky);
+/* ── HEADER ── */
+.frame-header {
+  position:absolute; top:0; left:0; right:0; height:68px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 52px; z-index:10;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.frame-header::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:4px;
+  background: linear-gradient(90deg, var(--sky-blue), color-mix(in srgb, var(--sky-blue) 50%, var(--dark-blue)));
+}
+#logo-text {
+  font-family:'Outfit', sans-serif;
+  font-size:14px; font-weight:600; letter-spacing:0.18em;
+  text-transform:uppercase; color:rgba(255,255,255,0.6);
+}
+.frame-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--sky-blue); opacity:0.7;
+}
+#frame-counter {
+  font-size:13px; font-weight:500;
+  color:rgba(255,255,255,0.3);
+  font-family:'Outfit', sans-serif;
 }
 
-.slide-title .rule {
-  width: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--sky), var(--grn));
-  margin-bottom: 22px;
-  transition: width 0.6s ease 0.25s;
+/* ── TITLE SLIDE ── */
+.slide-title {
+  padding:68px 52px 52px;
+  flex-direction:column; justify-content:space-between; position:relative;
+}
+.t-eyebrow {
+  font-size:12px; font-weight:600; letter-spacing:0.36em;
+  text-transform:uppercase; color:var(--sky-blue); opacity:0.8;
+  display:flex; align-items:center; gap:14px;
+}
+.t-eyebrow::before { content:''; width:28px; height:2px; background:var(--sky-blue); }
+.t-headline {
+  font-family:'Playfair Display', serif;
+  font-size:88px; font-weight:900; font-style:italic;
+  line-height:0.93; color:#fff; letter-spacing:-0.02em;
+  flex:1; display:flex; align-items:center; position:relative; z-index:1;
+}
+.t-rule {
+  width:48px; height:3px;
+  background: linear-gradient(90deg, var(--sky-blue), transparent);
+  margin-bottom:22px;
+}
+.t-sub {
+  font-size:20px; font-weight:300; line-height:1.6;
+  color:rgba(255,255,255,0.48); position:relative; z-index:1;
+}
+.t-swipe {
+  font-size:12px; font-weight:500; letter-spacing:0.28em;
+  text-transform:uppercase; color:rgba(255,255,255,0.25);
+  display:flex; align-items:center; gap:10px;
+  position:relative; z-index:1;
+}
+.t-swipe::after { content:'→'; color:var(--sky-blue); }
+
+/* ── CONTENT SLIDE ── */
+.slide-content {
+  padding:68px 52px 52px;
+  flex-direction:column; justify-content:space-between; position:relative;
+}
+.c-tag {
+  font-size:12px; font-weight:600; letter-spacing:0.32em;
+  text-transform:uppercase; color:var(--sky-blue); opacity:0.75;
+  margin-bottom:28px; position:relative; z-index:1;
+  display:flex; align-items:center; gap:12px;
+}
+.c-tag::before { content:''; width:24px; height:2px; background:var(--sky-blue); }
+.c-headline {
+  font-family:'Playfair Display', serif;
+  font-size:56px; font-weight:700; font-style:italic;
+  line-height:1.0; color:#fff; letter-spacing:-0.01em;
+  flex:1; display:flex; align-items:flex-start;
+  position:relative; z-index:1;
+}
+.c-body {
+  font-size:19px; font-weight:400; line-height:1.7;
+  color:rgba(255,255,255,0.52); position:relative; z-index:1;
+}
+/* Solid accent block for stat */
+.c-stat {
+  background:color-mix(in srgb, var(--sky-blue) 15%, transparent);
+  border-left:4px solid var(--sky-blue);
+  padding:20px 24px; margin-top:24px;
+  display:flex; align-items:baseline; gap:12px;
+  position:relative; z-index:1;
+}
+.c-stat-num {
+  font-family:'Playfair Display', serif;
+  font-size:52px; font-weight:900; color:var(--sky-blue);
+  letter-spacing:-0.02em;
+}
+.c-stat-desc {
+  font-size:17px; font-weight:400; color:rgba(255,255,255,0.55);
+  line-height:1.4;
 }
 
-.slide-title .subheadline {
-  font-size: 17px;
-  font-weight: 400;
-  color: var(--dim);
-  line-height: 1.7;
-  max-width: 720px;
-  opacity: 0;
-  transition: opacity 0.5s ease 0.35s;
-}
-
-.slide-title .meta {
-  margin-top: auto;
-  display: flex;
-  gap: 24px;
-  font-family: var(--mono);
-  font-size: 10px;
-  color: rgba(255,255,255,0.2);
-  letter-spacing: 0.12em;
-  opacity: 0;
-  transition: opacity 0.4s ease 0.6s;
-}
-
-/* ── CONTENT ── */
-.slide-content .data-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 12px;
-  background: rgba(0,182,255,0.08);
-  border: 1px solid rgba(0,182,255,0.2);
-  border-radius: 4px;
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--sky);
-  letter-spacing: 0.18em;
-  margin-bottom: 20px;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-}
-
-.slide-content .data-tag::before {
-  content: '▶';
-  color: var(--grn);
-  font-size: 8px;
-}
-
-.slide-content .headline {
-  font-size: 52px;
-  font-weight: 700;
-  color: #fff;
-  line-height: 1.1;
-  margin-bottom: 20px;
-  opacity: 0;
-  transform: translateY(12px);
-  transition: all 0.55s ease 0.1s;
-}
-
-.slide-content .body {
-  font-size: 18px;
-  font-weight: 400;
-  color: var(--dim);
-  line-height: 1.7;
-  max-width: 840px;
-  opacity: 0;
-  transition: opacity 0.5s ease 0.2s;
-}
-
-.slide-content .stat-block {
-  margin-top: 28px;
-  display: flex;
-  align-items: center;
-  gap: 0;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: all 0.5s ease 0.35s;
-}
-
-.slide-content .stat-line {
-  width: 4px;
-  height: 60px;
-  background: linear-gradient(180deg, var(--sky), var(--grn));
-  border-radius: 2px;
-  margin-right: 18px;
-  flex-shrink: 0;
-}
-
-.slide-content .stat-number {
-  font-family: var(--mono);
-  font-size: 52px;
-  font-weight: 700;
-  color: var(--sky);
-  line-height: 1;
-  margin-right: 14px;
-}
-
-.slide-content .stat-desc {
-  font-size: 14px;
-  color: var(--dim);
-  line-height: 1.5;
-  max-width: 360px;
-}
-
-/* ── CTA ── */
+/* ── CTA SLIDE ── */
 .slide-cta {
-  background: linear-gradient(135deg, var(--bg2) 0%, #041a2a 100%);
-  justify-content: center;
+  padding:68px 52px 52px;
+  flex-direction:column; justify-content:center; align-items:center;
+  text-align:center; position:relative;
+  background: radial-gradient(ellipse 70% 55% at 50% 50%, color-mix(in srgb, var(--sky-blue) 22%, transparent) 0%, transparent 65%) !important;
 }
-
-.slide-cta .terminal-prompt {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--grn);
-  letter-spacing: 0.14em;
-  margin-bottom: 28px;
-  opacity: 0;
-  transition: opacity 0.4s ease;
+.cta-mono {
+  width:64px; height:64px; border-radius:50%;
+  border:2px solid rgba(255,255,255,0.25);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Playfair Display', serif;
+  font-size:30px; font-weight:700; color:#fff;
+  margin-bottom:36px; position:relative; z-index:1;
 }
-
-.slide-cta .cta-headline {
-  font-size: 58px;
-  font-weight: 700;
-  color: #fff;
-  line-height: 1.1;
-  margin-bottom: 16px;
-  opacity: 0;
-  transform: translateY(12px);
-  transition: all 0.6s ease 0.1s;
+.cta-headline {
+  font-family:'Playfair Display', serif;
+  font-size:68px; font-weight:900; font-style:italic;
+  line-height:0.95; color:#fff;
+  letter-spacing:-0.02em; margin-bottom:32px;
+  position:relative; z-index:1;
 }
-
-.slide-cta .rule {
-  width: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--sky), var(--grn));
-  margin-bottom: 22px;
-  transition: width 0.6s ease 0.2s;
+.cta-rule {
+  width:48px; height:2px;
+  background: linear-gradient(90deg, transparent, var(--sky-blue), transparent);
+  margin:0 auto 28px; position:relative; z-index:1;
 }
-
-.slide-cta .cta-body {
-  font-size: 16px;
-  color: var(--dim);
-  line-height: 1.65;
-  max-width: 700px;
-  margin-bottom: 28px;
-  opacity: 0;
-  transition: opacity 0.5s ease 0.25s;
+.cta-body {
+  font-size:19px; font-weight:300; line-height:1.65;
+  color:rgba(255,255,255,0.48); max-width:720px;
+  margin-bottom:36px; position:relative; z-index:1;
 }
-
-.slide-cta .hashtags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  opacity: 0;
-  transition: opacity 0.5s ease 0.4s;
+.hashtags { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; position:relative; z-index:1; }
+.hashtag {
+  font-size:13px; font-weight:500; color:var(--sky-blue);
+  border:1px solid color-mix(in srgb, var(--sky-blue) 28%, transparent);
+  padding:6px 16px; border-radius:20px;
 }
-
-.slide-cta .hashtag {
-  padding: 5px 12px;
-  background: rgba(0,182,255,0.08);
-  border: 1px solid rgba(0,182,255,0.2);
-  border-radius: 3px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--sky);
-}
-
-/* ── ANIMATED ── */
-.scene.anim .slide-title .ticker,
-.scene.anim .slide-title .subheadline,
-.scene.anim .slide-title .meta { opacity: 1; }
-.scene.anim .slide-title .headline { opacity: 1; transform: none; }
-.scene.anim .slide-title .rule { width: 80px; }
-
-.scene.anim .slide-content .data-tag,
-.scene.anim .slide-content .body,
-.scene.anim .slide-content .stat-block { opacity: 1; transform: none; }
-.scene.anim .slide-content .headline { opacity: 1; transform: none; }
-
-.scene.anim .slide-cta .terminal-prompt,
-.scene.anim .slide-cta .cta-body,
-.scene.anim .slide-cta .hashtags { opacity: 1; }
-.scene.anim .slide-cta .cta-headline { opacity: 1; transform: none; }
-.scene.anim .slide-cta .rule { width: 80px; }
 </style>
 </head>
 <body>
-
-<div class="grid-lines"></div>
-<div class="frame">
-  <div class="scan-line"></div>
-  <div class="brand-tag" id="frame-brand"></div>
-  <div class="slide-counter" id="frame-counter"></div>
-  <div class="data-bars">
-    <span></span><span></span><span></span><span></span><span></span>
-    <span></span><span></span><span></span><span></span><span></span>
-    <span></span><span></span><span></span><span></span><span></span>
-    <span></span><span></span><span></span><span></span><span></span>
+<div id="scene-container">
+  <div class="frame-header">
+    <div id="logo-text">Brand</div>
+    <div class="frame-dot"></div>
+    <div id="frame-counter"></div>
   </div>
 </div>
-
-<div id="scene-container"></div>
-
 <script>
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function fmt(s) { return esc(s).replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(s){ return esc(s).replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); }
+
+function parseStatBlock(stat) {
+  if (!stat) return '';
+  const [v, d] = String(stat).split(/\s*—\s*/, 2);
+  return `<div class="c-stat">
+    <div class="c-stat-num">${esc(v.trim())}</div>
+    <div class="c-stat-desc">${esc(d||'')}</div>
+  </div>`;
+}
 
 window.loadScene = function(slideData) {
-  const c = document.getElementById('scene-container');
+  const c     = document.getElementById('scene-container');
   const idx   = slideData.index || 1;
   const type  = slideData.type  || 'content';
   const total = slideData.total || '';
-  const now   = new Date().toISOString().slice(0,10);
-
-  document.getElementById('frame-counter').textContent =
-    total ? `${String(idx).padStart(2,'0')}/${String(total).padStart(2,'0')}` : `${String(idx).padStart(2,'0')}`;
 
   const _bname = (window.__brand && window.__brand.name) || slideData.brand || '';
-  const fb = document.getElementById('frame-brand');
-  if (fb) fb.textContent = _bname ? _bname.toUpperCase() + ' — DATA INSIGHTS' : '';
+  const _b1    = (_bname[0] || 'B').toUpperCase();
+  const cntTxt = total ? `${String(idx).padStart(2,'0')} / ${String(total).padStart(2,'0')}` : '';
 
-  let html = '';
+  let sceneHtml = '';
+
   if (type === 'title') {
-    html = `<div class="scene slide-title" id="scene">
-      <div class="ticker">${esc(_bname).toUpperCase() || 'BRAND'} <span>● LIVE</span></div>
-      <div class="headline">${fmt(slideData.headline || '')}</div>
-      <div class="rule"></div>
-      <div class="subheadline">${esc(slideData.subheadline || '')}</div>
-      <div class="meta">
-        <span>${esc(_bname)}</span>
-        <span>${now}</span>
-        <span>${esc(slideData.cta || 'Swipe →')}</span>
+    sceneHtml = `<div class="scene slide-title active" id="scene">
+      <div class="t-eyebrow">${esc(_bname)}</div>
+      <div class="t-headline">${fmt(slideData.headline || '')}</div>
+      <div>
+        <div class="t-rule"></div>
+        <div class="t-sub">${esc(slideData.subheadline || '')}</div>
       </div>
+      <div class="t-swipe">${esc(slideData.cta || 'Swipe')}</div>
     </div>`;
+
   } else if (type === 'cta') {
     const tags = (slideData.hashtags || []).map(h => `<span class="hashtag">${esc(h)}</span>`).join('');
-    html = `<div class="scene slide-cta" id="scene">
-      <div class="terminal-prompt">$ contact --team rodschinson</div>
+    sceneHtml = `<div class="scene slide-cta active" id="scene">
+      <div class="cta-mono">${_b1}</div>
       <div class="cta-headline">${fmt(slideData.headline || '')}</div>
-      <div class="rule"></div>
+      <div class="cta-rule"></div>
       <div class="cta-body">${esc(slideData.body || '')}</div>
       ${tags ? `<div class="hashtags">${tags}</div>` : ''}
     </div>`;
+
   } else {
-    let statHtml = '';
-    if (slideData.stat) {
-      const m = String(slideData.stat).match(/^([0-9.,]+\s*[%€KMB+]*)\s*[-–:·]?\s*(.*)$/);
-      statHtml = `<div class="stat-block">
-        <div class="stat-line"></div>
-        ${m ? `<div class="stat-number">${esc(m[1])}</div><div class="stat-desc">${esc(m[2]||slideData.stat)}</div>`
-             : `<div class="stat-desc">${esc(slideData.stat)}</div>`}
-      </div>`;
-    }
-    html = `<div class="scene slide-content" id="scene">
-      <div class="data-tag">INSIGHT ${String(idx).padStart(2,'0')}</div>
-      <div class="headline">${fmt(slideData.headline || '')}</div>
-      <div class="body">${esc(slideData.body || '')}</div>
-      ${statHtml}
+    sceneHtml = `<div class="scene slide-content active" id="scene">
+      <div class="c-tag">${String(idx).padStart(2,'0')}</div>
+      <div class="c-headline">${fmt(slideData.headline || '')}</div>
+      <div class="c-body">${esc(slideData.body || '')}</div>
+      ${parseStatBlock(slideData.stat)}
     </div>`;
   }
 
-  c.innerHTML = html;
+  c.innerHTML = `<div class="frame-header">
+    <div id="logo-text">${esc(_bname)}</div>
+    <div class="frame-dot"></div>
+    <div id="frame-counter">${cntTxt}</div>
+  </div>` + sceneHtml;
   return true;
 };
 
-window.animateScene = function() {
-  const s = document.getElementById('scene');
-  if (!s) return;
-  requestAnimationFrame(() => {
-    s.classList.add('active');
-    setTimeout(() => s.classList.add('anim'), 40);
-  });
-};
-
-window.isAnimationComplete = function(d) {
-  return new Promise(r => setTimeout(r, d || 700));
-};
+window.animateScene = function() {};
+window.isAnimationComplete = function(d){ return new Promise(r=>setTimeout(r, d||400)); };
 </script>
 </body>
 </html>

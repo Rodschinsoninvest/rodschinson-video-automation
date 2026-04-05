@@ -70,7 +70,7 @@ const TEMPLATES = {
 const TEMPLATE_ALLOWED_TYPES = {
   // Landscape 16:9 — video templates
   // Only list types that have an explicit SCENE_BUILDERS entry in the HTML file.
-  rodschinson_premium: ['title_card', 'text_bullets', 'process_steps', 'quote_card', 'cta_screen'],
+  rodschinson_premium: ['title_card', 'text_bullets', 'process_steps', 'quote_card', 'big_number', 'bar_chart', 'comparison_table', 'cta_screen'],
   tech_data:           ['title_card', 'big_number',   'bar_chart',    'text_bullets',  'cta_screen'],
   news_reel:           ['title_card', 'big_number',   'bar_chart',    'text_bullets',  'cta_screen'],
   corporate_minimal:   ['title_card', 'text_bullets', 'split_screen', 'process_steps', 'cta_screen'],
@@ -147,7 +147,7 @@ function normalizeScene(scene) {
         visuel: {
           titre_principal: v.titre_principal || v.titre || v.title || '',
           sous_titre:      v.sous_titre      || v.subtitle || v.tagline || '',
-          eyebrow:         v.eyebrow         || v.location || 'Brussels · Dubai · Casablanca',
+          eyebrow:         v.eyebrow         || v.location || '',
           scene_number:    String(scene.id || '01').padStart(2,'0'),
           ...v,
         }
@@ -254,8 +254,20 @@ function normalizeScene(scene) {
           eyebrow:  v.eyebrow  || '',
           headline: v.headline || v.titre_principal || v.titre || v.title || '',
           body:     v.body     || v.sous_titre      || v.subtitle || (Array.isArray(v.elements) ? v.elements.join(' · ') : '') || '',
-          cta_text: v.cta_text || v.bouton || v.cta || 'Consultation Gratuite — 30 min',
-          url:      v.url      || v.site   || 'rodschinson.com',
+          cta_text: v.cta_text || v.bouton || v.cta || '',
+          url:      v.url      || v.site   || '',
+          ...v,
+        }
+      };
+
+    case 'quote_card':
+      return {
+        ...scene,
+        visuel: {
+          citation: v.citation || v.quote || v.texte || v.body || '',
+          auteur:   v.auteur   || v.author || v.speaker || '',
+          source:   v.source   || v.titre  || v.title   || '',
+          eyebrow:  v.eyebrow  || '',
           ...v,
         }
       };

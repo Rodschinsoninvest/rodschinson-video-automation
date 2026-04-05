@@ -49,7 +49,7 @@ html, body {
   top: 5.5%;
   left: 5%; right: 5%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(200,169,110,0.35), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--gold) 35%, transparent), transparent);
 }
 
 .rule-bot {
@@ -57,7 +57,7 @@ html, body {
   bottom: 8%;
   left: 5%; right: 5%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(200,169,110,0.35), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--gold) 35%, transparent), transparent);
 }
 
 .logo {
@@ -69,7 +69,7 @@ html, body {
   font-weight: 600;
   letter-spacing: 0.32em;
   text-transform: uppercase;
-  color: rgba(200,169,110,0.3);
+  color: color-mix(in srgb, var(--gold) 30%, transparent);
 }
 
 /* ── GEOMETRY ── */
@@ -234,8 +234,8 @@ html, body {
 .bn-formula {
   margin-top: 24px;
   padding: 16px 40px;
-  border: 1.5px solid rgba(0,182,255,0.2);
-  background: rgba(0,182,255,0.06);
+  border: 1.5px solid color-mix(in srgb, var(--sky) 20%, transparent);
+  background: color-mix(in srgb, var(--sky) 6%, transparent);
   font-family: var(--sans);
   font-size: 20px;
   font-weight: 500;
@@ -376,12 +376,12 @@ html, body {
 }
 
 .ps-step.done {
-  border-left-color: rgba(0,182,255,0.5);
-  background: rgba(0,182,255,0.07);
+  border-left-color: color-mix(in srgb, var(--sky) 50%, transparent);
+  background: color-mix(in srgb, var(--sky) 7%, transparent);
 }
 .ps-step.active {
   border-left-color: var(--gold);
-  background: rgba(200,169,110,0.1);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
 }
 
 .ps-num {
@@ -393,7 +393,7 @@ html, body {
   line-height: 1;
   flex-shrink: 0;
 }
-.ps-step.done .ps-num { color: rgba(0,182,255,0.6); }
+.ps-step.done .ps-num { color: color-mix(in srgb, var(--sky) 60%, transparent); }
 .ps-step.active .ps-num { color: var(--gold); }
 
 .ps-text {
@@ -436,7 +436,7 @@ html, body {
   align-items: center;
   gap: 20px;
   padding: 18px 22px;
-  border-left: 3px solid rgba(200,169,110,0.4);
+  border-left: 3px solid color-mix(in srgb, var(--gold) 40%, transparent);
   background: rgba(255,255,255,0.04);
   opacity: 0;
   transform: translateX(-16px);
@@ -512,7 +512,7 @@ html, body {
 .cta-btn {
   display: inline-block;
   padding: 18px 60px;
-  border: 2px solid rgba(200,169,110,0.5);
+  border: 2px solid color-mix(in srgb, var(--gold) 50%, transparent);
   font-family: var(--sans);
   font-size: 18px;
   font-weight: 600;
@@ -577,7 +577,7 @@ html, body {
   transition: all 0.55s cubic-bezier(0.16,1,0.3,1);
 }
 .ss-col.left  { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); transform: translateX(-20px); }
-.ss-col.right { background: rgba(200,169,110,0.08); border: 1px solid rgba(200,169,110,0.3); transform: translateX(20px); }
+.ss-col.right { background: color-mix(in srgb, var(--gold) 8%, transparent); border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent); transform: translateX(20px); }
 
 .ss-col-title {
   font-family: var(--serif);
@@ -627,16 +627,17 @@ html, body {
 
 <!-- GEOMETRY SVG -->
 <svg class="geo" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-  <line x1="0" y1="540" x2="1920" y2="540" stroke="#00B6FF" stroke-width="1"/>
-  <line x1="960" y1="0" x2="960" y2="1080" stroke="#00B6FF" stroke-width="1"/>
-  <rect x="560" y="140" width="800" height="800" fill="none" stroke="#00B6FF" stroke-width="0.8" transform="rotate(15 960 540)"/>
-  <rect x="380" y="40" width="1160" height="1000" fill="none" stroke="#00B6FF" stroke-width="0.6" transform="rotate(30 960 540)"/>
-  <circle cx="960" cy="540" r="360" fill="none" stroke="#00B6FF" stroke-width="0.8"/>
-  <circle cx="960" cy="540" r="520" fill="none" stroke="#00B6FF" stroke-width="0.5"/>
-  <line x1="200" y1="0" x2="960" y2="540" stroke="#C8A96E" stroke-width="0.6"/>
-  <line x1="1720" y1="0" x2="960" y2="540" stroke="#C8A96E" stroke-width="0.6"/>
-  <line x1="200" y1="1080" x2="960" y2="540" stroke="#C8A96E" stroke-width="0.6"/>
-  <line x1="1720" y1="1080" x2="960" y2="540" stroke="#C8A96E" stroke-width="0.6"/>
+  <style>.gs{stroke:var(--sky);fill:none}.gg{stroke:var(--gold);fill:none}</style>
+  <line class="gs" x1="0" y1="540" x2="1920" y2="540" stroke-width="1"/>
+  <line class="gs" x1="960" y1="0" x2="960" y2="1080" stroke-width="1"/>
+  <rect class="gs" x="560" y="140" width="800" height="800" stroke-width="0.8" transform="rotate(15 960 540)"/>
+  <rect class="gs" x="380" y="40" width="1160" height="1000" stroke-width="0.6" transform="rotate(30 960 540)"/>
+  <circle class="gs" cx="960" cy="540" r="360" stroke-width="0.8"/>
+  <circle class="gs" cx="960" cy="540" r="520" stroke-width="0.5"/>
+  <line class="gg" x1="200" y1="0" x2="960" y2="540" stroke-width="0.6"/>
+  <line class="gg" x1="1720" y1="0" x2="960" y2="540" stroke-width="0.6"/>
+  <line class="gg" x1="200" y1="1080" x2="960" y2="540" stroke-width="0.6"/>
+  <line class="gg" x1="1720" y1="1080" x2="960" y2="540" stroke-width="0.6"/>
 </svg>
 
 <!-- SCENE CONTAINER - populated by JavaScript -->
@@ -669,7 +670,7 @@ function normBN(d) {
 function normTC(d) {
   if (!d.titre_principal) d.titre_principal = d.titre || d.title || d.headline || '';
   if (!d.sous_titre)      d.sous_titre      = d.subtitle || d.sous_titre || '';
-  if (!d.eyebrow)         d.eyebrow         = d.location || 'Brussels \u00B7 Dubai \u00B7 Casablanca';
+  if (!d.eyebrow)         d.eyebrow         = d.location || (window.__brand && window.__brand.name) || '';
   if (!d.scene_number)    d.scene_number    = d.numero || '01';
   return d;
 }
@@ -711,8 +712,8 @@ function normTB(d) {
 
 function normCTA(d) {
   if (!d.headline) d.headline = d.titre || d.title || d.cta_text || '';
-  if (!d.cta_text) d.cta_text = d.bouton || d.button || d.cta || 'Consultation Gratuite \u2014 30 min';
-  if (!d.url)      d.url      = d.site || d.link || 'rodschinson.com';
+  if (!d.cta_text) d.cta_text = d.bouton || d.button || d.cta || '';
+  if (!d.url)      d.url      = d.site || d.link || '';
   if (!d.eyebrow)  d.eyebrow  = d.brand || (window.__brand&&window.__brand.name) || '';
   return d;
 }
@@ -721,7 +722,7 @@ const SCENE_BUILDERS = {
 
   title_card: (data) => { data = normTC(data); return  `
     <div class="scene title-card" id="scene">
-      <div class="tc-eyebrow">${data.eyebrow || 'Brussels \u00B7 Dubai \u00B7 Casablanca'}</div>
+      <div class="tc-eyebrow">${data.eyebrow || ''}</div>
       <div class="tc-title">${formatTitle(data.titre_principal || '')}</div>
       <div class="tc-divider"></div>
       <div class="tc-sub">${data.sous_titre || ''}</div>
@@ -742,7 +743,9 @@ const SCENE_BUILDERS = {
   bar_chart: (data) => { data = normBC(data);
     const series = data.series || [];
     const maxVal = Math.max(...series.map(s => s.valeur), 1);
-    const COLORS = ['rgba(255,255,255,0.85)', 'rgba(208,232,255,0.85)', '#00B6FF', '#C8A96E', '#B8894E'];
+    const _sky = getComputedStyle(document.documentElement).getPropertyValue('--sky').trim() || '#00B6FF';
+    const _gold = getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() || '#C8A96E';
+    const COLORS = ['rgba(255,255,255,0.85)', 'rgba(208,232,255,0.85)', _sky, _gold, _gold + '99'];
     const bars = series.map((s, i) => {
       const h = (s.valeur / maxVal * 100).toFixed(1);
       const color = s.couleur || COLORS[i % COLORS.length];
@@ -803,7 +806,7 @@ const SCENE_BUILDERS = {
       <div class="cta-eyebrow">${data.eyebrow || (window.__brand&&window.__brand.name) || ''}</div>
       <div class="cta-headline">${formatTitle(data.headline || '')}</div>
       <div class="cta-divider"></div>
-      <div class="cta-btn">${data.cta_text || 'Consultation Gratuite \u2014 30 min'}</div>
+      <div class="cta-btn">${data.cta_text || ''}</div>
       <div class="cta-url">${data.url || ''}</div>
     </div>`; },
 

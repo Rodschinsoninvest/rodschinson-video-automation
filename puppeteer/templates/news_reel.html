@@ -386,8 +386,8 @@ html, body {
   <div class="lower-third" id="lower-third">
     <div class="lt-accent"></div>
     <div class="lt-content">
-      <div class="lt-name" id="lt-name">Rachid Chikhi</div>
-      <div class="lt-title" id="lt-title">CEO, Rodschinson Investment · Brussels</div>
+      <div class="lt-name" id="lt-name"></div>
+      <div class="lt-title" id="lt-title"></div>
     </div>
   </div>
 </div>
@@ -409,12 +409,12 @@ const SCENE_BUILDERS = {
 
   title_card: (data) => `
     <div class="scene breaking" id="scene">
-      <div class="brk-category">${data.eyebrow || 'Marchés · Immobilier Commercial'}</div>
+      <div class="brk-category">${data.eyebrow||(window.__brand&&window.__brand.name)||''}</div>
       <div class="brk-headline">${(data.titre_principal||'').replace(/\n/g,'<br>').replace(/\*([^*]+)\*/g,'$1')}</div>
       <div class="brk-divider"></div>
       <div class="brk-sub">${data.sous_titre || ''}</div>
       <div class="brk-tags">
-        ${(data.tags||['Brussels','Dubai','Casablanca']).map(t=>`<div class="brk-tag">${t}</div>`).join('')}
+        ${(data.tags||[]).map(t=>`<div class="brk-tag">${t}</div>`).join('')}
       </div>
     </div>`,
 
@@ -491,7 +491,7 @@ const SCENE_BUILDERS = {
       <div class="brk-divider"></div>
       <div class="brk-sub">${data.url||''}</div>
       <div class="brk-tags">
-        <div class="brk-tag" style="border-color:var(--red);color:var(--red2)">${data.cta_text||'Consultation Gratuite'}</div>
+        ${data.cta_text?`<div class="brk-tag" style="border-color:var(--red);color:var(--red2)">${data.cta_text}</div>`:''}
       </div>
     </div>`,
 
@@ -541,7 +541,7 @@ window.loadScene = function(sceneData) {
 
   // Update lower third
   if (sceneData.speaker) {
-    document.getElementById('lt-name').textContent = sceneData.speaker.name || 'Rachid Chikhi';
+    document.getElementById('lt-name').textContent = sceneData.speaker.name || '';
     document.getElementById('lt-title').textContent = sceneData.speaker.title || '';
   }
 

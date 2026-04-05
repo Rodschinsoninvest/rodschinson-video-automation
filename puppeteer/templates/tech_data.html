@@ -34,8 +34,8 @@ html, body {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(0,182,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,182,255,0.04) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--sky) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--sky) 4%, transparent) 1px, transparent 1px);
   background-size: 60px 60px;
   animation: gridPulse 4s ease-in-out infinite;
 }
@@ -45,7 +45,7 @@ html, body {
   position: absolute;
   left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0,182,255,0.3), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--sky) 30%, transparent), transparent);
   animation: scanAnim 6s linear infinite;
 }
 @keyframes scanAnim { 0%{top:0;opacity:0} 5%{opacity:1} 95%{opacity:1} 100%{top:100%;opacity:0} }
@@ -55,7 +55,7 @@ html, body {
   top: 0; left: 0; right: 0;
   height: 56px;
   background: rgba(2,11,20,0.95);
-  border-bottom: 1px solid rgba(0,182,255,0.15);
+  border-bottom: 1px solid color-mix(in srgb, var(--sky) 15%, transparent);
   display: flex;
   align-items: center;
   padding: 0 40px;
@@ -68,22 +68,22 @@ html, body {
   color: var(--sky);
   letter-spacing: 0.08em;
 }
-.hd-sep { width: 1px; height: 24px; background: rgba(0,182,255,0.2); }
-.hd-index { font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(0,182,255,0.5); }
-.hd-time { margin-left: auto; font-family: var(--bebas); font-size: 22px; color: rgba(0,182,255,0.5); letter-spacing: 0.1em; }
+.hd-sep { width: 1px; height: 24px; background: color-mix(in srgb, var(--sky) 20%, transparent); }
+.hd-index { font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: color-mix(in srgb, var(--sky) 50%, transparent); }
+.hd-time { margin-left: auto; font-family: var(--bebas); font-size: 22px; color: color-mix(in srgb, var(--sky) 50%, transparent); letter-spacing: 0.1em; }
 
 .footer {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   height: 36px;
   background: rgba(2,11,20,0.95);
-  border-top: 1px solid rgba(0,182,255,0.1);
+  border-top: 1px solid color-mix(in srgb, var(--sky) 10%, transparent);
   display: flex;
   align-items: center;
   padding: 0 40px;
   gap: 40px;
 }
-.ft-item { font-size: 11px; font-weight: 500; letter-spacing: 0.15em; color: rgba(0,182,255,0.35); text-transform: uppercase; }
+.ft-item { font-size: 11px; font-weight: 500; letter-spacing: 0.15em; color: color-mix(in srgb, var(--sky) 35%, transparent); text-transform: uppercase; }
 .ft-item span { color: var(--sky); margin-left: 8px; }
 
 /* SCENE */
@@ -110,7 +110,7 @@ html, body {
   font-weight: 600;
   letter-spacing: 0.5em;
   text-transform: uppercase;
-  color: rgba(0,182,255,0.6);
+  color: color-mix(in srgb, var(--sky) 60%, transparent);
   margin-bottom: 24px;
   opacity: 0;
   transition: opacity 0.5s ease;
@@ -163,7 +163,7 @@ html, body {
   font-weight: 600;
   letter-spacing: 0.4em;
   text-transform: uppercase;
-  color: rgba(0,182,255,0.6);
+  color: color-mix(in srgb, var(--sky) 60%, transparent);
   margin-bottom: 20px;
   opacity: 0;
   transition: opacity 0.5s ease;
@@ -195,8 +195,8 @@ html, body {
 .tn-formula {
   margin-top: 20px;
   padding: 14px 36px;
-  border: 1px solid rgba(0,182,255,0.2);
-  background: rgba(0,182,255,0.05);
+  border: 1px solid color-mix(in srgb, var(--sky) 20%, transparent);
+  background: color-mix(in srgb, var(--sky) 5%, transparent);
   font-size: 18px;
   font-weight: 500;
   letter-spacing: 0.12em;
@@ -221,7 +221,7 @@ html, body {
 
 .tc-head { opacity: 0; transition: opacity 0.5s ease; }
 .tc-title { font-family: var(--bebas); font-size: 52px; color: var(--white); letter-spacing: 0.04em; margin-bottom: 4px; }
-.tc-source { font-size: 13px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(0,182,255,0.5); }
+.tc-source { font-size: 13px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: color-mix(in srgb, var(--sky) 50%, transparent); }
 
 .tc-bars {
   display: flex;
@@ -232,9 +232,9 @@ html, body {
 
 .tc-bw { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1; }
 .tc-val { font-family: var(--bebas); font-size: 36px; color: var(--sky); letter-spacing: 0.05em; opacity: 0; transition: opacity 0.4s ease 0.85s; }
-.tc-bo { width: 100%; height: 360px; background: rgba(0,182,255,0.06); border: 1px solid rgba(0,182,255,0.1); display: flex; align-items: flex-end; overflow: hidden; }
+.tc-bo { width: 100%; height: 360px; background: color-mix(in srgb, var(--sky) 6%, transparent); border: 1px solid color-mix(in srgb, var(--sky) 10%, transparent); display: flex; align-items: flex-end; overflow: hidden; }
 .tc-bi { width: 100%; transform: scaleY(0); transform-origin: bottom; transition: transform 0.85s cubic-bezier(0.16,1,0.3,1); }
-.tc-city { font-size: 13px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(0,182,255,0.5); }
+.tc-city { font-size: 13px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: color-mix(in srgb, var(--sky) 50%, transparent); }
 
 .scene.anim .tc-head { opacity: 1; }
 .scene.anim .tc-bi { transform: scaleY(1); }
@@ -254,15 +254,15 @@ html, body {
 .tp-step {
   display: flex; align-items: center; gap: 24px;
   padding: 18px 24px;
-  border: 1px solid rgba(0,182,255,0.08);
-  background: rgba(0,182,255,0.03);
+  border: 1px solid color-mix(in srgb, var(--sky) 8%, transparent);
+  background: color-mix(in srgb, var(--sky) 3%, transparent);
   opacity: 0; transform: translateX(-12px);
   transition: all 0.45s ease;
 }
-.tp-step.active { border-color: rgba(0,182,255,0.3); background: rgba(0,182,255,0.08); }
+.tp-step.active { border-color: color-mix(in srgb, var(--sky) 30%, transparent); background: color-mix(in srgb, var(--sky) 8%, transparent); }
 .tp-step.done { border-color: rgba(0,255,136,0.2); background: rgba(0,255,136,0.04); }
 
-.tp-num { font-family: var(--bebas); font-size: 48px; color: rgba(0,182,255,0.3); min-width: 52px; line-height: 1; }
+.tp-num { font-family: var(--bebas); font-size: 48px; color: color-mix(in srgb, var(--sky) 30%, transparent); min-width: 52px; line-height: 1; }
 .tp-step.active .tp-num { color: var(--sky); }
 .tp-step.done .tp-num { color: var(--green); }
 
@@ -280,12 +280,12 @@ html, body {
   gap: 24px;
 }
 
-.tca-pre { font-size: 14px; font-weight: 600; letter-spacing: 0.5em; text-transform: uppercase; color: rgba(0,182,255,0.6); opacity: 0; transition: opacity 0.5s ease; }
+.tca-pre { font-size: 14px; font-weight: 600; letter-spacing: 0.5em; text-transform: uppercase; color: color-mix(in srgb, var(--sky) 60%, transparent); opacity: 0; transition: opacity 0.5s ease; }
 .tca-headline { font-family: var(--bebas); font-size: 110px; color: var(--white); line-height: 0.9; letter-spacing: 0.04em; opacity: 0; transform: scale(0.92); transition: all 0.7s ease 0.2s; }
 .tca-headline .hl { color: var(--sky); }
 .tca-line { width: 0; height: 2px; background: var(--sky); margin: 0 auto; transition: width 0.6s ease 0.5s; }
-.tca-btn { padding: 16px 56px; border: 2px solid rgba(0,182,255,0.4); font-size: 16px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; color: var(--sky); opacity: 0; transition: opacity 0.5s ease 0.7s; }
-.tca-url { font-size: 16px; font-weight: 400; letter-spacing: 0.2em; color: rgba(0,182,255,0.35); opacity: 0; transition: opacity 0.5s ease 0.9s; }
+.tca-btn { padding: 16px 56px; border: 2px solid color-mix(in srgb, var(--sky) 40%, transparent); font-size: 16px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; color: var(--sky); opacity: 0; transition: opacity 0.5s ease 0.7s; }
+.tca-url { font-size: 16px; font-weight: 400; letter-spacing: 0.2em; color: color-mix(in srgb, var(--sky) 35%, transparent); opacity: 0; transition: opacity 0.5s ease 0.9s; }
 
 .scene.anim .tca-pre,
 .scene.anim .tca-btn,
@@ -300,7 +300,7 @@ html, body {
 
 <div class="frame">
   <div class="header">
-    <div class="hd-brand">RODSCHINSON · MARKET DATA</div>
+    <div class="hd-brand" id="hd-brand">MARKET DATA</div>
     <div class="hd-sep"></div>
     <div class="hd-index" id="hd-index">CRE INDEX · EMEA 2025</div>
     <div class="hd-time" id="hd-time">14:32:05</div>
@@ -324,12 +324,14 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
-const COLORS = ['rgba(255,255,255,0.85)', 'rgba(180,220,255,0.85)', '#00B6FF', '#C8A96E', '#00FF88'];
+const _sky = getComputedStyle(document.documentElement).getPropertyValue('--sky').trim() || '#00B6FF';
+const _gold = getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() || '#C8A96E';
+const COLORS = ['rgba(255,255,255,0.85)', 'rgba(180,220,255,0.85)', _sky, _gold, '#00FF88'];
 
 const SCENE_BUILDERS = {
   title_card: (d) => `
     <div class="scene tech-title" id="scene">
-      <div class="tt-pre">${d.eyebrow||'Brussels · Dubai · Casablanca'}</div>
+      <div class="tt-pre">${d.eyebrow||(window.__brand&&window.__brand.name)||''}</div>
       <div class="tt-title">${(d.titre_principal||'').replace(/\n/g,'<br>').replace(/\*([^*]+)\*/g,'<span class="accent">$1</span>')}</div>
       <div class="tt-line"></div>
       <div class="tt-sub">${d.sous_titre||''}</div>
@@ -356,7 +358,7 @@ const SCENE_BUILDERS = {
           ${s.map((b,i)=>`
           <div class="tc-bw">
             <div class="tc-val">${b.valeur.toFixed(1)}${d.unite||'%'}</div>
-            <div class="tc-bo"><div class="tc-bi" style="height:${(b.valeur/mx*100).toFixed(1)}%;background:linear-gradient(180deg,${COLORS[i%COLORS.length]} 0%,rgba(0,182,255,0.1) 100%)"></div></div>
+            <div class="tc-bo"><div class="tc-bi" style="height:${(b.valeur/mx*100).toFixed(1)}%;background:linear-gradient(180deg,${COLORS[i%COLORS.length]} 0%,color-mix(in srgb, var(--sky) 10%, transparent) 100%)"></div></div>
             <div class="tc-city">${b.label}</div>
           </div>`).join('')}
         </div>
@@ -398,8 +400,8 @@ const SCENE_BUILDERS = {
       <div class="tca-pre">${d.eyebrow||'Rodschinson Investment'}</div>
       <div class="tca-headline">${(d.headline||d.cta_text||'').replace(/\n/g,'<br>').replace(/\*([^*]+)\*/g,'<span class="hl">$1</span>')}</div>
       <div class="tca-line"></div>
-      <div class="tca-btn">${d.cta_text||'Consultation Gratuite'}</div>
-      <div class="tca-url">${d.url||'rodschinson.com'} · Brussels · Dubai · Casablanca</div>
+      <div class="tca-btn">${d.cta_text||''}</div>
+      <div class="tca-url">${d.url||''}</div>
     </div>`,
 
   split_screen: (d) => {
@@ -409,7 +411,7 @@ const SCENE_BUILDERS = {
         <div class="tp-title">${d.titre||''}</div>
         <div class="tp-steps" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div>
-            <div style="font-size:14px;font-weight:600;letter-spacing:.2em;color:rgba(0,182,255,.5);text-transform:uppercase;margin-bottom:12px">${l.titre||''}</div>
+            <div style="font-size:14px;font-weight:600;letter-spacing:.2em;color:color-mix(in srgb, var(--sky) 50%, transparent);text-transform:uppercase;margin-bottom:12px">${l.titre||''}</div>
             ${(l.items||[]).map((t,i)=>`<div class="tp-step" data-index="${i}" style="margin-bottom:8px"><div class="tp-num">${String(i+1).padStart(2,'0')}</div><div class="tp-text">${t}</div></div>`).join('')}
           </div>
           <div>
@@ -424,6 +426,9 @@ const SCENE_BUILDERS = {
 window.loadScene = function(sd) {
   const b = SCENE_BUILDERS[sd.type_visuel];
   if (!b) { console.error('Unknown:', sd.type_visuel); return false; }
+  const bname = (window.__brand && window.__brand.name) || '';
+  const hb = document.getElementById('hd-brand');
+  if (hb && bname) hb.textContent = bname + ' · MARKET DATA';
   document.getElementById('scene-container').innerHTML = b(sd.visuel||{});
   return true;
 };

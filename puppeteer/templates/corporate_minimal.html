@@ -13,8 +13,8 @@
   --gold:  #C8A96E;
   --sky:   #00B6FF;
   --white: #F8F5F0;
-  --ink:   #08316F;
-  --muted: rgba(8,49,111,0.45);
+  --ink:   var(--blue);
+  --muted: color-mix(in srgb, var(--blue) 45%, transparent);
   --serif: 'Cormorant Garamond', Georgia, serif;
   --sans:  'Space Grotesk', sans-serif;
 }
@@ -42,7 +42,7 @@ html, body {
   top: 80px; bottom: 80px;
   left: 7%;
   width: 1px;
-  background: rgba(8,49,111,0.1);
+  background: color-mix(in srgb, var(--blue) 10%, transparent);
 }
 
 .logo {
@@ -54,7 +54,7 @@ html, body {
   font-weight: 600;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: rgba(8,49,111,0.25);
+  color: color-mix(in srgb, var(--blue) 25%, transparent);
 }
 
 .issue-mark {
@@ -154,7 +154,7 @@ html, body {
   font-family: var(--serif);
   font-size: 180px;
   font-weight: 700;
-  color: rgba(8,49,111,0.06);
+  color: color-mix(in srgb, var(--blue) 6%, transparent);
   line-height: 1;
 }
 
@@ -177,7 +177,7 @@ html, body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  border-right: 1px solid rgba(8,49,111,0.08);
+  border-right: 1px solid color-mix(in srgb, var(--blue) 8%, transparent);
 }
 
 .en-label {
@@ -225,8 +225,8 @@ html, body {
 
 .en-formula {
   padding: 18px 24px;
-  border: 1px solid rgba(8,49,111,0.1);
-  background: rgba(8,49,111,0.03);
+  border: 1px solid color-mix(in srgb, var(--blue) 10%, transparent);
+  background: color-mix(in srgb, var(--blue) 3%, transparent);
   font-size: 18px;
   font-weight: 500;
   color: var(--blue);
@@ -272,7 +272,7 @@ html, body {
 
 .ech-bw { display: flex; flex-direction: column; align-items: center; gap: 12px; flex: 1; }
 .ech-val { font-family: var(--serif); font-size: 34px; font-weight: 700; color: var(--blue); opacity: 0; transition: opacity 0.4s ease 0.85s; line-height: 1; }
-.ech-bo { width: 100%; height: 380px; background: rgba(8,49,111,0.06); display: flex; align-items: flex-end; overflow: hidden; }
+.ech-bo { width: 100%; height: 380px; background: color-mix(in srgb, var(--blue) 6%, transparent); display: flex; align-items: flex-end; overflow: hidden; }
 .ech-bi { width: 100%; transform: scaleY(0); transform-origin: bottom; transition: transform 0.85s cubic-bezier(0.16,1,0.3,1); }
 .ech-city { font-size: 13px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
 
@@ -303,19 +303,19 @@ html, body {
 .ep-step {
   display: flex; align-items: center; gap: 24px;
   padding: 16px 20px;
-  border-left: 3px solid rgba(8,49,111,0.1);
+  border-left: 3px solid color-mix(in srgb, var(--blue) 10%, transparent);
   opacity: 0; transform: translateX(-12px);
   transition: all 0.45s ease;
 }
-.ep-step.done { border-left-color: rgba(0,182,255,0.4); background: rgba(0,182,255,0.04); }
-.ep-step.active { border-left-color: var(--gold); background: rgba(200,169,110,0.07); }
+.ep-step.done { border-left-color: color-mix(in srgb, var(--sky) 40%, transparent); background: color-mix(in srgb, var(--sky) 4%, transparent); }
+.ep-step.active { border-left-color: var(--gold); background: color-mix(in srgb, var(--gold) 7%, transparent); }
 
-.ep-num { font-family: var(--serif); font-size: 44px; font-weight: 700; color: rgba(8,49,111,0.15); min-width: 52px; line-height: 1; }
-.ep-step.done .ep-num { color: rgba(0,182,255,0.5); }
+.ep-num { font-family: var(--serif); font-size: 44px; font-weight: 700; color: color-mix(in srgb, var(--blue) 15%, transparent); min-width: 52px; line-height: 1; }
+.ep-step.done .ep-num { color: color-mix(in srgb, var(--sky) 50%, transparent); }
 .ep-step.active .ep-num { color: var(--gold); }
 
-.ep-text { font-size: 22px; font-weight: 500; color: rgba(8,49,111,0.35); line-height: 1.3; }
-.ep-step.done .ep-text { color: rgba(8,49,111,0.45); }
+.ep-text { font-size: 22px; font-weight: 500; color: color-mix(in srgb, var(--blue) 35%, transparent); line-height: 1.3; }
+.ep-step.done .ep-text { color: color-mix(in srgb, var(--blue) 45%, transparent); }
 .ep-step.active .ep-text { color: var(--blue); font-weight: 600; }
 
 .scene.anim .ep-title { opacity: 1; }
@@ -328,12 +328,12 @@ html, body {
   display: flex; align-items: center; gap: 24px;
   padding: 18px 22px;
   border-left: 2px solid var(--gold);
-  background: rgba(8,49,111,0.03);
+  background: color-mix(in srgb, var(--blue) 3%, transparent);
   opacity: 0; transform: translateX(-12px);
   transition: all 0.45s ease;
 }
 .eb-num { font-family: var(--serif); font-size: 40px; font-weight: 700; color: var(--gold); opacity: 0.65; min-width: 48px; line-height: 1; }
-.eb-text { font-size: 24px; font-weight: 500; color: rgba(8,49,111,0.82); line-height: 1.3; }
+.eb-text { font-size: 24px; font-weight: 500; color: color-mix(in srgb, var(--blue) 82%, transparent); line-height: 1.3; }
 .scene.anim .eb-title { opacity: 1; }
 
 /* CTA */
@@ -343,7 +343,7 @@ html, body {
 .ec-headline { font-family: var(--serif); font-size: 96px; font-weight: 700; color: var(--blue); line-height: 0.95; margin-bottom: 28px; opacity: 0; transform: translateY(16px); transition: all 0.7s ease 0.2s; }
 .ec-headline em { font-style: italic; color: var(--gold); }
 .ec-gold-rule { width: 0; height: 1px; background: var(--gold); margin-bottom: 24px; transition: width 0.6s ease 0.5s; }
-.ec-btn { padding: 16px 52px; border: 1.5px solid rgba(8,49,111,0.25); font-size: 15px; font-weight: 600; letter-spacing: 0.28em; text-transform: uppercase; color: var(--blue); margin-bottom: 16px; opacity: 0; transition: opacity 0.5s ease 0.7s; }
+.ec-btn { padding: 16px 52px; border: 1.5px solid color-mix(in srgb, var(--blue) 25%, transparent); font-size: 15px; font-weight: 600; letter-spacing: 0.28em; text-transform: uppercase; color: var(--blue); margin-bottom: 16px; opacity: 0; transition: opacity 0.5s ease 0.7s; }
 .ec-url { font-size: 16px; font-weight: 400; letter-spacing: 0.2em; color: var(--muted); opacity: 0; transition: opacity 0.5s ease 0.9s; }
 
 .scene.anim .ec-issue,
@@ -358,20 +358,23 @@ html, body {
 <div class="frame">
   <div class="top-accent"></div>
   <div class="side-rule"></div>
-  <div class="logo">Rodschinson Investment</div>
-  <div class="issue-mark" id="issue-mark">Brussels · Dubai · Casablanca</div>
+  <div class="logo" id="corp-logo"></div>
+  <div class="issue-mark" id="issue-mark"></div>
 </div>
 
 <div id="scene-container"></div>
 
 <script>
-const CORP_COLORS = ['#08316F','#1A6B9E','#00B6FF','#C8A96E','#B8894E'];
+const _blue = getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#08316F';
+const _sky  = getComputedStyle(document.documentElement).getPropertyValue('--sky').trim()  || '#00B6FF';
+const _gold = getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() || '#C8A96E';
+const CORP_COLORS = [_blue, _sky, _gold, _blue, _sky];
 
 const SCENE_BUILDERS = {
   title_card: (d) => `
     <div class="scene" id="scene" style="display:none">
       <div class="ed-title" style="display:flex">
-        <div class="et-issue">${d.eyebrow||'Brussels · Dubai · Casablanca'}</div>
+        <div class="et-issue">${d.eyebrow||(window.__brand&&window.__brand.name)||''}</div>
         <div class="et-rule-top"></div>
         <div class="et-title">${(d.titre_principal||'').replace(/\n/g,'<br>').replace(/\*([^*]+)\*/g,'<em>$1</em>')}</div>
         <div class="et-rule-gold"></div>
@@ -403,7 +406,7 @@ const SCENE_BUILDERS = {
           ${s.map((b,i)=>`
           <div class="ech-bw">
             <div class="ech-val">${b.valeur.toFixed(1)}${d.unite||'%'}</div>
-            <div class="ech-bo"><div class="ech-bi" style="height:${(b.valeur/mx*100).toFixed(1)}%;background:linear-gradient(180deg,${CORP_COLORS[i%CORP_COLORS.length]} 0%,rgba(8,49,111,0.15) 100%)"></div></div>
+            <div class="ech-bo"><div class="ech-bi" style="height:${(b.valeur/mx*100).toFixed(1)}%;background:linear-gradient(180deg,${CORP_COLORS[i%CORP_COLORS.length]} 0%,color-mix(in srgb, var(--blue) 15%, transparent) 100%)"></div></div>
             <div class="ech-city">${b.label}</div>
           </div>`).join('')}
         </div>
@@ -440,12 +443,12 @@ const SCENE_BUILDERS = {
   cta_screen: (d) => `
     <div class="scene" id="scene" style="display:none">
       <div class="ed-cta" style="display:flex">
-        <div class="ec-issue">${d.eyebrow||'Rodschinson Investment'}</div>
+        <div class="ec-issue">${d.eyebrow||(window.__brand&&window.__brand.name)||''}</div>
         <div class="ec-rule"></div>
         <div class="ec-headline">${(d.headline||d.cta_text||'').replace(/\n/g,'<br>').replace(/\*([^*]+)\*/g,'<em>$1</em>')}</div>
         <div class="ec-gold-rule"></div>
-        <div class="ec-btn">${d.cta_text||'Consultation Gratuite — 30 min'}</div>
-        <div class="ec-url">${d.url||'rodschinson.com'} · Brussels · Dubai · Casablanca</div>
+        <div class="ec-btn">${d.cta_text||''}</div>
+        <div class="ec-url">${d.url||''}</div>
       </div>
     </div>`,
 
@@ -471,6 +474,9 @@ const SCENE_BUILDERS = {
 window.loadScene = function(sd) {
   const b = SCENE_BUILDERS[sd.type_visuel];
   if (!b) { console.error('Unknown:', sd.type_visuel); return false; }
+  const bname = (window.__brand && window.__brand.name) || '';
+  const logo = document.getElementById('corp-logo');
+  if (logo) logo.textContent = bname;
   document.getElementById('scene-container').innerHTML = b(sd.visuel||{});
   return true;
 };
