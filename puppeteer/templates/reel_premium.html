@@ -9,7 +9,7 @@ html, body {
   width: 1080px; height: 1920px;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  background: #08316F;
+  background: var(--dark-blue);
   color: #fff;
 }
 
@@ -23,15 +23,15 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: linear-gradient(165deg, #0a3d8a 0%, #08316F 45%, #041d45 100%);
+  background: var(--dark-blue);
 }
 .scene::before {
   content: '';
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 70% 50% at 80% 15%, rgba(0,182,255,0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 10% 85%, rgba(200,169,110,0.10) 0%, transparent 60%);
+    radial-gradient(ellipse 70% 50% at 80% 15%, color-mix(in srgb, var(--sky-blue) 12%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 10% 85%, color-mix(in srgb, var(--sky-blue) 10%, transparent) 0%, transparent 60%);
   pointer-events: none;
 }
 
@@ -40,7 +40,7 @@ html, body {
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 6px;
-  background: linear-gradient(90deg, #00B6FF 0%, #C8A96E 60%, transparent 100%);
+  background: linear-gradient(90deg, var(--sky-blue) 0%, color-mix(in srgb, var(--sky-blue) 60%, transparent) 100%);
   z-index: 10;
 }
 .brand-bar {
@@ -57,7 +57,7 @@ html, body {
 }
 .brand-tag {
   font-size: 18px; font-weight: 500; letter-spacing: 0.12em;
-  color: #C8A96E; text-transform: uppercase;
+  color: var(--sky-blue); text-transform: uppercase;
 }
 
 /* ── FOOTER ── */
@@ -68,11 +68,11 @@ html, body {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 60px;
   border-top: 1px solid rgba(255,255,255,0.12);
-  background: rgba(4,29,69,0.8);
+  background: color-mix(in srgb, var(--dark-blue) 80%, transparent);
   z-index: 10;
 }
 .footer-brand { font-size: 20px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.7); }
-.footer-url   { font-size: 20px; color: #C8A96E; font-weight: 500; }
+.footer-url   { font-size: 20px; color: var(--sky-blue); font-weight: 500; }
 
 /* ══════════════════════════════════════════════
    TITLE CARD
@@ -80,7 +80,7 @@ html, body {
 .scene-title { justify-content: center; align-items: center; text-align: center; }
 .tc-eyebrow {
   font-size: 24px; font-weight: 600; letter-spacing: 0.22em;
-  text-transform: uppercase; color: #C8A96E; margin-bottom: 40px;
+  text-transform: uppercase; color: var(--sky-blue); margin-bottom: 40px;
 }
 .tc-content { padding: 0 80px; display: flex; flex-direction: column; align-items: center; }
 .tc-headline {
@@ -89,7 +89,7 @@ html, body {
 }
 .tc-rule {
   width: 120px; height: 4px;
-  background: linear-gradient(90deg, #C8A96E, #00B6FF);
+  background: linear-gradient(90deg, var(--sky-blue), color-mix(in srgb, var(--sky-blue) 60%, white));
   border-radius: 2px; margin: 0 auto 50px;
 }
 .tc-sub {
@@ -112,14 +112,14 @@ html, body {
 }
 .bn-value {
   font-size: 260px; font-weight: 900; line-height: 0.9;
-  color: #C8A96E; letter-spacing: -0.04em;
+  color: var(--sky-blue); letter-spacing: -0.04em;
 }
 .bn-unit {
-  font-size: 72px; font-weight: 700; color: #00B6FF;
+  font-size: 72px; font-weight: 700; color: var(--sky-blue);
   letter-spacing: 0.06em; margin-top: 10px;
 }
 .bn-rule {
-  width: 100px; height: 3px; background: linear-gradient(90deg, #C8A96E, #00B6FF);
+  width: 100px; height: 3px; background: linear-gradient(90deg, var(--sky-blue), color-mix(in srgb, var(--sky-blue) 60%, white));
   margin: 60px auto;
 }
 .bn-context {
@@ -140,7 +140,7 @@ html, body {
   font-size: 72px; font-weight: 800; line-height: 1.1;
   color: #fff; margin-bottom: 50px;
 }
-.tb-rule { width: 80px; height: 4px; background: #C8A96E; margin-bottom: 60px; }
+.tb-rule { width: 80px; height: 4px; background: var(--sky-blue); margin-bottom: 60px; }
 .tb-item {
   display: flex; align-items: flex-start; gap: 30px;
   margin-bottom: 44px;
@@ -150,7 +150,7 @@ html, body {
 .tb-item.visible { opacity: 1; transform: none; }
 .tb-dot {
   width: 14px; height: 14px; border-radius: 50%;
-  background: #C8A96E; margin-top: 16px; flex-shrink: 0;
+  background: var(--sky-blue); margin-top: 16px; flex-shrink: 0;
 }
 .tb-text { font-size: 40px; font-weight: 500; line-height: 1.35; color: rgba(255,255,255,0.88); }
 
@@ -162,16 +162,16 @@ html, body {
 .bc-title {
   font-size: 60px; font-weight: 800; line-height: 1.1; color: #fff; margin-bottom: 20px;
 }
-.bc-rule { width: 80px; height: 4px; background: #C8A96E; margin-bottom: 50px; }
+.bc-rule { width: 80px; height: 4px; background: var(--sky-blue); margin-bottom: 50px; }
 .bc-bars { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; gap: 30px; }
 .bc-row { display: flex; flex-direction: column; gap: 10px; }
 .bc-label-row { display: flex; justify-content: space-between; align-items: baseline; }
 .bc-label { font-size: 32px; font-weight: 600; color: rgba(255,255,255,0.85); }
-.bc-val-label { font-size: 36px; font-weight: 800; color: #C8A96E; }
+.bc-val-label { font-size: 36px; font-weight: 800; color: var(--sky-blue); }
 .bc-track { height: 24px; background: rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; }
 .bc-fill {
   height: 100%; border-radius: 12px;
-  background: linear-gradient(90deg, #08316F, #00B6FF);
+  background: linear-gradient(90deg, var(--dark-blue), var(--sky-blue));
   width: 0%; transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
 }
 .bc-fill.anim { width: var(--w); }
@@ -184,15 +184,15 @@ html, body {
 .cta-inner { padding: 0 80px; display: flex; flex-direction: column; align-items: center; gap: 50px; }
 .cta-eyebrow {
   font-size: 24px; font-weight: 600; letter-spacing: 0.22em;
-  text-transform: uppercase; color: #C8A96E;
+  text-transform: uppercase; color: var(--sky-blue);
 }
 .cta-headline {
   font-size: 90px; font-weight: 800; line-height: 1.1;
   color: #fff; text-align: center;
 }
-.cta-rule { width: 120px; height: 4px; background: linear-gradient(90deg, #C8A96E, #00B6FF); }
+.cta-rule { width: 120px; height: 4px; background: linear-gradient(90deg, var(--sky-blue), color-mix(in srgb, var(--sky-blue) 60%, white)); }
 .cta-btn {
-  padding: 36px 80px; background: #C8A96E; color: #08316F;
+  padding: 36px 80px; background: var(--sky-blue); color: var(--dark-blue);
   font-size: 34px; font-weight: 800; letter-spacing: 0.08em;
   border-radius: 8px; text-transform: uppercase;
 }
