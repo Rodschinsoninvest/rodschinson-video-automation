@@ -425,6 +425,8 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
                 logo_path = _candidate
         audio_mode   = data.get("audioMode", "voice")   # "voice" | "music"
         music_genre  = data.get("musicGenre", "corporate")
+        transition    = data.get("transition", "none")
+        caption_style = data.get("caption_style", "none")
 
         output_file:     str | None = None
         output_text:     str | None = None
@@ -903,10 +905,16 @@ Hard rules — violations will crash the render pipeline with no recovery:
                         "--script", str(script_path), "--template", template,
                         "--brand-primary", brand_primary,
                         "--brand-accent",  brand_accent,
-                        "--brand-name",    brand_display]
+                        "--brand-name",    brand_display,
+                        "--transition",    transition,
+                        "--caption-style", caption_style]
             if logo_path:
                 node_cmd += ["--logo", str(logo_path), "--brand-logo", str(logo_path)]
             await step("Rendering scenes", 35, node_cmd, cwd=PUPPET)
+
+            _assemble_base = [str(PYTHON), str(SCRIPTS / "assemble_video.py"),
+                              "--script", str(script_path),
+                              "--transition", transition]
 
             if audio_mode == "music":
                 # Download/pick a royalty-free background track, skip ElevenLabs
@@ -914,17 +922,13 @@ Hard rules — violations will crash the render pipeline with no recovery:
                                [str(PYTHON), str(SCRIPTS / "download_music.py"),
                                 "--genre", music_genre, "--count", "1"])
                 await step("Assembling video", 85,
-                           [str(PYTHON), str(SCRIPTS / "assemble_video.py"),
-                            "--script", str(script_path), "--music-only",
-                            "--music-genre", music_genre])
+                           _assemble_base + ["--music-only", "--music-genre", music_genre])
             else:
                 # ElevenLabs is optional — pipeline continues without audio if it fails
                 await try_step("Generating audio", 60,
                                [str(PYTHON), str(SCRIPTS / "generate_audio.py"),
                                 "--script", str(script_path), "--language", language.lower()])
-                await step("Assembling video", 85,
-                           [str(PYTHON), str(SCRIPTS / "assemble_video.py"),
-                            "--script", str(script_path)])
+                await step("Assembling video", 85, _assemble_base)
 
             video_files = sorted((OUTPUT / "video").glob("*.mp4"),
                                   key=lambda p: p.stat().st_mtime, reverse=True)

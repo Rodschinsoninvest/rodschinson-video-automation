@@ -622,7 +622,7 @@ html, body {
   <div class="top-bar"></div>
   <div class="rule-top"></div>
   <div class="rule-bot"></div>
-  <div class="logo">Rodschinson Investment</div>
+  <div class="logo" id="frame-logo"></div>
 </div>
 
 <!-- GEOMETRY SVG -->
@@ -683,7 +683,7 @@ function normBC(d) {
     }));
   }
   if (!d.titre) d.titre = d.title || d.headline || '';
-  if (!d.source) d.source = d.sources || 'Source : CBRE / JLL \u2014 Rodschinson Investment';
+  if (!d.source) d.source = d.sources || '';
   if (!d.unite) d.unite = d.unit || '%';
   return d;
 }
@@ -713,7 +713,7 @@ function normCTA(d) {
   if (!d.headline) d.headline = d.titre || d.title || d.cta_text || '';
   if (!d.cta_text) d.cta_text = d.bouton || d.button || d.cta || 'Consultation Gratuite \u2014 30 min';
   if (!d.url)      d.url      = d.site || d.link || 'rodschinson.com';
-  if (!d.eyebrow)  d.eyebrow  = d.brand || 'Rodschinson Investment';
+  if (!d.eyebrow)  d.eyebrow  = d.brand || (window.__brand&&window.__brand.name) || '';
   return d;
 }
 
@@ -800,11 +800,11 @@ const SCENE_BUILDERS = {
 
   cta_screen: (data) => { data = normCTA(data); return  `
     <div class="scene cta-screen" id="scene">
-      <div class="cta-eyebrow">${data.eyebrow || 'Rodschinson Investment'}</div>
+      <div class="cta-eyebrow">${data.eyebrow || (window.__brand&&window.__brand.name) || ''}</div>
       <div class="cta-headline">${formatTitle(data.headline || '')}</div>
       <div class="cta-divider"></div>
       <div class="cta-btn">${data.cta_text || 'Consultation Gratuite \u2014 30 min'}</div>
-      <div class="cta-url">${data.url || 'rodschinson.com'}</div>
+      <div class="cta-url">${data.url || ''}</div>
     </div>`; },
 
   split_screen: (data) => { data = normCTA(data);
@@ -888,6 +888,8 @@ window.loadScene = function(sceneData) {
   }
 
   container.innerHTML = builder(visuel);
+  const _fl = document.getElementById('frame-logo');
+  if(_fl) _fl.textContent = (window.__brand&&window.__brand.name)||'';
   return true;
 };
 

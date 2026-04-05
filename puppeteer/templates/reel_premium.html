@@ -212,11 +212,10 @@ function fitText(el, minPx){
   }
 }
 
-const BRAND    = 'RODSCHINSON';
-const BRAND_LO = 'rodschinson.com';
-
-const FOOTER = `<div class="scene-footer"><span class="footer-brand">${BRAND}</span><span class="footer-url">${BRAND_LO}</span></div>`;
-const BAR    = `<div class="brand-strip"></div><div class="brand-bar"><span class="brand-name">${BRAND}</span><span class="brand-tag">Investment</span></div>`;
+function _B(){ return (window.__brand&&window.__brand.name)||''; }
+function _U(){ return ''; }
+function _FOOTER(){ const b=_B(); return `<div class="scene-footer"><span class="footer-brand">${b}</span><span class="footer-url">${_U()}</span></div>`; }
+function _BAR(){ const b=_B(); return `<div class="brand-strip"></div><div class="brand-bar"><span class="brand-name">${b}</span></div>`; }
 
 window.loadScene = function(data){
   const c  = document.getElementById('scene-container');
@@ -226,7 +225,7 @@ window.loadScene = function(data){
 
   if(tv === 'title_card'){
     html = `<div class="scene scene-title">
-      ${BAR}${FOOTER}
+      ${_BAR()}${_FOOTER()}
       <div class="tc-content">
         ${v.eyebrow ? `<div class="tc-eyebrow">${esc(v.eyebrow)}</div>` : ''}
         <div class="tc-headline" id="_hl">${fmt(v.titre_principal||v.titre||'')}</div>
@@ -237,7 +236,7 @@ window.loadScene = function(data){
 
   } else if(tv === 'big_number'){
     html = `<div class="scene scene-number">
-      ${BAR}${FOOTER}
+      ${_BAR()}${_FOOTER()}
       <div class="bn-eyebrow" id="_ey">${fmt(v.eyebrow||v.label||v.titre||'')}</div>
       <div class="bn-wrap">
         <div class="bn-value">${esc(v.valeur||'0')}</div>
@@ -251,7 +250,7 @@ window.loadScene = function(data){
     const items = (v.items||v.elements||v.points||[]);
     const rows  = items.map((it,i)=>`<div class="tb-item" data-i="${i}"><div class="tb-dot"></div><div class="tb-text">${fmt(String(it))}</div></div>`).join('');
     html = `<div class="scene scene-bullets">
-      ${BAR}${FOOTER}
+      ${_BAR()}${_FOOTER()}
       <div class="tb-inner">
         <div class="tb-title" id="_tit">${fmt(v.titre||v.titre_principal||'')}</div>
         <div class="tb-rule"></div>
@@ -274,7 +273,7 @@ window.loadScene = function(data){
       </div>`;
     }).join('');
     html = `<div class="scene scene-chart">
-      ${BAR}${FOOTER}
+      ${_BAR()}${_FOOTER()}
       <div class="bc-inner">
         <div class="bc-title" id="_tit">${fmt(v.titre||v.titre_principal||'')}</div>
         <div class="bc-rule"></div>
@@ -285,13 +284,13 @@ window.loadScene = function(data){
 
   } else if(tv === 'cta_screen'){
     html = `<div class="scene scene-cta">
-      ${BAR}${FOOTER}
+      ${_BAR()}${_FOOTER()}
       <div class="cta-inner">
-        <div class="cta-eyebrow">${esc(v.eyebrow||BRAND)}</div>
+        <div class="cta-eyebrow">${esc(v.eyebrow||_B())}</div>
         <div class="cta-headline" id="_hl">${fmt(v.headline||v.titre_principal||v.titre||'')}</div>
         <div class="cta-rule"></div>
         <div class="cta-btn">${esc(v.cta_text||v.cta||'Consultation Gratuite')}</div>
-        <div class="cta-url">${esc(v.url||v.site||BRAND_LO)}</div>
+        <div class="cta-url">${esc(v.url||v.site||_U())}</div>
       </div>
     </div>`;
 
@@ -300,7 +299,7 @@ window.loadScene = function(data){
     const items = (v.etapes||v.items||v.elements||[]);
     const rows  = items.map((it,i)=>`<div class="tb-item" data-i="${i}"><div class="tb-dot"></div><div class="tb-text">${fmt(String(it))}</div></div>`).join('');
     html = `<div class="scene scene-bullets">
-      ${BAR}${FOOTER}
+      ${_BAR()}${_FOOTER()}
       <div class="tb-inner">
         <div class="tb-title" id="_tit">${fmt(v.titre||v.titre_principal||'')}</div>
         <div class="tb-rule"></div>

@@ -373,7 +373,7 @@ html, body {
 <div class="frame">
   <div class="top-bar"></div>
   <div class="header">
-    <div class="logo-box">RODSCHINSON</div>
+    <div class="logo-box" id="frame-logo-box"></div>
     <div class="header-divider"></div>
     <div class="header-channel">Market Intelligence</div>
     <div class="live-badge"><div class="live-dot"></div>LIVE</div>
@@ -486,10 +486,10 @@ const SCENE_BUILDERS = {
 
   cta_screen: (data) => `
     <div class="scene breaking" id="scene">
-      <div class="brk-category">${data.eyebrow||'Rodschinson Investment'}</div>
+      <div class="brk-category">${data.eyebrow||(window.__brand&&window.__brand.name)||''}</div>
       <div class="brk-headline" style="font-size:72px">${(data.headline||data.cta_text||'').replace(/\n/g,'<br>')}</div>
       <div class="brk-divider"></div>
-      <div class="brk-sub">${data.url||'rodschinson.com'} · Brussels · Dubai · Casablanca</div>
+      <div class="brk-sub">${data.url||''}</div>
       <div class="brk-tags">
         <div class="brk-tag" style="border-color:var(--red);color:var(--red2)">${data.cta_text||'Consultation Gratuite'}</div>
       </div>
@@ -530,15 +530,19 @@ window.loadScene = function(sceneData) {
   if (!builder) { console.error('Unknown:', type); return false; }
   container.innerHTML = builder(visuel);
 
+  // Update logo box
+  const _lb = document.getElementById('frame-logo-box');
+  if(_lb) _lb.textContent = (window.__brand&&window.__brand.name)||'';
+
   // Update ticker
   const tickerText = sceneData.ticker ||
-    'DUBAI CRE +31% Q1 2025 · PARIS BUREAUX PRIME 3.8% · RODSCHINSON INVESTMENT · M&A EMEA VOLUME UP 18% · CORRIDOR EUROPE-GOLFE';
+    ((window.__brand&&window.__brand.name)||'').toUpperCase();
   document.getElementById('ticker-text').textContent = tickerText;
 
   // Update lower third
   if (sceneData.speaker) {
     document.getElementById('lt-name').textContent = sceneData.speaker.name || 'Rachid Chikhi';
-    document.getElementById('lt-title').textContent = sceneData.speaker.title || 'CEO, Rodschinson Investment · Brussels';
+    document.getElementById('lt-title').textContent = sceneData.speaker.title || '';
   }
 
   return true;

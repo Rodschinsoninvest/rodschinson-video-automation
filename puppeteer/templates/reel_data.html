@@ -162,9 +162,10 @@ function fitText(el,minPx){
   while(iter++<80&&el.scrollHeight>el.parentElement.clientHeight+8&&size>minPx){ size-=2;el.style.fontSize=size+'px'; }
 }
 
-const B='RODSCHINSON'; const U='rodschinson.com';
-const HDR=`<div class="top-bar"></div><div class="header"><span class="header-brand">${B}</span><span class="header-badge">DATA</span></div>`;
-const FTR=`<div class="footer"><span class="footer-l">${B}</span><span class="footer-r">${U}</span></div>`;
+function _B(){ return (window.__brand&&window.__brand.name)||''; }
+function _U(){ return ''; }
+function _HDR(){ const b=_B(); return `<div class="top-bar"></div><div class="header"><span class="header-brand">${b}</span><span class="header-badge">DATA</span></div>`; }
+function _FTR(){ const b=_B(); return `<div class="footer"><span class="footer-l">${b}</span><span class="footer-r">${_U()}</span></div>`; }
 const BRK=`<div class="bracket tl"></div><div class="bracket tr"></div><div class="bracket bl"></div><div class="bracket br"></div>`;
 
 window.loadScene = function(data){
@@ -174,7 +175,7 @@ window.loadScene = function(data){
   let html='';
 
   if(tv==='title_card'){
-    html=`<div class="scene scene-title">${HDR}${FTR}${BRK}
+    html=`<div class="scene scene-title">${_HDR()}${_FTR()}${BRK}
       <div class="tc-content">
         ${v.eyebrow?`<div class="tc-tag">${esc(v.eyebrow)}</div>`:''}
         <div class="tc-headline" id="_hl">${fmt(v.titre_principal||v.titre||'')}</div>
@@ -183,7 +184,7 @@ window.loadScene = function(data){
       </div></div>`;
 
   } else if(tv==='big_number'){
-    html=`<div class="scene scene-number">${HDR}${FTR}${BRK}
+    html=`<div class="scene scene-number">${_HDR()}${_FTR()}${BRK}
       <div class="bn-label" id="_ey">${fmt(v.eyebrow||v.label||v.titre||'')}</div>
       <div class="bn-box">
         <div class="bn-number">${esc(v.valeur||'0')}</div>
@@ -195,7 +196,7 @@ window.loadScene = function(data){
   } else if(tv==='text_bullets'){
     const items=v.items||v.elements||v.points||[];
     const rows=items.map((it,i)=>`<div class="tb-item" data-i="${i}"><div class="tb-num">${String(i+1).padStart(2,'0')}</div><div class="tb-text">${fmt(String(it))}</div></div>`).join('');
-    html=`<div class="scene scene-bullets">${HDR}${FTR}${BRK}
+    html=`<div class="scene scene-bullets">${_HDR()}${_FTR()}${BRK}
       <div class="tb-wrap">
         <div class="tb-title" id="_tit">${fmt(v.titre||v.titre_principal||'')}</div>
         <div class="tb-rule"></div>${rows}
@@ -207,7 +208,7 @@ window.loadScene = function(data){
       const pct=((s.valeur/maxV)*100).toFixed(1);
       return `<div class="bc-row"><div class="bc-meta"><span class="bc-lbl">${esc(s.label)}</span><span class="bc-vl">${s.valeur}${unite}</span></div><div class="bc-track"><div class="bc-fill" style="--w:${pct}%"></div></div></div>`;
     }).join('');
-    html=`<div class="scene scene-chart">${HDR}${FTR}${BRK}
+    html=`<div class="scene scene-chart">${_HDR()}${_FTR()}${BRK}
       <div class="bc-wrap">
         <div class="bc-title" id="_tit">${fmt(v.titre||v.titre_principal||'')}</div>
         <div class="bc-rule"></div>
@@ -221,15 +222,15 @@ window.loadScene = function(data){
     const items=isStep?(v.etapes||v.items||[]):(v.items||v.elements||[]);
     if(isStep&&items.length){
       const rows=items.map((it,i)=>`<div class="tb-item" data-i="${i}"><div class="tb-num">${String(i+1).padStart(2,'0')}</div><div class="tb-text">${fmt(String(it))}</div></div>`).join('');
-      html=`<div class="scene scene-bullets">${HDR}${FTR}${BRK}<div class="tb-wrap"><div class="tb-title" id="_tit">${fmt(v.titre||v.titre_principal||'')}</div><div class="tb-rule"></div>${rows}</div></div>`;
+      html=`<div class="scene scene-bullets">${_HDR()}${_FTR()}${BRK}<div class="tb-wrap"><div class="tb-title" id="_tit">${fmt(v.titre||v.titre_principal||'')}</div><div class="tb-rule"></div>${rows}</div></div>`;
     } else {
-      html=`<div class="scene scene-cta">${HDR}${FTR}${BRK}
+      html=`<div class="scene scene-cta">${_HDR()}${_FTR()}${BRK}
         <div class="cta-wrap">
-          <div class="cta-tag">${esc(v.eyebrow||B)}</div>
+          <div class="cta-tag">${esc(v.eyebrow||_B())}</div>
           <div class="cta-headline" id="_hl">${fmt(v.headline||v.titre_principal||v.titre||'')}</div>
           <div class="cta-sep"></div>
           <div class="cta-btn">${esc(v.cta_text||v.cta||'Consultation Gratuite')}</div>
-          <div class="cta-url">${esc(v.url||v.site||U)}</div>
+          <div class="cta-url">${esc(v.url||v.site||_U())}</div>
         </div></div>`;
     }
   }

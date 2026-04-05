@@ -65,28 +65,101 @@ def run_ffmpeg(cmd: list, label: str = "") -> bool:
         return False
 
 
+# ── Transition → FFmpeg xfade map ────────────────────────────────────────────
+XFADE_MAP = {
+    "dissolve":   "dissolve",
+    "fade":       "fade",
+    "slide_up":   "slideup",
+    "slide_left": "slideleft",
+    "zoom":       "zoom",
+    "glitch":     "pixelize",
+    "wipe":       "wipeleft",
+}
+
 # ─── ÉTAPE 1 : CONCAT DES SCÈNES ─────────────────────────────────────────────
 
-def concat_scenes(scene_files: list, output: Path, width: int = 1920, height: int = 1080) -> bool:
+def _get_video_duration(path: Path) -> float:
+    """Return duration of a video file in seconds using ffprobe."""
+    try:
+        import subprocess as sp
+        r = sp.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1",
+             str(path)],
+            capture_output=True, text=True
+        )
+        return float(r.stdout.strip())
+    except Exception:
+        return 5.0  # fallback
+
+
+def concat_scenes(scene_files: list, output: Path,
+                  width: int = 1920, height: int = 1080,
+                  transition: str = "none",
+                  transition_duration: float = 0.5) -> bool:
     if not scene_files:
         print("  ❌ Aucune scène MP4 trouvée")
         return False
     n = len(scene_files)
+
+    xfade_type = XFADE_MAP.get(transition)
+
+    # No transition — simple concat
+    if not xfade_type or n == 1:
+        inputs = []
+        for sf in scene_files:
+            inputs += ["-i", str(sf)]
+        scale = "".join(
+            f"[{i}:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
+            f"crop={width}:{height}[v{i}];"
+            for i in range(n)
+        )
+        concat = "".join(f"[v{i}]" for i in range(n))
+        concat += f"concat=n={n}:v=1[outv]"
+        filter_str = scale + concat
+        cmd = ["ffmpeg", "-y", *inputs,
+               "-filter_complex", filter_str,
+               "-map", "[outv]", str(output)]
+        return run_ffmpeg(cmd, f"Concat {n} scènes")
+
+    # With xfade transitions
+    td = transition_duration
+    durations = [_get_video_duration(sf) for sf in scene_files]
+
     inputs = []
     for sf in scene_files:
         inputs += ["-i", str(sf)]
-    scale = "".join(
-        f"[{i}:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
-        f"crop={width}:{height}[v{i}];"
-        for i in range(n)
-    )
-    concat = "".join(f"[v{i}]" for i in range(n))
-    concat += f"concat=n={n}:v=1[outv]"
-    filter_str = scale + concat
+
+    # Build scale filters
+    filter_parts = []
+    for i in range(n):
+        filter_parts.append(
+            f"[{i}:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
+            f"crop={width}:{height}[sv{i}]"
+        )
+
+    # Build xfade chain
+    # xfade offset = cumulative duration of all previous clips minus the overlaps so far
+    # Each xfade trims `td` seconds from the end of clip i and start of clip i+1
+    xfade_parts = []
+    cumulative = 0.0
+    prev_tag = "sv0"
+    for i in range(1, n):
+        cumulative += durations[i - 1] - td
+        offset = round(cumulative, 4)
+        out_tag = f"xf{i}"
+        xfade_parts.append(
+            f"[{prev_tag}][sv{i}]xfade=transition={xfade_type}:"
+            f"duration={td}:offset={offset}[{out_tag}]"
+        )
+        prev_tag = out_tag
+
+    filter_str = ";".join(filter_parts + xfade_parts) + f";[{prev_tag}]null[outv]"
+
     cmd = ["ffmpeg", "-y", *inputs,
            "-filter_complex", filter_str,
            "-map", "[outv]", str(output)]
-    return run_ffmpeg(cmd, f"Concat {n} scènes")
+    return run_ffmpeg(cmd, f"Concat {n} scènes ({xfade_type} transition)")
 
 
 # ─── ÉTAPE 2 : MERGE AUDIO ────────────────────────────────────────────────────
@@ -212,7 +285,8 @@ def pick_music_track(genre: str = "corporate") -> Path | None:
 
 
 def assemble(script_path: str, with_subtitles: bool = False,
-             music_only: bool = False, music_genre: str = "corporate") -> dict:
+             music_only: bool = False, music_genre: str = "corporate",
+             transition: str = "none") -> dict:
     """Pipeline d'assemblage complet."""
 
     with open(script_path, encoding="utf-8") as f:
@@ -255,7 +329,7 @@ def assemble(script_path: str, with_subtitles: bool = False,
 
         # ── Étape 1 : Concat scènes ────────────────────────────────────
         concat_out = tmp_dir / "concat.mp4"
-        if not concat_scenes(scene_files, concat_out, width=width, height=height):
+        if not concat_scenes(scene_files, concat_out, width=width, height=height, transition=transition):
             return {}
 
         # ── Étape 2 : Chercher l'audio ──────────────────────────────────
@@ -340,13 +414,15 @@ def main():
     parser.add_argument("--no-subtitles",  action="store_true")
     parser.add_argument("--music-only",    action="store_true", help="Use background music instead of voiceover")
     parser.add_argument("--music-genre",   default="corporate", help="Music genre: corporate|cinematic|lofi|upbeat")
+    parser.add_argument("--transition",    default="none",       help="Scene transition: none|dissolve|fade|slide_up|zoom|glitch|wipe")
     args = parser.parse_args()
 
     if args.script:
         assemble(args.script,
                  with_subtitles=not args.no_subtitles,
                  music_only=args.music_only,
-                 music_genre=args.music_genre)
+                 music_genre=args.music_genre,
+                 transition=args.transition)
     else:
         parser.print_help()
         print("\n  Exemple :")

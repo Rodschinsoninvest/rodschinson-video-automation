@@ -104,6 +104,18 @@ function contrastText(hex) {
   } catch { return '#ffffff'; }
 }
 
+// ── TRANSITION → FFmpeg xfade map ────────────────────────────────────────────
+const XFADE_MAP = {
+  dissolve:  'dissolve',
+  fade:      'fade',
+  slide_up:  'slideup',
+  slide_left:'slideleft',
+  zoom:      'zoom',
+  glitch:    'pixelize',
+  wipe:      'wipeleft',
+  none:      null,
+};
+
 // ── PARSE ARGS ───────────────────────────────────────────────────────────────
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -117,6 +129,8 @@ function parseArgs() {
     brandAccent:  get('--brand-accent')  || null,
     brandName:    get('--brand-name')    || null,
     brandLogo:    get('--brand-logo')    || null,
+    transition:   get('--transition')   || 'none',
+    captionStyle: get('--caption-style') || 'none',
   };
 }
 
@@ -198,7 +212,7 @@ function normalizeScene(scene) {
         ...scene,
         visuel: {
           titre:  v.titre  || v.titre_principal || v.title || '',
-          source: v.source || v.sources || 'Source : CBRE / JLL — Rodschinson Investment',
+          source: v.source || v.sources || '',
           unite:  v.unite  || '%',
           series,
           ...v, series,
@@ -237,7 +251,7 @@ function normalizeScene(scene) {
       return {
         ...scene,
         visuel: {
-          eyebrow:  v.eyebrow  || 'Rodschinson Investment',
+          eyebrow:  v.eyebrow  || '',
           headline: v.headline || v.titre_principal || v.titre || v.title || '',
           body:     v.body     || v.sous_titre      || v.subtitle || (Array.isArray(v.elements) ? v.elements.join(' · ') : '') || '',
           cta_text: v.cta_text || v.bouton || v.cta || 'Consultation Gratuite — 30 min',
@@ -253,7 +267,7 @@ function normalizeScene(scene) {
         visuel: {
           titre:          v.titre || v.title || '',
           colonne_gauche: v.colonne_gauche || v.left  || { titre: 'Standard', items: [] },
-          colonne_droite: v.colonne_droite || v.right || { titre: 'Rodschinson', items: [] },
+          colonne_droite: v.colonne_droite || v.right || { titre: '', items: [] },
           ...v,
         }
       };
@@ -263,9 +277,71 @@ function normalizeScene(scene) {
   }
 }
 
+// ── CAPTION STYLES ───────────────────────────────────────────────────────────
+const CAPTION_CSS = {
+  viral: `
+    #rod-cap-overlay {
+      position:fixed; bottom:80px; left:0; right:0; z-index:9999;
+      text-align:center; padding:0 60px; pointer-events:none;
+    }
+    #rod-cap-overlay .rod-word {
+      display:inline-block; margin:0 4px;
+      font-family:'Impact','Arial Black',sans-serif;
+      font-size:62px; font-weight:900; line-height:1.15;
+      color:#fff; -webkit-text-stroke:3px #000;
+      text-shadow:3px 3px 8px rgba(0,0,0,0.9);
+      transition:none;
+    }
+    #rod-cap-overlay .rod-word.active {
+      color:#FFE600; -webkit-text-stroke:3px #000;
+      transform:scale(1.08); display:inline-block;
+    }`,
+  minimal: `
+    #rod-cap-overlay {
+      position:fixed; bottom:80px; left:0; right:0; z-index:9999;
+      text-align:center; padding:0 80px; pointer-events:none;
+    }
+    #rod-cap-overlay .rod-cap-inner {
+      display:inline-block; background:rgba(0,0,0,0.55);
+      padding:14px 32px; border-radius:12px; backdrop-filter:blur(4px);
+    }
+    #rod-cap-overlay .rod-word {
+      display:inline-block; margin:0 3px;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      font-size:44px; font-weight:600; color:#fff;
+      text-shadow:0 1px 4px rgba(0,0,0,0.6);
+    }
+    #rod-cap-overlay .rod-word.active { color:#60C6FF; }`,
+  neon: `
+    #rod-cap-overlay {
+      position:fixed; bottom:80px; left:0; right:0; z-index:9999;
+      text-align:center; padding:0 60px; pointer-events:none;
+    }
+    #rod-cap-overlay .rod-word {
+      display:inline-block; margin:0 5px;
+      font-family:'Arial Black','Impact',sans-serif;
+      font-size:58px; font-weight:900; color:#fff;
+      text-shadow:0 0 20px rgba(0,182,255,0.6),2px 2px 0 #000;
+    }
+    #rod-cap-overlay .rod-word.active {
+      color:#00E5FF;
+      text-shadow:0 0 30px rgba(0,229,255,1),0 0 60px rgba(0,229,255,0.5),2px 2px 0 #000;
+    }`,
+};
+
+function buildCaptionHTML(words, activeIndex, style) {
+  const inner = words.map((w, i) =>
+    `<span class="rod-word${i === activeIndex ? ' active' : ''}">${w}</span>`
+  ).join(' ');
+  if (style === 'minimal') {
+    return `<div class="rod-cap-inner">${inner}</div>`;
+  }
+  return inner;
+}
+
 // ── RENDER ONE SCENE ─────────────────────────────────────────────────────────
 async function renderScene(browser, rawScene, opts) {
-  const { width, height, fps, templatePath, outputPath, brand } = opts;
+  const { width, height, fps, templatePath, outputPath, brand, captionStyle } = opts;
 
   const scene  = normalizeScene(rawScene);
   const sid    = scene.id;
@@ -379,8 +455,39 @@ async function renderScene(browser, rawScene, opts) {
 
     await new Promise(r => setTimeout(r, 50));
 
+    // ── Caption overlay setup ─────────────────────────────────────────────
+    const captionText = scene.caption || scene.visuel?.sous_titre || scene.visuel?.subtitle || '';
+    const captionWords = captionStyle && captionStyle !== 'none' && captionText
+      ? captionText.trim().split(/\s+/).filter(Boolean)
+      : [];
+
+    if (captionWords.length > 0 && CAPTION_CSS[captionStyle]) {
+      await page.evaluate(({ css, style }) => {
+        const s = document.createElement('style');
+        s.id = '_rod_cap_css';
+        s.textContent = css;
+        document.head.appendChild(s);
+        const div = document.createElement('div');
+        div.id = 'rod-cap-overlay';
+        document.body.appendChild(div);
+      }, { css: CAPTION_CSS[captionStyle], style: captionStyle });
+    }
+
     // Capture frames — screenshots only, no real-time delay between frames
     for (let f = 0; f < frames; f++) {
+      // Update caption word highlight
+      if (captionWords.length > 0 && CAPTION_CSS[captionStyle]) {
+        const wordIdx = Math.min(
+          Math.floor((f / frames) * captionWords.length),
+          captionWords.length - 1
+        );
+        const html = buildCaptionHTML(captionWords, wordIdx, captionStyle);
+        await page.evaluate(({ html, style }) => {
+          const el = document.getElementById('rod-cap-overlay');
+          if (el) el.innerHTML = html;
+        }, { html, style: captionStyle });
+      }
+
       await page.screenshot({
         path: path.join(frameDir, `f${String(f).padStart(5,'0')}.png`),
         type: 'png',
@@ -535,6 +642,7 @@ async function main() {
         templatePath: tmplPath,
         outputPath:   fpath,
         brand,
+        captionStyle: args.captionStyle,
       });
       if (res) ok.push(res); else err.push(scene.id);
     }
@@ -545,6 +653,17 @@ async function main() {
   console.log('\n' + '─'.repeat(62));
   console.log(`  ✅ ${ok.length} scène(s) OK  |  ❌ ${err.length} erreur(s)`);
   console.log(`  📁 ${SCENES_OUT}  [run: ${RUN_ID}]\n`);
+
+  // Write render manifest so assembler can pick up transition setting
+  const manifest = {
+    run_id:       RUN_ID,
+    transition:   args.transition || 'none',
+    caption_style:args.captionStyle || 'none',
+    scenes_dir:   SCENES_OUT,
+    scene_files:  ok,
+    errors:       err,
+  };
+  fs.writeFileSync(path.join(SCENES_OUT, 'render_manifest.json'), JSON.stringify(manifest, null, 2));
 
   if (ok.length > 0) {
     console.log(`  Étape suivante :`);

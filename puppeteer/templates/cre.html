@@ -387,7 +387,7 @@ window.loadScene = function(slideData) {
 
   const idx   = slideData.id    || slideData.index || 1;
   const total = slideData.total || '';
-  const brand = v.brand || slideData.brand || 'Rodschinson Investment';
+  const brand = v.brand || slideData.brand || (window.__brand&&window.__brand.name) || '';
   const counter = total ? `${padNum(idx)} / ${padNum(total)}` : '';
 
   // --- Canonical field extraction from visuel ---

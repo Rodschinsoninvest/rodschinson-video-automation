@@ -250,6 +250,8 @@ const INITIAL_FORM = {
   voiceStyle: 'professional', platforms: ['linkedin'], logo: null,
   slides: 6, duration: 60, canvaTemplateUrl: '',
   audioMode: 'voice', musicGenre: 'corporate',
+  transition: 'dissolve',
+  caption_style: 'none',
 }
 
 function loadSavedTemplates() {
@@ -1142,6 +1144,8 @@ export default function NewContent() {
       duration: form.duration,
       audioMode: form.audioMode,
       musicGenre: form.musicGenre,
+      transition: form.transition,
+      caption_style: form.caption_style,
       ...(form.canvaTemplateUrl ? { canva_template_url: form.canvaTemplateUrl } : {}),
       ...(previewScript && editedScript && !overrideSubject ? { custom_script: editedScript } : {}),
     }))
@@ -1606,6 +1610,93 @@ export default function NewContent() {
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {MUSIC_GENRES.map(g => (
                       <Chip key={g.id} active={form.musicGenre === g.id} onClick={() => set('musicGenre', g.id)}>{g.label}</Chip>
+                    ))}
+                  </div>
+                )}
+              </Section>
+            )}
+
+            {/* Transition Style — video, reel & story only */}
+            {(form.contentType === 'video' || form.contentType === 'reel' || form.contentType === 'story') && (
+              <Section title="Transition Style" hint="How scenes cut between each other">
+                <div className="grid grid-cols-3 gap-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {[
+                    { id: 'none',     label: 'Cut',      icon: '⚡', desc: 'Hard cut' },
+                    { id: 'dissolve', label: 'Dissolve', icon: '◌', desc: 'Cross fade' },
+                    { id: 'fade',     label: 'Fade',     icon: '◐', desc: 'Fade black' },
+                    { id: 'slide_up', label: 'Slide Up', icon: '↑', desc: 'Push up' },
+                    { id: 'zoom',     label: 'Zoom',     icon: '⊕', desc: 'Zoom in' },
+                    { id: 'glitch',   label: 'Glitch',   icon: '▨', desc: 'Digital' },
+                  ].map(t => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => set('transition', t.id)}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                        padding: '10px 8px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
+                        border: form.transition === t.id ? '2px solid #00B6FF' : '2px solid var(--cs-border)',
+                        background: form.transition === t.id ? 'rgba(0,182,255,0.06)' : 'var(--cs-surface)',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <span style={{ fontSize: 20 }}>{t.icon}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: form.transition === t.id ? '#00B6FF' : 'var(--cs-text)' }}>{t.label}</span>
+                      <span style={{ fontSize: 10, color: 'var(--cs-text-muted)' }}>{t.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            {/* Captions / Subtitles — video, reel & story only */}
+            {(form.contentType === 'video' || form.contentType === 'reel' || form.contentType === 'story') && (
+              <Section title="Captions / Subtitles" hint="Burned-in captions overlay on the video">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: form.caption_style !== 'none' ? 12 : 0 }}>
+                  <span style={{ color: 'var(--cs-text-sub)', fontSize: 13 }}>
+                    {form.caption_style !== 'none' ? 'Enabled' : 'Disabled'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => set('caption_style', form.caption_style === 'none' ? 'viral' : 'none')}
+                    style={{
+                      position: 'relative', display: 'inline-flex', alignItems: 'center',
+                      width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
+                      background: form.caption_style !== 'none' ? '#00B6FF' : 'var(--cs-border)',
+                      transition: 'background 0.2s', padding: 0,
+                    }}
+                  >
+                    <span style={{
+                      display: 'inline-block', width: 18, height: 18, borderRadius: '50%',
+                      background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                      transform: form.caption_style !== 'none' ? 'translateX(22px)' : 'translateX(3px)',
+                      transition: 'transform 0.2s',
+                    }} />
+                  </button>
+                </div>
+                {form.caption_style !== 'none' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                    {[
+                      { id: 'viral',   label: 'Viral',   icon: '🔥', desc: 'Bold TikTok' },
+                      { id: 'minimal', label: 'Minimal', icon: '✦',  desc: 'Clean pill' },
+                      { id: 'neon',    label: 'Neon',    icon: '⚡', desc: 'Glow effect' },
+                    ].map(s => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => set('caption_style', s.id)}
+                        style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                          padding: '10px 8px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
+                          border: form.caption_style === s.id ? '2px solid #00B6FF' : '2px solid var(--cs-border)',
+                          background: form.caption_style === s.id ? 'rgba(0,182,255,0.06)' : 'var(--cs-surface)',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        <span style={{ fontSize: 20 }}>{s.icon}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: form.caption_style === s.id ? '#00B6FF' : 'var(--cs-text)' }}>{s.label}</span>
+                        <span style={{ fontSize: 10, color: 'var(--cs-text-muted)' }}>{s.desc}</span>
+                      </button>
                     ))}
                   </div>
                 )}
