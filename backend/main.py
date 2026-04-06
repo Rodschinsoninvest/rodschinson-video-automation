@@ -103,6 +103,25 @@ _APP_PASSWORD  = os.getenv("APP_PASSWORD", "rodschinson2024")
 _APP_SECRET    = os.getenv("APP_SECRET", "cs-secret-change-in-prod")
 _TOKEN_TTL     = int(os.getenv("AUTH_TOKEN_TTL", str(60 * 60 * 24 * 7)))  # 7 days
 
+def _parse_json(raw: str) -> any:
+    """Parse JSON from a string that may have extra text after the first object.
+    Strips markdown fences, then uses raw_decode to ignore trailing content."""
+    s = raw.strip()
+    if s.startswith("```"):
+        s = re.sub(r"^```[a-z]*\n?", "", s)
+        s = re.sub(r"\n?```\s*$", "", s.strip())
+        s = s.strip()
+    # Find first { or [ and try raw_decode from there
+    for start in range(len(s)):
+        if s[start] in ('{', '['):
+            try:
+                obj, _ = json.JSONDecoder().raw_decode(s, start)
+                return obj
+            except json.JSONDecodeError:
+                continue
+    raise json.JSONDecodeError("No JSON object found", s, 0)
+
+
 def _make_token(username: str) -> str:
     exp = int(_time.time()) + _TOKEN_TTL
     payload = base64.urlsafe_b64encode(f"{username}:{exp}".encode()).decode().rstrip("=")
@@ -947,12 +966,8 @@ Hard rules — violations will crash the render pipeline with no recovery:
                     raise RuntimeError(f"Claude API error {code}: {(_res.text[:200] if _res else '')}")
 
                 raw_script = _res.json()["content"][0]["text"].strip()
-                if raw_script.startswith("```"):
-                    raw_script = re.sub(r"^```[a-z]*\n?", "", raw_script)
-                    raw_script = re.sub(r"\n?```$", "", raw_script.strip())
-
                 try:
-                    script_data = json.loads(raw_script)
+                    script_data = _parse_json(raw_script)
                 except json.JSONDecodeError as e:
                     raise RuntimeError(f"Claude returned invalid JSON for script: {e}")
 
@@ -1190,15 +1205,10 @@ Rules:
                 raise RuntimeError(f"Claude API error {_res.status_code}: {_res.text[:200]}")
 
             raw = _res.json()["content"][0]["text"].strip()
-            if raw.startswith("```"):
-                raw = re.sub(r"^```[a-z]*\n?", "", raw)
-                raw = re.sub(r"\n?```$", "", raw.strip())
-
             try:
-                _slides = json.loads(raw)
+                _slides = _parse_json(raw)
             except json.JSONDecodeError:
-                m = re.search(r"\[.*\]", raw, re.DOTALL)
-                _slides = json.loads(m.group()) if m else []
+                _slides = []
 
             if not _slides:
                 raise RuntimeError("No slide data returned from Claude")
@@ -1586,11 +1596,8 @@ Scene 1 must be title_card, last scene must be cta_screen. Return ONLY valid JSO
         raise HTTPException(500, f"Claude API error {res.status_code}: {res.text[:200]}")
 
     raw = res.json()["content"][0]["text"].strip()
-    if raw.startswith("```"):
-        raw = re.sub(r"^```[a-z]*\n?", "", raw)
-        raw = re.sub(r"\n?```$", "", raw.strip())
     try:
-        script = json.loads(raw)
+        script = _parse_json(raw)
     except json.JSONDecodeError as e:
         raise HTTPException(500, f"Claude returned invalid JSON: {e}")
 
@@ -1664,15 +1671,10 @@ No markdown, no explanation — JSON array only."""
         raise HTTPException(502, f"Claude API error {res.status_code}: {res.text[:200]}")
 
     raw = res.json()["content"][0]["text"].strip()
-    if raw.startswith("```"):
-        raw = re.sub(r"^```[a-z]*\n?", "", raw)
-        raw = re.sub(r"\n?```$", "", raw.strip())
-
     try:
-        slides = json.loads(raw)
+        slides = _parse_json(raw)
     except json.JSONDecodeError:
-        m = re.search(r"\[.*\]", raw, re.DOTALL)
-        slides = json.loads(m.group()) if m else []
+        slides = []
 
     return {"slides": slides, "total": len(slides)}
 
@@ -1861,7 +1863,7 @@ async def generate_variations(body: dict):
     # Pass 1: parse the whole array
     for attempt in (json_str, _repair(json_str)):
         try:
-            variations = json.loads(attempt)
+            variations = _parse_json(attempt)
             if isinstance(variations, list) and variations:
                 return {"variations": variations[:count], "content_type": content_type}
         except json.JSONDecodeError:
@@ -4516,11 +4518,9 @@ Return only valid JSON, no markdown."""
 
     raw = await _claude_strategy(prompt, model="claude-haiku-4-5-20251001")
     try:
-        strategy_data = json.loads(raw)
+        strategy_data = _parse_json(raw)
     except json.JSONDecodeError:
-        import re
-        m = re.search(r'\{.*\}', raw, re.DOTALL)
-        strategy_data = json.loads(m.group()) if m else {}
+        strategy_data = {}
 
     record = {
         "id": str(uuid.uuid4()),
@@ -4707,11 +4707,9 @@ Return only valid JSON array, no markdown."""
 
     raw = await _claude_strategy(prompt)
     try:
-        hooks = json.loads(raw)
+        hooks = _parse_json(raw)
     except json.JSONDecodeError:
-        import re
-        m = re.search(r'\[.*\]', raw, re.DOTALL)
-        hooks = json.loads(m.group()) if m else []
+        hooks = []
 
     # Sort by score descending
     hooks.sort(key=lambda h: h.get("score", {}).get("total", 0), reverse=True)
@@ -4769,11 +4767,9 @@ Return only valid JSON."""
 
     raw = await _claude_strategy(prompt)
     try:
-        analysis = json.loads(raw)
+        analysis = _parse_json(raw)
     except json.JSONDecodeError:
-        import re
-        m = re.search(r'\{.*\}', raw, re.DOTALL)
-        analysis = json.loads(m.group()) if m else {}
+        analysis = {}
 
     return {"job_id": body.job_id, "title": title, "analysis": analysis}
 
@@ -4829,11 +4825,9 @@ Return only valid JSON."""
 
     raw = await _claude_strategy(prompt)
     try:
-        rewrite = json.loads(raw)
+        rewrite = _parse_json(raw)
     except json.JSONDecodeError:
-        import re
-        m = re.search(r'\{.*\}', raw, re.DOTALL)
-        rewrite = json.loads(m.group()) if m else {}
+        rewrite = {}
 
     return {"job_id": body.job_id, "platform": body.platform, "rewrite": rewrite}
 
@@ -4877,11 +4871,9 @@ Return only valid JSON."""
 
     raw = await _claude_strategy(prompt)
     try:
-        variants = json.loads(raw)
+        variants = _parse_json(raw)
     except json.JSONDecodeError:
-        import re
-        m = re.search(r'\{.*\}', raw, re.DOTALL)
-        variants = json.loads(m.group()) if m else {}
+        variants = {}
 
     test = {
         "id": str(uuid.uuid4()),
