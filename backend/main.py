@@ -72,6 +72,12 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def _lifespan(_: FastAPI):
+    # ── startup: validate required env vars ──────────────────────────
+    _missing = [v for v in ("ANTHROPIC_API_KEY", "APP_PASSWORD", "APP_SECRET") if not os.getenv(v)]
+    if _missing:
+        log.error("❌ Missing required env vars: %s — set them in .env before starting.", ", ".join(_missing))
+        sys.exit(1)
+
     # ── startup: recover jobs orphaned by a previous server restart ──
     if JOBS_DIR.exists():
         for p in JOBS_DIR.glob("*.json"):
@@ -83,8 +89,8 @@ async def _lifespan(_: FastAPI):
                                 updated_at=_now())
                     p.write_text(json.dumps(data, indent=2))
                     log.warning("Recovered orphaned job %s", data.get("job_id", "")[:8])
-            except Exception:
-                pass
+            except Exception as e:
+                log.warning("Could not recover job file %s: %s", p.name, e)
     yield  # server runs
     # (no shutdown logic needed)
 
@@ -99,11 +105,11 @@ import time as _time
 
 _AUTH_ENABLED  = os.getenv("AUTH_ENABLED", "true").lower() not in ("false", "0", "no")
 _APP_USERNAME  = os.getenv("APP_USERNAME", "admin")
-_APP_PASSWORD  = os.getenv("APP_PASSWORD", "rodschinson2024")
-_APP_SECRET    = os.getenv("APP_SECRET", "cs-secret-change-in-prod")
+_APP_PASSWORD  = os.getenv("APP_PASSWORD", "")   # must be set in .env — no insecure default
+_APP_SECRET    = os.getenv("APP_SECRET", "")     # must be set in .env — no insecure default
 _TOKEN_TTL     = int(os.getenv("AUTH_TOKEN_TTL", str(60 * 60 * 24 * 7)))  # 7 days
 
-def _parse_json(raw: str) -> any:
+def _parse_json(raw: str):
     """Parse JSON from a string that may have extra text after the first object.
     Strips markdown fences, then uses raw_decode to ignore trailing content."""
     s = raw.strip()
@@ -186,8 +192,8 @@ def _settings_load() -> dict:
     if SETTINGS_FILE.exists():
         try:
             return json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            pass
+        except Exception as e:
+            log.warning("Could not load settings file: %s", e)
     return {}
 
 def _settings_save(data: dict):
@@ -203,6 +209,21 @@ _job_tasks: dict[str, asyncio.Task]                         = {}  # asyncio task
 _job_procs: dict[str, asyncio.subprocess.Process]           = {}  # active subprocess per job
 VALID_STATUSES = {"Draft", "Ready", "Approved", "Scheduled", "Published"}
 VALID_SLOTS    = {"morning", "noon", "afternoon", "evening"}
+
+# ── Rate limiter for /api/generate ────────────────────────────────────────────
+# Sliding-window: max 10 jobs per IP per 60 seconds.
+_rate_window: dict[str, list[float]] = {}  # ip → list of epoch timestamps
+_RATE_LIMIT  = int(os.getenv("GENERATE_RATE_LIMIT", "10"))   # max jobs
+_RATE_WINDOW = int(os.getenv("GENERATE_RATE_WINDOW", "60"))  # seconds
+
+def _check_rate_limit(ip: str) -> None:
+    import time as _t
+    now = _t.time()
+    hits = [ts for ts in _rate_window.get(ip, []) if now - ts < _RATE_WINDOW]
+    if len(hits) >= _RATE_LIMIT:
+        raise HTTPException(429, f"Rate limit exceeded — max {_RATE_LIMIT} jobs per {_RATE_WINDOW}s per IP.")
+    hits.append(now)
+    _rate_window[ip] = hits
 
 # ── Concurrency guards ─────────────────────────────────────────────────────────
 # Limit simultaneous Puppeteer render jobs to prevent Railway OOM when
@@ -254,8 +275,12 @@ async def _run(cmd: list[str], cwd: Path | None = None, timeout: int = 600,
 
 async def _library_load() -> list[dict]:
     if not LIBRARY_FILE.exists(): return []
-    async with aiofiles.open(LIBRARY_FILE) as f:
-        return json.loads(await f.read())
+    try:
+        async with aiofiles.open(LIBRARY_FILE) as f:
+            return json.loads(await f.read())
+    except Exception as e:
+        log.error("Failed to load library.json: %s", e)
+        return []
 
 
 async def _library_save(entries: list[dict]) -> None:
@@ -298,7 +323,7 @@ _DEFAULT_USERS = [
     {
         "id": "admin",
         "username": os.getenv("APP_USERNAME", "admin"),
-        "password": os.getenv("APP_PASSWORD", "rodschinson2024"),
+        "password": os.getenv("APP_PASSWORD", ""),
         "role": "admin",
         "email": os.getenv("ADMIN_EMAIL", ""),
         "created_at": "2026-01-01T00:00:00+00:00",
@@ -1466,7 +1491,8 @@ def health():
 # ── Generate ───────────────────────────────────────────────────────────────────
 
 @app.post("/api/generate", status_code=202)
-async def generate(payload: str = Form(...), logo: Optional[UploadFile] = File(None)):
+async def generate(request: Request, payload: str = Form(...), logo: Optional[UploadFile] = File(None)):
+    _check_rate_limit(request.client.host if request.client else "unknown")
     try:
         data = json.loads(payload)
     except json.JSONDecodeError:
@@ -1499,7 +1525,7 @@ async def generate(payload: str = Form(...), logo: Optional[UploadFile] = File(N
 
 class PreviewRequest(BaseModel):
     subject: str
-    brand: str = "investment"
+    brand: str = "rodschinson"
     language: str = "EN"
     format: str = "16:9"
     contentType: str = "video"
@@ -1614,7 +1640,7 @@ async def preview_carousel(body: dict):
         raise HTTPException(503, "ANTHROPIC_API_KEY not set in .env")
 
     subject    = body.get("subject", "").strip()
-    brand      = body.get("brand", "investment")
+    brand      = body.get("brand", "rodschinson")
     language   = body.get("language", "EN")
     style      = body.get("style", "educational")
     num_slides = min(max(int(body.get("slides", 6)), 3), 12)
@@ -1781,7 +1807,7 @@ async def generate_variations(body: dict):
     subject      = body.get("subject", "").strip()
     language     = body.get("language", "EN")
     style        = body.get("style", "viral_hook")
-    brand        = body.get("brand", "investment")
+    brand        = body.get("brand", "rodschinson")
     count        = min(max(int(body.get("count", 3)), 2), 5)
 
     if not subject:
@@ -1881,14 +1907,20 @@ async def generate_variations(body: dict):
 
 @app.get("/api/jobs/{job_id}")
 async def get_job(job_id: str):
+    path = JOBS_DIR / f"{job_id}.json"
+    # Always prefer disk for terminal jobs — disk is the authoritative record
+    # after _save_job(); in-memory dict may lag on concurrent access.
+    if path.exists():
+        try:
+            async with aiofiles.open(path) as f:
+                job = json.loads(await f.read())
+            _jobs[job_id] = job  # keep in-memory cache in sync
+            return job
+        except Exception as e:
+            log.warning("Could not read job file %s: %s", job_id[:8], e)
+    # Fall back to in-memory dict (job not yet persisted — still in-flight)
     if job_id in _jobs:
         return _jobs[job_id]
-    path = JOBS_DIR / f"{job_id}.json"
-    if path.exists():
-        async with aiofiles.open(path) as f:
-            job = json.loads(await f.read())
-        _jobs[job_id] = job
-        return job
     raise HTTPException(404, "Job not found")
 
 
@@ -4412,8 +4444,8 @@ async def update_settings(body: SettingsUpdateRequest, request: Request):
     # Re-apply special vars that are cached at startup
     global _APP_USERNAME, _APP_PASSWORD, _APP_SECRET
     _APP_USERNAME = overrides.get("APP_USERNAME") or os.getenv("APP_USERNAME", "admin")
-    _APP_PASSWORD = overrides.get("APP_PASSWORD") or os.getenv("APP_PASSWORD", "rodschinson2024")
-    _APP_SECRET   = overrides.get("APP_SECRET")   or os.getenv("APP_SECRET", "cs-secret-change-in-prod")
+    _APP_PASSWORD = overrides.get("APP_PASSWORD") or os.getenv("APP_PASSWORD", "")
+    _APP_SECRET   = overrides.get("APP_SECRET")   or os.getenv("APP_SECRET", "")
 
     return {"status": "saved", "keys": list(body.updates.keys())}
 
@@ -4465,7 +4497,7 @@ async def _claude_strategy(prompt: str, model: str = "claude-haiku-4-5-20251001"
         max_tokens=4096,
         messages=[{"role": "user", "content": prompt}],
     )
-    return next((b.text for b in msg.content if hasattr(b, "text")), "")
+    return next((getattr(b, "text") for b in msg.content if hasattr(b, "text")), "")
 
 
 # ── 1. Content Strategy Generator ─────────────────────────────────────────────
@@ -4973,7 +5005,7 @@ async def upload_asset(
     asset_type: str = Form("logo"),   # logo | icon | visual | font
     
 ):
-    ext  = Path(file.filename).suffix.lower() or ".png"
+    ext  = Path(file.filename or "upload.png").suffix.lower() or ".png"
     aid  = str(uuid.uuid4())
     dest = ASSETS_DIR / f"{aid}{ext}"
     async with aiofiles.open(dest, "wb") as f:
