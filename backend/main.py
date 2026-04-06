@@ -491,6 +491,9 @@ _BUILTIN_TEMPLATE_META = [
     {"id": "reel_bold",     "label": "Bold",     "html": "reel_bold",     "ratio": "9:16", "w": 1080, "h": 1920, "fps": 30, "formats": ["reel", "story"], "builtin": True, "accent": "#FF4444", "gradient": "linear-gradient(160deg,#0a0a0a,#1a0000)", "style": "Black · red · high energy viral", "scenes": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"]},
     {"id": "reel_minimal",  "label": "Minimal",  "html": "reel_minimal",  "ratio": "9:16", "w": 1080, "h": 1920, "fps": 30, "formats": ["reel", "story"], "builtin": True, "accent": "#08316F", "gradient": "linear-gradient(160deg,#F5F5F0,#e5e5e0)", "style": "Light · minimal · clean editorial", "scenes": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"]},
     {"id": "reel_gradient", "label": "Gradient", "html": "reel_gradient", "ratio": "9:16", "w": 1080, "h": 1920, "fps": 30, "formats": ["reel", "story"], "builtin": True, "accent": "#9b6dff", "gradient": "linear-gradient(160deg,#1a0a2e,#08316F)", "style": "Purple-navy · glow · modern social", "scenes": ["title_card", "big_number", "text_bullets", "bar_chart", "cta_screen"]},
+    # Real Estate Light (architectural · clear background)
+    {"id": "realestate_light", "label": "Real Estate", "html": "realestate_light", "ratio": "16:9", "w": 1920, "h": 1080, "fps": 24, "formats": ["video"], "builtin": True, "accent": "#C8A96E", "gradient": "linear-gradient(135deg,#F5F2ED,#ede9e2)", "style": "Light linen · navy · gold · architectural skyline", "scenes": ["title_card", "big_number", "bar_chart", "text_bullets", "process_steps", "quote_card", "split_screen", "cta_screen"]},
+    {"id": "reel_realestate",  "label": "Real Estate", "html": "reel_realestate",  "ratio": "9:16", "w": 1080, "h": 1920, "fps": 30, "formats": ["reel", "story"], "builtin": True, "accent": "#C8A96E", "gradient": "linear-gradient(160deg,#F5F2ED,#ede9e2)", "style": "Light linen · navy · gold · vertical architectural", "scenes": ["title_card", "big_number", "bar_chart", "text_bullets", "process_steps", "quote_card", "cta_screen"]},
 ]
 
 _SCENE_TYPE_SCHEMAS = {
@@ -1141,6 +1144,11 @@ Hard rules — violations will crash the render pipeline with no recovery:
                     "tone":  "Data-first. Every slide should include a hard number. Stat field is mandatory. Body reads like a data analyst briefing.",
                     "schema": "standard",
                 },
+                "carousel_realestate": {
+                    "style": "Light linen (#F5F2ED) background, navy (#08316F) + gold (#C8A96E) accents, architectural skyline graphic design elements. Premium real estate / CRE feel. Serif headlines allowed with *italic*.",
+                    "tone":  "Professional real estate investor voice. Each slide is crisp and visual. Lead with a bold insight, back it with a key stat. CTA is action-oriented.",
+                    "schema": "standard",
+                },
             }
             tmpl_hint = CAROUSEL_HINTS.get(template, CAROUSEL_HINTS["carousel_bold"])
 
@@ -1249,7 +1257,7 @@ Rules:
             await _save_job(job)
 
             # Resolve carousel template (default to carousel_bold)
-            carousel_templates = {"carousel_bold", "carousel_clean", "carousel_minimal", "carousel_data", "carousel_cre"}
+            carousel_templates = {"carousel_bold", "carousel_clean", "carousel_minimal", "carousel_data", "carousel_cre", "carousel_realestate"}
             carousel_tmpl = template if template in carousel_templates else "carousel_bold"
             # Also accept custom AI-generated carousel templates
             tmpl_file = PUPPET / "templates" / f"{carousel_tmpl}.html"
