@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 import base64
 import hashlib
 import secrets
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Query, Request
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Query, Request, Depends, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
@@ -4463,7 +4463,7 @@ async def _claude_strategy(prompt: str, model: str = "claude-haiku-4-5-20251001"
         max_tokens=4096,
         messages=[{"role": "user", "content": prompt}],
     )
-    return msg.content[0].text
+    return next((b.text for b in msg.content if hasattr(b, "text")), "")
 
 
 # ── 1. Content Strategy Generator ─────────────────────────────────────────────
@@ -4476,7 +4476,7 @@ class StrategyRequest(BaseModel):
     duration_days: int = 30
 
 @app.post("/api/strategy/generate")
-async def generate_strategy(body: StrategyRequest, _=Depends(_require_role("creator"))):
+async def generate_strategy(body: StrategyRequest):
     brand_meta = await _brand_lookup(body.brand) or {}
     brand_name = brand_meta.get("name", body.brand)
     icp = brand_meta.get("icp") or {}
@@ -4523,7 +4523,7 @@ Return only valid JSON, no markdown."""
         strategy_data = json.loads(m.group()) if m else {}
 
     record = {
-        "id": _new_id(),
+        "id": str(uuid.uuid4()),
         "brand": body.brand,
         "industry": body.industry,
         "audience": body.audience,
@@ -4545,7 +4545,7 @@ class CalendarFillRequest(BaseModel):
     start_date: str   # YYYY-MM-DD
 
 @app.post("/api/strategy/calendar-fill")
-async def calendar_fill(body: CalendarFillRequest, _=Depends(_require_role("creator"))):
+async def calendar_fill(body: CalendarFillRequest):
     strategies = await _strategy_load()
     strat = next((s for s in strategies if s["id"] == body.strategy_id), None)
     if not strat:
@@ -4594,7 +4594,7 @@ async def calendar_fill(body: CalendarFillRequest, _=Depends(_require_role("crea
                     # pick an approved job if available, else placeholder
                     job = random.choice(approved_jobs) if approved_jobs else None
                     entry = {
-                        "id": _new_id(),
+                        "id": str(uuid.uuid4()),
                         "date": date_str,
                         "slot": slot,
                         "scheduled_time": time_str,
@@ -4617,7 +4617,7 @@ async def calendar_fill(body: CalendarFillRequest, _=Depends(_require_role("crea
 
 # ── 3. Content Mix Analysis ────────────────────────────────────────────────────
 @app.get("/api/strategy/content-mix/{brand_id}")
-async def content_mix(brand_id: str, _=Depends(_require_role("creator"))):
+async def content_mix(brand_id: str):
     library = await _library_load()
     items = [j for j in library if j.get("brand") == brand_id or brand_id == "all"]
 
@@ -4674,7 +4674,7 @@ class HookRequest(BaseModel):
     audience: str = ""
 
 @app.post("/api/hooks/generate")
-async def generate_hooks(body: HookRequest, _=Depends(_require_role("creator"))):
+async def generate_hooks(body: HookRequest):
     brand_meta = (await _brand_lookup(body.brand) or {}) if body.brand else {}
     brand_name = brand_meta.get("name", "")
     icp = brand_meta.get("icp") or {}
@@ -4724,7 +4724,7 @@ class ImproveRequest(BaseModel):
     aspect: str = "overall"   # "hook" | "cta" | "structure" | "virality" | "overall"
 
 @app.post("/api/content/improve")
-async def improve_content(body: ImproveRequest, _=Depends(_require_role("creator"))):
+async def improve_content(body: ImproveRequest):
     library = await _library_load()
     job = next((j for j in library if j.get("job_id") == body.job_id), None)
     if not job:
@@ -4784,7 +4784,7 @@ class ViralRewriteRequest(BaseModel):
     platform: str = "linkedin"
 
 @app.post("/api/content/viral-rewrite")
-async def viral_rewrite(body: ViralRewriteRequest, _=Depends(_require_role("creator"))):
+async def viral_rewrite(body: ViralRewriteRequest):
     library = await _library_load()
     job = next((j for j in library if j.get("job_id") == body.job_id), None)
     if not job:
@@ -4844,7 +4844,7 @@ class ABTestRequest(BaseModel):
     test_type: str = "hook"   # "hook" | "caption" | "title"
 
 @app.post("/api/ab-test")
-async def create_ab_test(body: ABTestRequest, _=Depends(_require_role("creator"))):
+async def create_ab_test(body: ABTestRequest):
     library = await _library_load()
     job = next((j for j in library if j.get("job_id") == body.job_id), None)
     if not job:
@@ -4884,7 +4884,7 @@ Return only valid JSON."""
         variants = json.loads(m.group()) if m else {}
 
     test = {
-        "id": _new_id(),
+        "id": str(uuid.uuid4()),
         "job_id": body.job_id,
         "title": job.get("title",""),
         "test_type": body.test_type,
@@ -4899,11 +4899,11 @@ Return only valid JSON."""
     return test
 
 @app.get("/api/ab-test")
-async def list_ab_tests(_=Depends(_require_role("creator"))):
+async def list_ab_tests():
     return await _ab_tests_load()
 
 @app.patch("/api/ab-test/{test_id}/winner")
-async def set_ab_winner(test_id: str, body: dict = Body(...), _=Depends(_require_role("publisher"))):
+async def set_ab_winner(test_id: str, body: dict = Body(...)):
     tests = await _ab_tests_load()
     idx = next((i for i,t in enumerate(tests) if t["id"] == test_id), None)
     if idx is None:
@@ -4916,7 +4916,7 @@ async def set_ab_winner(test_id: str, body: dict = Body(...), _=Depends(_require
 
 # ── 8. Top Performers ─────────────────────────────────────────────────────────
 @app.get("/api/analytics/top-performers")
-async def top_performers(brand: str = "", _=Depends(_require_role("creator"))):
+async def top_performers(brand: str = ""):
     library = await _library_load()
     items = [j for j in library if (not brand or j.get("brand") == brand) and j.get("status") == "Published"]
 
@@ -4967,7 +4967,7 @@ async def top_performers(brand: str = "", _=Depends(_require_role("creator"))):
 
 # ── 9. Asset Library ───────────────────────────────────────────────────────────
 @app.get("/api/assets")
-async def list_assets(brand: str = "", _=Depends(_require_role("creator"))):
+async def list_assets(brand: str = ""):
     assets = await _assets_load()
     if brand:
         assets = [a for a in assets if a.get("brand") == brand or not a.get("brand")]
@@ -4979,10 +4979,10 @@ async def upload_asset(
     brand: str = Form(""),
     label: str = Form(""),
     asset_type: str = Form("logo"),   # logo | icon | visual | font
-    _=Depends(_require_role("creator")),
+    
 ):
     ext  = Path(file.filename).suffix.lower() or ".png"
-    aid  = _new_id()
+    aid  = str(uuid.uuid4())
     dest = ASSETS_DIR / f"{aid}{ext}"
     async with aiofiles.open(dest, "wb") as f:
         await f.write(await file.read())
@@ -4998,7 +4998,7 @@ async def upload_asset(
     return record
 
 @app.get("/api/assets/{asset_id}/file")
-async def get_asset_file(asset_id: str, _=Depends(_require_role("creator"))):
+async def get_asset_file(asset_id: str):
     assets = await _assets_load()
     asset = next((a for a in assets if a["id"] == asset_id), None)
     if not asset:
@@ -5010,7 +5010,7 @@ async def get_asset_file(asset_id: str, _=Depends(_require_role("creator"))):
     return FileResponse(str(path))
 
 @app.delete("/api/assets/{asset_id}", status_code=204)
-async def delete_asset(asset_id: str, _=Depends(_require_role("creator"))):
+async def delete_asset(asset_id: str):
     assets = await _assets_load()
     asset  = next((a for a in assets if a["id"] == asset_id), None)
     if asset:
