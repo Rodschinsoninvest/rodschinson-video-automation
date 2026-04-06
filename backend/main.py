@@ -48,6 +48,9 @@ CUSTOM_TEMPLATES_FILE = OUTPUT / "custom_templates.json"
 CUSTOM_TMPL_DIR       = PUPPET / "templates" / "custom"
 CUSTOM_TMPL_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATE_REGISTRY     = PUPPET / "template_registry.json"  # consumed by renderer.js
+USERS_FILE            = OUTPUT / "users.json"
+COMMENTS_FILE         = OUTPUT / "comments.json"
+SERIES_FILE           = OUTPUT / "series.json"
 
 load_dotenv(ROOT / ".env", override=False)
 
@@ -262,6 +265,72 @@ async def _templates_load() -> list[dict]:
 
 async def _templates_save(entries: list[dict]) -> None:
     async with aiofiles.open(TEMPLATES_FILE, "w") as f:
+        await f.write(json.dumps(entries, indent=2, default=str))
+
+
+# ── Users (roles) storage ──────────────────────────────────────────────────────
+# Roles: admin > publisher > reviewer > creator
+_DEFAULT_USERS = [
+    {
+        "id": "admin",
+        "username": os.getenv("APP_USERNAME", "admin"),
+        "password": os.getenv("APP_PASSWORD", "rodschinson2024"),
+        "role": "admin",
+        "email": os.getenv("ADMIN_EMAIL", ""),
+        "created_at": "2026-01-01T00:00:00+00:00",
+    }
+]
+_ROLE_RANK = {"creator": 1, "reviewer": 2, "publisher": 3, "admin": 4}
+
+async def _users_load() -> list[dict]:
+    if not USERS_FILE.exists():
+        await _users_save(list(_DEFAULT_USERS))
+        return list(_DEFAULT_USERS)
+    async with aiofiles.open(USERS_FILE) as f:
+        return json.loads(await f.read())
+
+async def _users_save(entries: list[dict]) -> None:
+    async with aiofiles.open(USERS_FILE, "w") as f:
+        await f.write(json.dumps(entries, indent=2, default=str))
+
+async def _get_user(username: str) -> dict | None:
+    users = await _users_load()
+    return next((u for u in users if u["username"] == username), None)
+
+async def _get_request_user(request: Request) -> dict | None:
+    token = _get_request_token(request)
+    uname = _verify_token(token) if token else None
+    if not uname: return None
+    return await _get_user(uname)
+
+def _require_role(user: dict | None, min_role: str) -> None:
+    if not user:
+        raise HTTPException(401, "Not authenticated")
+    if _ROLE_RANK.get(user.get("role", ""), 0) < _ROLE_RANK.get(min_role, 99):
+        raise HTTPException(403, f"Requires role '{min_role}' or higher")
+
+
+# ── Comments storage ───────────────────────────────────────────────────────────
+
+async def _comments_load() -> list[dict]:
+    if not COMMENTS_FILE.exists(): return []
+    async with aiofiles.open(COMMENTS_FILE) as f:
+        return json.loads(await f.read())
+
+async def _comments_save(entries: list[dict]) -> None:
+    async with aiofiles.open(COMMENTS_FILE, "w") as f:
+        await f.write(json.dumps(entries, indent=2, default=str))
+
+
+# ── Recurring series storage ───────────────────────────────────────────────────
+
+async def _series_load() -> list[dict]:
+    if not SERIES_FILE.exists(): return []
+    async with aiofiles.open(SERIES_FILE) as f:
+        return json.loads(await f.read())
+
+async def _series_save(entries: list[dict]) -> None:
+    async with aiofiles.open(SERIES_FILE, "w") as f:
         await f.write(json.dumps(entries, indent=2, default=str))
 
 
@@ -2186,17 +2255,42 @@ async def delete_library_entry(job_id: str):
 
 
 @app.patch("/api/library/{job_id}/status")
-async def update_library_status(job_id: str, body: StatusUpdate):
+async def update_library_status(job_id: str, body: StatusUpdate, request: Request):
     if body.status not in VALID_STATUSES:
         raise HTTPException(422, f"status must be one of {sorted(VALID_STATUSES)}")
     entries = await _library_load()
     for entry in entries:
         if entry.get("job_id") == job_id:
+            old_status = entry.get("status", "")
             entry["status"] = body.status
             entry["updated_at"] = _now()
             await _library_save(entries)
+            if old_status != body.status:
+                _tok = _get_request_token(request)
+                actor = (_verify_token(_tok) if _tok else None) or "system"
+                asyncio.create_task(_send_notification(
+                    subject=f"Content status: {old_status} → {body.status}",
+                    body=f'"{entry.get("title","")}" moved from {old_status} to {body.status} by {actor}.',
+                ))
             return entry
     raise HTTPException(404, "Library entry not found")
+
+
+@app.get("/api/platforms")
+async def list_platforms():
+    """Return all platforms supported for publishing via Metricool."""
+    _META = {
+        "linkedin":  {"name": "LinkedIn",   "color": "#0077B5", "icon": "in"},
+        "instagram": {"name": "Instagram",  "color": "#E1306C", "icon": "◻"},
+        "facebook":  {"name": "Facebook",   "color": "#1877F2", "icon": "f"},
+        "tiktok":    {"name": "TikTok",     "color": "#ff2d55", "icon": "♪"},
+        "youtube":   {"name": "YouTube",    "color": "#FF0000", "icon": "▶"},
+        "twitter":   {"name": "X / Twitter","color": "#000000", "icon": "✕"},
+        "bluesky":   {"name": "Bluesky",    "color": "#0085ff", "icon": "☁"},
+        "pinterest": {"name": "Pinterest",  "color": "#E60023", "icon": "P"},
+        "gmb":       {"name": "Google Business", "color": "#4285F4", "icon": "G"},
+    }
+    return [{"id": k, **v} for k, v in _META.items()]
 
 
 # ── Publish (Ayrshare) ─────────────────────────────────────────────────────────
@@ -2234,7 +2328,11 @@ _MC_PLATFORM_FIELD = {
     "youtube":   "youtubeData",
     "twitter":   "twitterData",
     "bluesky":   "blueskyData",
+    "pinterest": "pinterestData",
+    "gmb":       "gmbData",
 }
+
+ALL_SUPPORTED_PLATFORMS = sorted(_MC_PLATFORM_FIELD.keys())
 
 def _metricool_payload(caption: str, platforms: list[str], pub_dt: str,
                        media_urls: list[str] | None = None,
@@ -2268,6 +2366,9 @@ def _metricool_payload(caption: str, platforms: list[str], pub_dt: str,
         "tiktok":    "tiktok",
         "youtube":   "youtube",
         "twitter":   "twitter",
+        "bluesky":   "bluesky",
+        "pinterest": "pinterest",
+        "gmb":       "gmb",
     }
 
     payload: dict = {
@@ -2310,6 +2411,15 @@ def _metricool_payload(caption: str, platforms: list[str], pub_dt: str,
 
         elif platform == "twitter":
             payload["twitterData"] = {"tags": []}
+
+        elif platform == "bluesky":
+            payload["blueskyData"] = {}
+
+        elif platform == "pinterest":
+            payload["pinterestData"] = {"boardId": ""}
+
+        elif platform == "gmb":
+            payload["gmbData"] = {"type": "STANDARD"}
 
     if media_urls:
         payload["media"] = [{"url": u} for u in media_urls]
@@ -3517,10 +3627,15 @@ class LoginRequest(BaseModel):
 
 @app.post("/api/auth/login")
 async def auth_login(body: LoginRequest):
-    if body.username != _APP_USERNAME or body.password != _APP_PASSWORD:
+    users = await _users_load()
+    user = next((u for u in users if u["username"] == body.username and u["password"] == body.password), None)
+    # Legacy fallback: single admin credentials from env
+    if not user and body.username == _APP_USERNAME and body.password == _APP_PASSWORD:
+        user = {"username": body.username, "role": "admin", "email": ""}
+    if not user:
         raise HTTPException(401, "Invalid credentials")
-    token = _make_token(body.username)
-    return {"token": token, "username": body.username}
+    token = _make_token(user["username"])
+    return {"token": token, "username": user["username"], "role": user.get("role", "admin")}
 
 @app.post("/api/auth/logout")
 async def auth_logout():
@@ -3532,7 +3647,623 @@ async def auth_me(request: Request):
     username = _verify_token(token) if token else None
     if not username:
         raise HTTPException(401, "Not authenticated")
-    return {"username": username}
+    user = await _get_user(username)
+    role = user.get("role", "admin") if user else "admin"
+    return {"username": username, "role": role}
+
+
+# ── Users management endpoints ─────────────────────────────────────────────────
+
+@app.get("/api/users")
+async def list_users(request: Request):
+    u = await _get_request_user(request)
+    _require_role(u, "admin")
+    users = await _users_load()
+    return [{"id": x["id"], "username": x["username"], "role": x["role"], "email": x.get("email",""), "created_at": x.get("created_at","")} for x in users]
+
+class UserCreate(BaseModel):
+    username: str
+    password: str
+    role: str = "creator"
+    email: str = ""
+
+@app.post("/api/users", status_code=201)
+async def create_user(body: UserCreate, request: Request):
+    u = await _get_request_user(request)
+    _require_role(u, "admin")
+    if body.role not in _ROLE_RANK:
+        raise HTTPException(422, f"role must be one of {list(_ROLE_RANK)}")
+    users = await _users_load()
+    if any(x["username"] == body.username for x in users):
+        raise HTTPException(409, "Username already exists")
+    entry = {"id": str(uuid.uuid4()), "username": body.username, "password": body.password,
+             "role": body.role, "email": body.email, "created_at": _now()}
+    users.append(entry)
+    await _users_save(users)
+    return {"id": entry["id"], "username": entry["username"], "role": entry["role"]}
+
+class UserUpdate(BaseModel):
+    password: Optional[str] = None
+    role: Optional[str] = None
+    email: Optional[str] = None
+
+@app.put("/api/users/{user_id}")
+async def update_user(user_id: str, body: UserUpdate, request: Request):
+    u = await _get_request_user(request)
+    _require_role(u, "admin")
+    users = await _users_load()
+    target = next((x for x in users if x["id"] == user_id or x["username"] == user_id), None)
+    if not target:
+        raise HTTPException(404, "User not found")
+    if body.password: target["password"] = body.password
+    if body.role:
+        if body.role not in _ROLE_RANK:
+            raise HTTPException(422, f"role must be one of {list(_ROLE_RANK)}")
+        target["role"] = body.role
+    if body.email is not None: target["email"] = body.email
+    await _users_save(users)
+    return {"id": target["id"], "username": target["username"], "role": target["role"]}
+
+@app.delete("/api/users/{user_id}", status_code=204)
+async def delete_user(user_id: str, request: Request):
+    u = await _get_request_user(request)
+    _require_role(u, "admin")
+    users = await _users_load()
+    updated = [x for x in users if x["id"] != user_id and x["username"] != user_id]
+    if len(updated) == len(users):
+        raise HTTPException(404, "User not found")
+    await _users_save(updated)
+
+
+# ── Comments endpoints ─────────────────────────────────────────────────────────
+
+class CommentCreate(BaseModel):
+    text: str
+
+@app.get("/api/library/{job_id}/comments")
+async def get_comments(job_id: str):
+    comments = await _comments_load()
+    return [c for c in comments if c.get("job_id") == job_id]
+
+@app.post("/api/library/{job_id}/comments", status_code=201)
+async def add_comment(job_id: str, body: CommentCreate, request: Request):
+    token = _get_request_token(request)
+    username = _verify_token(token) if token else "anonymous"
+    comments = await _comments_load()
+    entry = {
+        "id": str(uuid.uuid4()),
+        "job_id": job_id,
+        "text": body.text,
+        "author": username or "anonymous",
+        "created_at": _now(),
+    }
+    comments.append(entry)
+    await _comments_save(comments)
+    # Fire notification to other users about new comment
+    asyncio.create_task(_notify_comment(job_id, username or "anonymous", body.text))
+    return entry
+
+@app.delete("/api/library/{job_id}/comments/{comment_id}", status_code=204)
+async def delete_comment(job_id: str, comment_id: str, request: Request):
+    await _get_request_user(request)  # auth check; role enforcement can be added
+    comments = await _comments_load()
+    updated = [c for c in comments if not (c["id"] == comment_id and c["job_id"] == job_id)]
+    await _comments_save(updated)
+
+async def _notify_comment(job_id: str, author: str, text: str):
+    """Send email notification when a comment is added (non-blocking)."""
+    try:
+        lib = await _library_load()
+        entry = next((e for e in lib if e.get("job_id") == job_id), None)
+        title = entry.get("title", job_id) if entry else job_id
+        await _send_notification(
+            subject=f"New comment on: {title}",
+            body=f"{author} commented:\n\n{text}\n\nContent: {title}",
+        )
+    except Exception as exc:
+        log.warning("Comment notify failed: %s", exc)
+
+
+# ── Status-change notification helper ─────────────────────────────────────────
+
+async def _send_notification(subject: str, body: str):
+    """Send email via SMTP if configured. Silent on failure."""
+    host  = os.getenv("SMTP_HOST", "")
+    port  = int(os.getenv("SMTP_PORT", "587"))
+    user  = os.getenv("SMTP_USER", "")
+    pw    = os.getenv("SMTP_PASS", "")
+    to    = os.getenv("NOTIFY_EMAIL", user)
+    slack = os.getenv("SLACK_WEBHOOK_URL", "")
+
+    if slack:
+        try:
+            async with httpx.AsyncClient(timeout=8) as c:
+                await c.post(slack, json={"text": f"*{subject}*\n{body}"})
+        except Exception as exc:
+            log.warning("Slack notify failed: %s", exc)
+
+    if not all([host, user, pw, to]):
+        return
+    try:
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = user
+        msg["To"] = to
+        import asyncio as _aio
+        loop = _aio.get_event_loop()
+        await loop.run_in_executor(None, _smtp_send, host, port, user, pw, to, msg)
+    except Exception as exc:
+        log.warning("Email notify failed: %s", exc)
+
+def _smtp_send(host, port, user, pw, to, msg):
+    with smtplib.SMTP(host, port, timeout=10) as s:
+        s.starttls()
+        s.login(user, pw)
+        s.sendmail(user, [to], msg.as_string())
+
+
+
+
+# ── Repurpose engine ───────────────────────────────────────────────────────────
+
+class RepurposeRequest(BaseModel):
+    formats: Optional[list[str]] = None  # e.g. ["reel","carousel","text_only"] — default all
+    brand: Optional[str] = None
+    language: Optional[str] = None
+
+@app.post("/api/repurpose/{job_id}", status_code=202)
+async def repurpose_content(job_id: str, body: RepurposeRequest = RepurposeRequest()):
+    """
+    Generate all missing formats from an existing piece of content.
+    Reads the original brief/subject from the library entry's script and
+    queues new generation jobs for each requested format.
+    Returns a list of new job IDs.
+    """
+    lib = await _library_load()
+    source = next((e for e in lib if e.get("job_id") == job_id), None)
+    if not source:
+        raise HTTPException(404, "Source library entry not found")
+
+    # Extract subject from script metadata
+    subject = source.get("title", "")
+    brand   = body.brand or source.get("brand", "rodschinson")
+    lang    = body.language or source.get("language", "EN")
+    script_path = source.get("script_path")
+    if script_path and os.path.isfile(script_path):
+        try:
+            sdata = json.loads(open(script_path, encoding="utf-8").read())
+            subject = sdata.get("meta", {}).get("titre") or subject
+        except Exception:
+            pass
+
+    # Default: generate all complementary formats not already produced
+    existing_type = source.get("content_type", "video")
+    all_formats = ["video", "reel", "carousel", "text_only"]
+    requested = body.formats or [f for f in all_formats if f != existing_type]
+
+    FORMAT_DEFAULTS = {
+        "video":     {"format": "16:9", "template": "educational", "duration": 60},
+        "reel":      {"format": "9:16", "template": "reel_premium", "duration": 30},
+        "carousel":  {"format": "1:1",  "template": "carousel_bold", "duration": 0},
+        "text_only": {"format": "text", "template": "",              "duration": 0},
+    }
+
+    new_jobs = []
+    for fmt_type in requested:
+        if fmt_type not in FORMAT_DEFAULTS:
+            continue
+        d = FORMAT_DEFAULTS[fmt_type]
+        new_job_id = str(uuid.uuid4())
+        new_job = {
+            "job_id": new_job_id,
+            "status": "pending",
+            "step": "Queued",
+            "detail": f"Repurposed from {job_id[:8]}",
+            "content_type": fmt_type,
+            "brand": brand,
+            "language": lang,
+            "subject": subject,
+            "format": d["format"],
+            "template": d["template"],
+            "source_job_id": job_id,
+            "created_at": _now(),
+            "updated_at": _now(),
+        }
+        await _save_job(new_job)
+        asyncio.create_task(_run_repurpose_job(new_job_id, subject, brand, lang, d, fmt_type))
+        new_jobs.append({"job_id": new_job_id, "content_type": fmt_type, "status": "pending"})
+
+    return {"source_job_id": job_id, "jobs": new_jobs}
+
+async def _run_repurpose_job(job_id: str, subject: str, brand: str, lang: str, d: dict, fmt_type: str):
+    """Background task: run a single repurpose generation."""
+    try:
+        brands = await _brands_load()
+        brand_obj = next((b for b in brands if b["id"] == brand or b.get("slug") == brand), {})
+        # Reuse the same generate pipeline — build a minimal form payload
+        # We'll call generate_content internals by constructing the right args
+        job = json.loads((JOBS_DIR / f"{job_id}.json").read_text())
+        _job_update(job, status="running", step="Script", detail="Generating script…")
+        await _save_job(job)
+
+        # Script generation
+        script_args = [
+            str(PYTHON), str(SCRIPTS / "generate_video_script.py"),
+            "--subject", subject,
+            "--brand", brand_obj.get("name", brand),
+            "--language", lang,
+            "--content_type", fmt_type,
+            "--template", d["template"],
+            "--output_dir", str(OUTPUT / "scripts"),
+            "--job_id", job_id,
+        ]
+        rc, _out, err = await _run(script_args, job_id=job_id)
+        if rc != 0:
+            _job_update(job, status="error", step="Script", detail=err[:400])
+            await _save_job(job)
+            return
+
+        script_file = OUTPUT / "scripts" / f"{job_id}.json"
+        if not script_file.exists():
+            _job_update(job, status="error", step="Script", detail="Script file not found")
+            await _save_job(job)
+            return
+
+        if fmt_type == "text_only":
+            script_data = json.loads(script_file.read_text())
+            output_text = script_data.get("text") or script_data.get("meta", {}).get("description", "")
+            _job_update(job, status="done", step="Done", detail="Text post ready",
+                        script_path=str(script_file), output_text=output_text)
+            await _save_job(job)
+        else:
+            _job_update(job, step="Render", detail="Rendering…")
+            await _save_job(job)
+            render_args = [
+                "node", str(PUPPET / "renderer.js"),
+                "--script", str(script_file),
+                "--output", str(OUTPUT / "scenes"),
+                "--job_id", job_id,
+            ]
+            rc2, _out2, err2 = await _run(render_args, job_id=job_id)
+            if rc2 != 0:
+                _job_update(job, status="error", step="Render", detail=err2[:400])
+                await _save_job(job)
+                return
+            _job_update(job, status="done", step="Done", detail="Ready",
+                        script_path=str(script_file))
+            await _save_job(job)
+
+        lib_entry = {
+            "job_id": job_id,
+            "title": f"[Repurposed] {subject[:60]}",
+            "brand": brand,
+            "language": lang,
+            "content_type": fmt_type,
+            "format": d["format"],
+            "template": d["template"],
+            "platforms": [],
+            "status": "Draft",
+            "script_path": str(OUTPUT / "scripts" / f"{job_id}.json"),
+            "source_job_id": job["source_job_id"],
+            "created_at": _now(),
+            "updated_at": _now(),
+        }
+        await _library_append(lib_entry)
+
+    except Exception as exc:
+        log.exception("Repurpose job %s failed: %s", job_id, exc)
+        try:
+            job = json.loads((JOBS_DIR / f"{job_id}.json").read_text())
+            _job_update(job, status="error", step="Error", detail=str(exc)[:300])
+            await _save_job(job)
+        except Exception:
+            pass
+
+
+# ── Per-platform caption generator ────────────────────────────────────────────
+
+class CaptionRequest(BaseModel):
+    job_id: str
+    platforms: list[str]
+    base_caption: Optional[str] = None
+
+@app.post("/api/captions/generate")
+async def generate_platform_captions(body: CaptionRequest):
+    """
+    Use Claude to produce platform-optimised captions for each requested platform.
+    Returns a dict of {platform: caption_text}.
+    """
+    lib = await _library_load()
+    entry = next((e for e in lib if e.get("job_id") == body.job_id), None)
+    base = body.base_caption or (entry.get("output_text") if entry else "") or ""
+    title = (entry.get("title", "") if entry else "")
+    brand_id = (entry.get("brand", "") if entry else "")
+    brands = await _brands_load()
+    brand = next((b for b in brands if b["id"] == brand_id), {})
+    brand_name = brand.get("name", brand_id)
+    brand_ctx  = brand.get("context", "")
+
+    if not base and entry:
+        # Try to extract from script
+        sp = entry.get("script_path")
+        if sp and os.path.isfile(sp):
+            try:
+                sd = json.loads(open(sp).read())
+                base = sd.get("meta", {}).get("description") or title
+            except Exception:
+                pass
+    if not base:
+        base = title
+
+    _PLATFORM_GUIDANCE = {
+        "linkedin":  "Professional tone. 1200–1500 chars. Hook sentence, 3 insight bullets, strong CTA. No emoji spam. End with 3–5 relevant hashtags.",
+        "instagram": "Conversational and engaging. 150–300 chars visible above fold, expand below. 5–10 relevant hashtags. 1–2 emojis in first line.",
+        "twitter":   "Max 280 chars. Punchy. One clear point. 1–2 hashtags max. Optional thread indicator (🧵 1/x).",
+        "tiktok":    "Casual, energetic. Under 150 chars. Trending hashtags. Hook word in first 5 words.",
+        "facebook":  "Friendly and conversational. 80–120 chars optimal. Can include question to drive comments. 2–3 hashtags.",
+        "youtube":   "SEO-optimised description. 200–300 chars first paragraph (shows above fold). Include target keywords naturally. Then timestamps if applicable.",
+        "bluesky":   "Thoughtful, community-focused. Max 300 chars. 1–2 hashtags. Similar to Twitter but more longform-friendly.",
+    }
+
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not anthropic_key:
+        # Return plain base caption for all platforms if no AI key
+        return {p: base for p in body.platforms}
+
+    results = {}
+    for platform in body.platforms:
+        guidance = _PLATFORM_GUIDANCE.get(platform, "Adapt the caption for this platform.")
+        prompt = f"""You are a social media copywriter for {brand_name}.
+{brand_ctx}
+
+Original content: "{base}"
+Title: "{title}"
+
+Write a caption optimised for {platform.upper()}.
+Guidelines: {guidance}
+
+Return ONLY the caption text, no explanation, no quotes around it."""
+        try:
+            async with httpx.AsyncClient(timeout=20) as client:
+                resp = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={"x-api-key": anthropic_key, "anthropic-version": "2023-06-01",
+                             "content-type": "application/json"},
+                    json={"model": "claude-haiku-4-5-20251001", "max_tokens": 500,
+                          "messages": [{"role": "user", "content": prompt}]},
+                )
+                if resp.status_code == 200:
+                    results[platform] = resp.json()["content"][0]["text"].strip()
+                else:
+                    results[platform] = base
+        except Exception:
+            results[platform] = base
+
+    return results
+
+
+# ── Recurring series ───────────────────────────────────────────────────────────
+
+class SeriesCreate(BaseModel):
+    name: str
+    brand: str
+    language: str = "EN"
+    content_type: str = "carousel"
+    template: str = "carousel_bold"
+    format: str = "1:1"
+    platforms: list[str] = []
+    subject_template: str  # e.g. "Weekly market update for {brand} — week {week}"
+    cadence: str = "weekly"   # weekly | biweekly | monthly
+    day_of_week: int = 1      # 0=Mon … 6=Sun
+    slot: str = "morning"
+    active: bool = True
+
+@app.get("/api/series")
+async def list_series():
+    return await _series_load()
+
+@app.post("/api/series", status_code=201)
+async def create_series(body: SeriesCreate):
+    if body.slot not in VALID_SLOTS:
+        raise HTTPException(422, f"slot must be one of {sorted(VALID_SLOTS)}")
+    entry = {
+        "id": str(uuid.uuid4()),
+        "name": body.name,
+        "brand": body.brand,
+        "language": body.language,
+        "content_type": body.content_type,
+        "template": body.template,
+        "format": body.format,
+        "platforms": body.platforms,
+        "subject_template": body.subject_template,
+        "cadence": body.cadence,
+        "day_of_week": body.day_of_week,
+        "slot": body.slot,
+        "active": body.active,
+        "last_run": None,
+        "created_at": _now(),
+    }
+    series = await _series_load()
+    series.append(entry)
+    await _series_save(series)
+    return entry
+
+@app.put("/api/series/{series_id}")
+async def update_series(series_id: str, body: SeriesCreate):
+    series = await _series_load()
+    s = next((x for x in series if x["id"] == series_id), None)
+    if not s:
+        raise HTTPException(404, "Series not found")
+    s.update(body.model_dump())
+    await _series_save(series)
+    return s
+
+@app.delete("/api/series/{series_id}", status_code=204)
+async def delete_series(series_id: str):
+    series = await _series_load()
+    updated = [x for x in series if x["id"] != series_id]
+    if len(updated) == len(series):
+        raise HTTPException(404, "Series not found")
+    await _series_save(updated)
+
+@app.post("/api/series/{series_id}/run")
+async def run_series_now(series_id: str):
+    """Manually trigger a series run (generate + queue next post)."""
+    series = await _series_load()
+    s = next((x for x in series if x["id"] == series_id), None)
+    if not s:
+        raise HTTPException(404, "Series not found")
+    job_id = await _trigger_series_run(s)
+    return {"job_id": job_id, "series_id": series_id}
+
+async def _trigger_series_run(s: dict) -> str:
+    """Generate content for a series entry. Returns new job_id."""
+    from datetime import date
+    week_num = date.today().isocalendar()[1]
+    brands = await _brands_load()
+    brand_obj = next((b for b in brands if b["id"] == s["brand"]), {})
+    subject = s["subject_template"].format(
+        brand=brand_obj.get("name", s["brand"]),
+        week=week_num,
+        date=date.today().isoformat(),
+    )
+    new_job_id = str(uuid.uuid4())
+    job = {
+        "job_id": new_job_id, "status": "pending", "step": "Queued",
+        "detail": f"Series: {s['name']}", "content_type": s["content_type"],
+        "brand": s["brand"], "language": s["language"], "subject": subject,
+        "format": s["format"], "template": s["template"],
+        "series_id": s["id"], "created_at": _now(), "updated_at": _now(),
+    }
+    await _save_job(job)
+    d = {"format": s["format"], "template": s["template"], "duration": 60}
+    asyncio.create_task(_run_repurpose_job(new_job_id, subject, s["brand"], s["language"], d, s["content_type"]))
+    # Update last_run
+    series = await _series_load()
+    for entry in series:
+        if entry["id"] == s["id"]:
+            entry["last_run"] = _now()
+    await _series_save(series)
+    return new_job_id
+
+
+# ── Content gap detection ─────────────────────────────────────────────────────
+
+@app.get("/api/schedule/gaps")
+async def get_schedule_gaps(start: Optional[str] = None, brand: Optional[str] = None):
+    """
+    Analyse the next 14 days and return days/platforms with no scheduled content.
+    Also flags any brand with < 3 posts in the coming 7 days.
+    """
+    from datetime import date, timedelta
+    today = date.today()
+    if start:
+        try: today = date.fromisoformat(start)
+        except ValueError: raise HTTPException(422, "start must be YYYY-MM-DD")
+
+    all_entries = await _schedule_load()
+    brands = await _brands_load()
+    _brand_ids = [b["id"] for b in brands]  # noqa: used for future extension
+
+    gaps = []
+    for offset in range(14):
+        d = today + timedelta(days=offset)
+        d_str = d.isoformat()
+        day_entries = [e for e in all_entries if e.get("date") == d_str
+                       and (not brand or e.get("brand") == brand)]
+        platforms_scheduled = {e.get("platform") for e in day_entries}
+        core_platforms = {"linkedin", "instagram"}
+        missing = core_platforms - platforms_scheduled
+        if missing:
+            gaps.append({
+                "date": d_str,
+                "weekday": d.strftime("%A"),
+                "missing_platforms": sorted(missing),
+                "severity": "high" if offset < 3 else "medium",
+            })
+
+    # Brand frequency warnings
+    warnings = []
+    week_end = (today + timedelta(days=7)).isoformat()
+    for b in (brands if not brand else [x for x in brands if x["id"] == brand]):
+        bid = b["id"]
+        week_posts = [e for e in all_entries
+                      if e.get("brand") == bid and today.isoformat() <= e.get("date","") <= week_end]
+        if len(week_posts) < 3:
+            warnings.append({
+                "brand": bid,
+                "brand_name": b.get("name", bid),
+                "posts_next_7_days": len(week_posts),
+                "recommended_minimum": 3,
+                "message": f"{b.get('name', bid)} has only {len(week_posts)} post(s) in the next 7 days (min: 3)",
+            })
+
+    return {"gaps": gaps, "warnings": warnings, "analysed_days": 14}
+
+
+# ── Weekly report ─────────────────────────────────────────────────────────────
+
+@app.get("/api/reports/weekly")
+async def weekly_report(send_email: bool = False, brand: Optional[str] = None):
+    """
+    Generate a text summary of last week's activity and optionally email it.
+    """
+    from datetime import date, timedelta
+    today = date.today()
+    week_start = today - timedelta(days=7)
+    lib = await _library_load()
+    sched = await _schedule_load()
+
+    # Filter to last week
+    recent_lib = [e for e in lib
+                  if e.get("created_at", "")[:10] >= week_start.isoformat()
+                  and (not brand or e.get("brand") == brand)]
+    recent_sched = [e for e in sched
+                    if e.get("date", "") >= week_start.isoformat()
+                    and e.get("date", "") <= today.isoformat()
+                    and (not brand or e.get("brand") == brand)]
+
+    published = [e for e in recent_lib if e.get("status") == "Published"]
+    by_type = {}
+    for e in recent_lib:
+        t = e.get("content_type", "unknown")
+        by_type[t] = by_type.get(t, 0) + 1
+    by_platform = {}
+    for e in recent_sched:
+        p = e.get("platform", "unknown")
+        by_platform[p] = by_platform.get(p, 0) + 1
+
+    sent_count = len([e for e in recent_sched if e.get("publish_status") in ("sent", "published")])
+
+    report = {
+        "period": {"start": week_start.isoformat(), "end": today.isoformat()},
+        "content_created": len(recent_lib),
+        "published": len(published),
+        "scheduled_posts_sent": sent_count,
+        "by_content_type": by_type,
+        "by_platform": by_platform,
+        "brand": brand or "all",
+    }
+
+    if send_email:
+        lines = [
+            f"Weekly Content Report — {week_start.isoformat()} to {today.isoformat()}",
+            f"Brand: {brand or 'all'}",
+            "",
+            f"Content created:    {report['content_created']}",
+            f"Published:          {report['published']}",
+            f"Scheduled sent:     {report['scheduled_posts_sent']}",
+            "",
+            "By type: " + ", ".join(f"{k}: {v}" for k, v in by_type.items()),
+            "By platform: " + ", ".join(f"{k}: {v}" for k, v in by_platform.items()),
+        ]
+        asyncio.create_task(_send_notification(
+            subject=f"Weekly Report — {today.isoformat()}",
+            body="\n".join(lines),
+        ))
+        report["email_sent"] = True
+
+    return report
 
 
 # ── Settings endpoints ─────────────────────────────────────────────────────────
@@ -3551,6 +4282,9 @@ _SETTINGS_SCHEMA = [
     ("ELEVENLABS_VOICE_ID_STANDARD", "Voice ID — Standard",   "elevenlabs",   "text",     False),
     ("ANTHROPIC_API_KEY",            "Anthropic API key",     "ai",           "password", True),
     ("FRONTEND_URL",                 "Frontend URL (CORS)",   "general",      "text",     False),
+    ("NOTIFY_EMAIL",                 "Notification email",    "notifications","text",     False),
+    ("SLACK_WEBHOOK_URL",            "Slack webhook URL",     "notifications","text",     False),
+    ("ADMIN_EMAIL",                  "Admin email",           "security",     "text",     False),
 ]
 
 def _mask(value: str) -> str:
