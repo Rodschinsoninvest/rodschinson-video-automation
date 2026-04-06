@@ -392,6 +392,8 @@ async function renderScene(browser, rawScene, opts) {
         const families = fontsToLoad.map(f => encodeURIComponent(f) + ':wght@300;400;500;600;700;800').join('&family=');
         await page.addStyleTag({ url: `https://fonts.googleapis.com/css2?family=${families}&display=swap` })
           .catch(() => {}); // non-fatal if offline
+        // Wait for fonts to be ready before rendering — prevents fallback font frames
+        await page.evaluate(() => document.fonts.ready).catch(() => {});
       }
 
       await page.evaluate((b) => {

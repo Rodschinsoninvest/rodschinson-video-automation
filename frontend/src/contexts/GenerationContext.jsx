@@ -11,7 +11,7 @@ const MAX_JOBS       = 6
 const POLL_MS        = 2000
 const MAX_NET_ERRORS = 5    // after this many consecutive failures, mark job as connection-lost
 const TERMINAL       = new Set(['done', 'error', 'aborted'])
-const STALE_MS       = 2 * 60 * 60 * 1000  // 2 hours — jobs stuck pending longer than this are stale
+const STALE_MS       = 6 * 60 * 60 * 1000  // 6 hours — jobs stuck pending longer than this are stale
 
 function loadPersistedJobs() {
   try {
