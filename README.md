@@ -66,7 +66,9 @@ Multi-brand workspace. Each brand stores:
 Brand colors and fonts are injected as CSS variables at render time by Puppeteer, so every generated visual automatically matches brand guidelines.
 
 ### 6 · Templates
-Four built-in Puppeteer HTML templates plus a custom template registry:
+15 built-in Puppeteer HTML templates across three categories, plus a custom template registry:
+
+**Video (16:9 / 9:16 / 1:1)**
 
 | Template | Format | Style |
 |---|---|---|
@@ -74,8 +76,29 @@ Four built-in Puppeteer HTML templates plus a custom template registry:
 | `tech_data` | 16:9 | Terminal / data dashboard, CRE market data |
 | `news_reel` | 9:16 | Breaking news lower-thirds, editorial |
 | `corporate_minimal` | 1:1 | Clean minimal, corporate white-label |
+| `cre` | 16:9 | Commercial real estate vertical |
 
-Custom templates can be added to `puppeteer/templates/custom/` and registered in `template_registry.json`.
+**Carousels**
+
+| Template | Style |
+|---|---|
+| `carousel_bold` | Dark navy, gold + cyan accents, premium investment |
+| `carousel_clean` | Light editorial, serif headlines, sky blue accents |
+| `carousel_minimal` | Near-black, white text, one idea per slide |
+| `carousel_data` | Data-driven, charts and stats |
+| `carousel_cre` | CRE market-focused |
+
+**Reels (9:16)**
+
+| Template | Style |
+|---|---|
+| `reel_premium` | Premium branded, full-bleed |
+| `reel_bold` | High-contrast, bold typography |
+| `reel_gradient` | Gradient backgrounds, dynamic |
+| `reel_data` | Data visualisation, market stats |
+| `reel_minimal` | White/near-white, editorial minimal |
+
+All templates respond to brand colors and fonts set in the Brands section. Custom templates can be added to `puppeteer/templates/custom/` and registered in `template_registry.json`.
 
 ### 7 · Analytics
 Platform performance aggregation: views, engagement, leads by brand, platform, and content type. Weekly reports can be emailed automatically.
