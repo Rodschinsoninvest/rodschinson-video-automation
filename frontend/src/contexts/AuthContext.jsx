@@ -9,9 +9,12 @@ export function AuthProvider({ children }) {
 
   const verify = useCallback(async (t) => {
     if (!t) { setChecking(false); return }
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 6000)
     try {
       const res = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${t}` },
+        signal: controller.signal,
       })
       if (res.ok) {
         const { username: u } = await res.json()
@@ -23,9 +26,10 @@ export function AuthProvider({ children }) {
         setUsername(null)
       }
     } catch {
-      // network error → keep token, let pages handle 401s
+      // network error or timeout → keep token, let pages handle 401s
       setUsername(null)
     } finally {
+      clearTimeout(timeout)
       setChecking(false)
     }
   }, [])

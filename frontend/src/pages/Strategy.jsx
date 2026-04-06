@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useBrands } from '../contexts/BrandContext'
+import { useGeneration } from '../contexts/GenerationContext'
 import { apiFetch } from '../utils/apiFetch'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -9,6 +10,22 @@ const PLATFORMS = ['linkedin', 'instagram', 'facebook', 'tiktok', 'youtube', 'tw
 const PILLAR_COLORS = {
   Educational: '#00B6FF', Authority: '#C8A96E',
   Storytelling: '#a78bfa', Promotional: '#34d399',
+}
+
+const CONTENT_TYPES = ['video', 'reel', 'carousel', 'image_post', 'story']
+const FORMATS       = ['16:9', '9:16', '1:1', '4:5']
+const LANGUAGES     = ['EN', 'FR', 'NL']
+const TEMPLATES     = ['rodschinson_premium', 'news_reel', 'tech_data', 'corporate_minimal', 'carousel_bold', 'carousel_clean', 'reel_bold', 'reel_minimal']
+
+// Map platform → default content type + format
+const PLATFORM_DEFAULTS = {
+  linkedin:  { contentType: 'video',     format: '16:9' },
+  youtube:   { contentType: 'video',     format: '16:9' },
+  instagram: { contentType: 'reel',      format: '9:16' },
+  tiktok:    { contentType: 'reel',      format: '9:16' },
+  facebook:  { contentType: 'video',     format: '16:9' },
+  twitter:   { contentType: 'video',     format: '16:9' },
+  bluesky:   { contentType: 'image_post',format: '1:1'  },
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -204,8 +221,190 @@ function StrategyForm({ brands, onGenerated }) {
   )
 }
 
+// ─── Content Plan Panel (selectable topics → generate) ───────────────────────
+function ContentPlanPanel({ strategy, brands }) {
+  const s = strategy.strategy
+  const { trackJob } = useGeneration()
+
+  // Build items from weekly themes
+  const allItems = (s.weekly_themes || []).flatMap(week =>
+    (week.topics || []).map((topic, i) => ({
+      id: `w${week.week}-${i}`,
+      topic,
+      week: week.week,
+      theme: week.theme,
+      // suggest platform/type from platform_mix
+      platform: s.platform_mix?.[i % (s.platform_mix?.length || 1)]?.platform || 'linkedin',
+      contentType: s.platform_mix?.[i % (s.platform_mix?.length || 1)]?.content_types?.[0] || 'video',
+    }))
+  )
+
+  const [selected, setSelected]     = useState(new Set())
+  const [generating, setGenerating] = useState(false)
+  const [done, setDone]             = useState(0)
+  const [genConfig, setGenConfig]   = useState({
+    brand:       strategy.brand || (brands[0]?.id || ''),
+    language:    'EN',
+    contentType: 'video',
+    format:      '16:9',
+    template:    'rodschinson_premium',
+  })
+
+  const toggle = (id) => setSelected(prev => {
+    const s = new Set(prev)
+    s.has(id) ? s.delete(id) : s.add(id)
+    return s
+  })
+  const toggleAll = () => setSelected(
+    selected.size === allItems.length ? new Set() : new Set(allItems.map(i => i.id))
+  )
+
+  const generateSelected = async () => {
+    const toGen = allItems.filter(i => selected.has(i.id))
+    if (!toGen.length) return
+    setGenerating(true); setDone(0)
+    for (const item of toGen) {
+      try {
+        const fd = new FormData()
+        fd.append('payload', JSON.stringify({
+          subject:     item.topic,
+          brand:       genConfig.brand,
+          language:    genConfig.language,
+          contentType: genConfig.contentType,
+          format:      genConfig.format,
+          template:    genConfig.template,
+          style:       'educational',
+          platforms:   [item.platform],
+        }))
+        const res = await apiFetch('/api/generate', { method: 'POST', body: fd })
+        if (res.ok) {
+          const { job_id } = await res.json()
+          trackJob(job_id, { title: item.topic, contentType: genConfig.contentType })
+        }
+      } catch { }
+      setDone(d => d + 1)
+    }
+    setGenerating(false)
+    setSelected(new Set())
+  }
+
+  const inp = { background: 'var(--cs-input-bg)', border: '1px solid var(--cs-border)', borderRadius: 6, padding: '5px 8px', color: 'var(--cs-text)', fontSize: 11, outline: 'none', cursor: 'pointer', fontFamily: 'inherit' }
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ color: 'var(--cs-text)', fontSize: 14, fontWeight: 700 }}>Content Plan</div>
+          <div style={{ color: 'var(--cs-text-muted)', fontSize: 11, marginTop: 2 }}>{allItems.length} topics · select and generate</div>
+        </div>
+        <button onClick={toggleAll} style={{
+          padding: '4px 12px', borderRadius: 5, border: '1px solid var(--cs-border)',
+          background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 11, cursor: 'pointer',
+        }}>{selected.size === allItems.length ? 'Deselect all' : 'Select all'}</button>
+      </div>
+
+      {/* Generation toolbar — visible when items are selected */}
+      {selected.size > 0 && (
+        <div style={{
+          padding: '12px 14px', borderRadius: 9, marginBottom: 14,
+          background: 'rgba(0,182,255,0.05)', border: '1px solid rgba(0,182,255,0.2)',
+          display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8,
+        }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#00B6FF', marginRight: 4 }}>{selected.size} selected</span>
+
+          <select value={genConfig.brand} onChange={e => setGenConfig(c => ({...c, brand: e.target.value}))} style={inp}>
+            {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+
+          <select value={genConfig.language} onChange={e => setGenConfig(c => ({...c, language: e.target.value}))} style={inp}>
+            {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+          </select>
+
+          <select value={genConfig.contentType} onChange={e => {
+            const ct = e.target.value
+            const fmt = ct === 'reel' || ct === 'story' ? '9:16' : ct === 'carousel' ? '1:1' : '16:9'
+            setGenConfig(c => ({...c, contentType: ct, format: fmt}))
+          }} style={inp}>
+            {CONTENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+
+          <select value={genConfig.format} onChange={e => setGenConfig(c => ({...c, format: e.target.value}))} style={inp}>
+            {FORMATS.map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+
+          <select value={genConfig.template} onChange={e => setGenConfig(c => ({...c, template: e.target.value}))} style={inp}>
+            {TEMPLATES.map(t => <option key={t} value={t}>{t.replace(/_/g,' ')}</option>)}
+          </select>
+
+          <button onClick={generateSelected} disabled={generating} style={{
+            marginLeft: 'auto', padding: '7px 18px', borderRadius: 7, border: 'none', cursor: generating ? 'not-allowed' : 'pointer',
+            background: generating ? 'var(--cs-hover)' : 'linear-gradient(135deg,#08316F,#00B6FF)',
+            color: generating ? 'var(--cs-text-muted)' : '#fff', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
+          }}>
+            {generating ? `Queuing… ${done}/${selected.size}` : `⚡ Generate ${selected.size}`}
+          </button>
+        </div>
+      )}
+
+      {/* Topic grid */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {allItems.map((item, idx) => {
+          const isSelected = selected.has(item.id)
+          const isNewWeek = idx === 0 || allItems[idx - 1]?.week !== item.week
+          return (
+            <div key={item.id}>
+              {isNewWeek && (
+                <div style={{ padding: '10px 0 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: '#00B6FF', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Week {item.week}</div>
+                  <div style={{ fontSize: 9, color: 'var(--cs-text-muted)' }}>— {item.theme}</div>
+                  <div style={{ flex: 1, height: 1, background: 'var(--cs-border)' }} />
+                </div>
+              )}
+              <div
+                onClick={() => toggle(item.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '9px 10px', borderRadius: 7, cursor: 'pointer',
+                  background: isSelected ? 'rgba(0,182,255,0.06)' : 'transparent',
+                  border: `1px solid ${isSelected ? 'rgba(0,182,255,0.25)' : 'transparent'}`,
+                  marginBottom: 3, transition: 'all 0.1s',
+                }}
+                onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--cs-hover)' }}
+                onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
+              >
+                {/* Checkbox */}
+                <div style={{
+                  width: 16, height: 16, borderRadius: 4, border: `2px solid ${isSelected ? '#00B6FF' : 'var(--cs-border)'}`,
+                  background: isSelected ? '#00B6FF' : 'transparent', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.1s',
+                }}>
+                  {isSelected && <span style={{ color: '#fff', fontSize: 9, fontWeight: 800, lineHeight: 1 }}>✓</span>}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: 'var(--cs-text)', lineHeight: 1.4 }}>{item.topic}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                  <span style={{ fontSize: 9, fontWeight: 600, padding: '2px 6px', borderRadius: 3, background: 'var(--cs-surface2)', color: 'var(--cs-text-muted)', textTransform: 'uppercase' }}>{item.platform}</span>
+                  <span style={{ fontSize: 9, fontWeight: 600, padding: '2px 6px', borderRadius: 3, background: 'var(--cs-surface2)', color: 'var(--cs-text-muted)' }}>{item.contentType}</span>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {done > 0 && !generating && (
+        <div style={{ marginTop: 10, padding: '8px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, color: '#22c55e', fontSize: 12 }}>
+          ✓ {done} items queued — check the Library for progress
+        </div>
+      )}
+    </Card>
+  )
+}
+
 // ─── Strategy Result ──────────────────────────────────────────────────────────
-function StrategyResult({ strategy, onCalendarFill }) {
+function StrategyResult({ strategy, onCalendarFill, brands }) {
   const s = strategy.strategy
   const [filling, setFilling] = useState(false)
   const [filled, setFilled]   = useState(null)
@@ -329,6 +528,9 @@ function StrategyResult({ strategy, onCalendarFill }) {
           </div>
         </Card>
       )}
+
+      {/* Content Plan — selectable + generate */}
+      <ContentPlanPanel strategy={strategy} brands={brands} />
     </div>
   )
 }
@@ -474,7 +676,7 @@ export default function Strategy() {
                 padding: '6px 14px', cursor: 'pointer', color: 'var(--cs-text-sub)', fontSize: 12,
                 width: 'fit-content', display: 'flex', alignItems: 'center', gap: 5,
               }}>← New strategy</button>
-              <StrategyResult strategy={activeStrategy} onCalendarFill={() => {}} />
+              <StrategyResult strategy={activeStrategy} onCalendarFill={() => {}} brands={brands.length ? brands : [{id:'default',name:'My Brand'}]} />
             </>
           )}
         </div>

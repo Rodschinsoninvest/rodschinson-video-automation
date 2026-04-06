@@ -1968,14 +1968,25 @@ export default function Library() {
   }, [jobs]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10000)
     try {
-      const res  = await apiFetch('/api/library')
+      const res  = await apiFetch('/api/library', { signal: controller.signal })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       setItems(data.items || [])
-    } catch {
-      setError('Could not reach API — make sure the backend is running')
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        setError('Request timed out — backend may be starting up')
+      } else {
+        setError(`Could not reach API (${e.message}) — make sure the backend is running`)
+      }
+      // Fall back to MOCK so the UI isn't empty
+      setItems(MOCK)
     } finally {
+      clearTimeout(timeout)
       setLoading(false)
     }
   }, [])
@@ -2134,8 +2145,10 @@ export default function Library() {
       )}
 
       {error && (
-        <div style={{ background: 'rgba(180,83,9,0.06)', border: '1px solid rgba(180,83,9,0.15)', borderRadius: 7, padding: '8px 14px', marginBottom: 16, color: '#b45309', fontSize: 12 }}>
-          {error}
+        <div style={{ background: 'rgba(180,83,9,0.06)', border: '1px solid rgba(180,83,9,0.15)', borderRadius: 7, padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ color: '#b45309', fontSize: 12, flex: 1 }}>⚠ {error}</span>
+          <button onClick={load} style={{ padding: '4px 12px', borderRadius: 5, border: '1px solid rgba(180,83,9,0.3)', background: 'rgba(180,83,9,0.08)', color: '#b45309', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>↻ Retry</button>
+          <span style={{ fontSize: 10, color: 'rgba(180,83,9,0.6)', flexShrink: 0 }}>Showing demo content</span>
         </div>
       )}
 
