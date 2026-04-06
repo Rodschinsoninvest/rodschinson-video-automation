@@ -296,20 +296,38 @@ function ScheduleInline({ item, onScheduled, onClose }) {
 // ─── Publish modal ────────────────────────────────────────────────────────────
 
 const ALL_PLATFORMS = [
-  { id: 'linkedin',  name: 'LinkedIn',  color: '#0077B5' },
-  { id: 'instagram', name: 'Instagram', color: '#E1306C' },
-  { id: 'youtube',   name: 'YouTube',   color: '#FF0000' },
-  { id: 'tiktok',    name: 'TikTok',    color: '#ff2d55' },
-  { id: 'facebook',  name: 'Facebook',  color: '#1877F2' },
-  { id: 'twitter',   name: 'X',         color: '#000000' },
+  { id: 'linkedin',  name: 'LinkedIn',       color: '#0077B5' },
+  { id: 'instagram', name: 'Instagram',      color: '#E1306C' },
+  { id: 'youtube',   name: 'YouTube',        color: '#FF0000' },
+  { id: 'tiktok',    name: 'TikTok',         color: '#ff2d55' },
+  { id: 'facebook',  name: 'Facebook',       color: '#1877F2' },
+  { id: 'twitter',   name: 'X / Twitter',    color: '#000000' },
+  { id: 'bluesky',   name: 'Bluesky',        color: '#0085ff' },
+  { id: 'pinterest', name: 'Pinterest',      color: '#E60023' },
+  { id: 'gmb',       name: 'Google Business',color: '#4285F4' },
 ]
 
 function PublishModal({ item, onClose, onPublished }) {
-  const [selected, setSelected]   = useState(item.platforms || [])
-  const [publishing, setPublishing] = useState(false)
-  const [result, setResult]       = useState(null)  // null | { ok, platforms, error }
+  const [selected, setSelected]       = useState(item.platforms || [])
+  const [publishing, setPublishing]   = useState(false)
+  const [result, setResult]           = useState(null)
+  const [captions, setCaptions]       = useState({})
+  const [genCap, setGenCap]           = useState(false)
+  const [showCaptions, setShowCaptions] = useState(false)
 
   const toggle = (id) => setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id])
+
+  const generateCaptions = async () => {
+    if (!selected.length) return
+    setGenCap(true)
+    try {
+      const r = await apiFetch('/api/captions/generate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: item.job_id, platforms: selected }),
+      })
+      if (r.ok) { setCaptions(await r.json()); setShowCaptions(true) }
+    } finally { setGenCap(false) }
+  }
 
   const publish = async () => {
     if (!selected.length) return
@@ -415,19 +433,52 @@ function PublishModal({ item, onClose, onPublished }) {
           </div>
         )}
 
+        {/* Per-platform captions panel */}
+        {!result && showCaptions && Object.keys(captions).length > 0 && (
+          <div style={{ margin: '0 24px 12px', border: '1px solid var(--cs-border)', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ padding: '8px 12px', background: 'var(--cs-surface2)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--cs-text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              AI-generated captions
+              <button onClick={() => setShowCaptions(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 13 }}>✕</button>
+            </div>
+            <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+              {Object.entries(captions).map(([platform, text]) => {
+                const meta = ALL_PLATFORMS.find(p => p.id === platform)
+                return (
+                  <div key={platform} style={{ padding: '10px 12px', borderTop: '1px solid var(--cs-border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: meta?.color || '#999' }} />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: meta?.color || 'var(--cs-text)' }}>{meta?.name || platform}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--cs-text-sub)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{text}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
-        <div style={{ padding: '0 24px 20px', display: 'flex', gap: 8 }}>
+        <div style={{ padding: '0 24px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {!result ? (
             <>
-              <button onClick={onClose} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
-              <button onClick={publish} disabled={!selected.length || publishing} style={{
-                flex: 2, padding: '10px', borderRadius: 8, border: 'none', cursor: selected.length && !publishing ? 'pointer' : 'not-allowed',
-                background: selected.length ? 'linear-gradient(135deg,#08316F,#00B6FF)' : 'var(--cs-hover)',
-                color: selected.length ? '#fff' : 'var(--cs-text-muted)', fontSize: 13, fontWeight: 700,
-                opacity: publishing ? 0.7 : 1, transition: 'all 0.15s',
-              }}>
-                {publishing ? 'Publishing…' : `Publish to ${selected.length || 0} platform${selected.length !== 1 ? 's' : ''}`}
-              </button>
+              {selected.length > 0 && !showCaptions && (
+                <button onClick={generateCaptions} disabled={genCap} style={{
+                  padding: '8px', borderRadius: 8, border: '1px solid rgba(0,182,255,0.3)',
+                  background: 'rgba(0,182,255,0.06)', color: '#00B6FF', fontSize: 12, fontWeight: 600,
+                  cursor: genCap ? 'not-allowed' : 'pointer', opacity: genCap ? 0.6 : 1,
+                }}>{genCap ? 'Generating captions…' : '✨ Generate platform-specific captions'}</button>
+              )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={onClose} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={publish} disabled={!selected.length || publishing} style={{
+                  flex: 2, padding: '10px', borderRadius: 8, border: 'none', cursor: selected.length && !publishing ? 'pointer' : 'not-allowed',
+                  background: selected.length ? 'linear-gradient(135deg,#08316F,#00B6FF)' : 'var(--cs-hover)',
+                  color: selected.length ? '#fff' : 'var(--cs-text-muted)', fontSize: 13, fontWeight: 700,
+                  opacity: publishing ? 0.7 : 1, transition: 'all 0.15s',
+                }}>
+                  {publishing ? 'Publishing…' : `Publish to ${selected.length || 0} platform${selected.length !== 1 ? 's' : ''}`}
+                </button>
+              </div>
             </>
           ) : (
             <button onClick={onClose} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#08316F,#00B6FF)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Close</button>
@@ -438,12 +489,178 @@ function PublishModal({ item, onClose, onPublished }) {
   )
 }
 
+// ─── Comments panel ───────────────────────────────────────────────────────────
+
+function CommentsPanel({ jobId }) {
+  const [comments, setComments] = useState([])
+  const [text, setText]         = useState('')
+  const [saving, setSaving]     = useState(false)
+
+  useEffect(() => {
+    apiFetch(`/api/library/${jobId}/comments`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setComments(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }, [jobId])
+
+  const submit = async () => {
+    if (!text.trim()) return
+    setSaving(true)
+    try {
+      const r = await apiFetch(`/api/library/${jobId}/comments`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text.trim() }),
+      })
+      if (r.ok) {
+        const c = await r.json()
+        setComments(prev => [...prev, c])
+        setText('')
+      }
+    } finally { setSaving(false) }
+  }
+
+  const remove = async (id) => {
+    await apiFetch(`/api/library/${jobId}/comments/${id}`, { method: 'DELETE' })
+    setComments(prev => prev.filter(c => c.id !== id))
+  }
+
+  return (
+    <div style={{ borderTop: '1px solid var(--cs-border)', paddingTop: 14, marginTop: 14 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--cs-text-muted)', marginBottom: 10 }}>
+        Comments {comments.length > 0 && <span style={{ color: 'var(--cs-text-sub)' }}>({comments.length})</span>}
+      </div>
+      {comments.length === 0 && (
+        <div style={{ color: 'var(--cs-text-muted)', fontSize: 12, marginBottom: 10 }}>No comments yet</div>
+      )}
+      {comments.map(c => (
+        <div key={c.id} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
+          <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--cs-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--cs-text-sub)', flexShrink: 0 }}>
+            {(c.author || '?')[0].toUpperCase()}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 2 }}>
+              <span style={{ fontWeight: 600, fontSize: 12, color: 'var(--cs-text)' }}>{c.author}</span>
+              <span style={{ fontSize: 11, color: 'var(--cs-text-muted)' }}>{new Date(c.created_at).toLocaleDateString()}</span>
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--cs-text-sub)', lineHeight: 1.5 }}>{c.text}</div>
+          </div>
+          <button onClick={() => remove(c.id)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 14, padding: '2px 4px', opacity: 0.5 }}>✕</button>
+        </div>
+      ))}
+      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+        <input
+          value={text} onChange={e => setText(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && submit()}
+          placeholder="Add a comment…"
+          style={{ flex: 1, padding: '7px 10px', borderRadius: 6, border: '1px solid var(--cs-border)', background: 'var(--cs-surface2)', color: 'var(--cs-text)', fontSize: 12 }}
+        />
+        <button onClick={submit} disabled={saving || !text.trim()} style={{
+          padding: '7px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
+          background: '#08316F', color: '#fff', fontSize: 12, fontWeight: 600,
+          opacity: saving || !text.trim() ? 0.5 : 1,
+        }}>{saving ? '…' : 'Post'}</button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Repurpose modal ──────────────────────────────────────────────────────────
+
+function RepurposeModal({ item, onClose }) {
+  const ALL_FORMATS = ['video', 'reel', 'carousel', 'text_only']
+  const [selected, setSelected] = useState(ALL_FORMATS.filter(f => f !== item.content_type))
+  const [running, setRunning]   = useState(false)
+  const [jobs, setJobs]         = useState(null)
+
+  const toggle = f => setSelected(s => s.includes(f) ? s.filter(x => x !== f) : [...s, f])
+  const FORMAT_ICONS = { video: '🎬', reel: '🎞️', carousel: '🖼️', text_only: '✍️' }
+  const FORMAT_LABELS = { video: 'Video 16:9', reel: 'Reel 9:16', carousel: 'Carousel', text_only: 'Text Post' }
+
+  const run = async () => {
+    setRunning(true)
+    try {
+      const r = await apiFetch(`/api/repurpose/${item.job_id}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formats: selected }),
+      })
+      if (r.ok) {
+        const d = await r.json()
+        setJobs(d.jobs || [])
+      }
+    } finally { setRunning(false) }
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 16, width: 420, maxWidth: '96vw', boxShadow: '0 24px 80px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
+        <div style={{ padding: '20px 24px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--cs-text)' }}>Repurpose content</div>
+            <div style={{ fontSize: 12, color: 'var(--cs-text-sub)', marginTop: 2 }}>Generate all formats from this brief</div>
+          </div>
+          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--cs-border)', background: 'var(--cs-hover)', cursor: 'pointer', color: 'var(--cs-text-sub)', fontSize: 16 }}>✕</button>
+        </div>
+        {!jobs ? (
+          <>
+            <div style={{ padding: '16px 24px' }}>
+              <div style={{ fontSize: 11, color: 'var(--cs-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>Select formats to generate</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {ALL_FORMATS.map(f => {
+                  const isCurrent = f === item.content_type
+                  const on = selected.includes(f)
+                  return (
+                    <button key={f} onClick={() => !isCurrent && toggle(f)} disabled={isCurrent} style={{
+                      padding: '12px 14px', borderRadius: 10, cursor: isCurrent ? 'default' : 'pointer', textAlign: 'left',
+                      border: `1px solid ${on && !isCurrent ? '#08316F' : 'var(--cs-border)'}`,
+                      background: isCurrent ? 'var(--cs-hover)' : on ? 'rgba(8,49,111,0.08)' : 'var(--cs-surface2)',
+                      opacity: isCurrent ? 0.5 : 1,
+                    }}>
+                      <div style={{ fontSize: 20, marginBottom: 4 }}>{FORMAT_ICONS[f]}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--cs-text)' }}>{FORMAT_LABELS[f]}</div>
+                      {isCurrent && <div style={{ fontSize: 10, color: 'var(--cs-text-muted)', marginTop: 2 }}>Current format</div>}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div style={{ padding: '0 24px 20px', display: 'flex', gap: 8 }}>
+              <button onClick={onClose} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={run} disabled={!selected.length || running} style={{
+                flex: 2, padding: '10px', borderRadius: 8, border: 'none',
+                background: selected.length ? 'linear-gradient(135deg,#08316F,#00B6FF)' : 'var(--cs-hover)',
+                color: selected.length ? '#fff' : 'var(--cs-text-muted)', fontSize: 13, fontWeight: 700,
+                cursor: selected.length && !running ? 'pointer' : 'not-allowed', opacity: running ? 0.7 : 1,
+              }}>{running ? 'Queuing…' : `Generate ${selected.length} format${selected.length !== 1 ? 's' : ''}`}</button>
+            </div>
+          </>
+        ) : (
+          <div style={{ padding: '20px 24px' }}>
+            <div style={{ fontSize: 40, textAlign: 'center', marginBottom: 12 }}>✅</div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--cs-text)', textAlign: 'center', marginBottom: 8 }}>{jobs.length} job{jobs.length !== 1 ? 's' : ''} queued</div>
+            {jobs.map(j => (
+              <div key={j.job_id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--cs-surface2)', marginBottom: 6 }}>
+                <span>{FORMAT_ICONS[j.content_type]}</span>
+                <span style={{ fontSize: 12, color: 'var(--cs-text-sub)', flex: 1 }}>{FORMAT_LABELS[j.content_type]}</span>
+                <span style={{ fontSize: 11, color: '#22c55e', fontWeight: 600 }}>Queued</span>
+              </div>
+            ))}
+            <div style={{ fontSize: 11, color: 'var(--cs-text-muted)', textAlign: 'center', marginTop: 10 }}>Check the Library in a few minutes</div>
+            <button onClick={onClose} style={{ width: '100%', marginTop: 14, padding: '10px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#08316F,#00B6FF)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Close</button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+
 function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose }) {
   const currentIdx = STATUS_FLOW.indexOf(item.status)
   const nextStatus = STATUS_FLOW[currentIdx + 1]
   const prevStatus = STATUS_FLOW[currentIdx - 1]
-  const [showSchedule, setShowSchedule] = useState(false)
-  const [showPublish,  setShowPublish]  = useState(false)
+  const [showSchedule,  setShowSchedule]  = useState(false)
+  const [showPublish,   setShowPublish]   = useState(false)
+  const [showRepurpose, setShowRepurpose] = useState(false)
 
   return (
     <div>
@@ -453,6 +670,9 @@ function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose })
           onClose={() => setShowPublish(false)}
           onPublished={() => { onStatusChange(item.job_id, 'Published') }}
         />
+      )}
+      {showRepurpose && (
+        <RepurposeModal item={item} onClose={() => setShowRepurpose(false)} />
       )}
       {showSchedule && (
         <ScheduleInline
@@ -465,6 +685,7 @@ function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose })
         <span style={{ color: 'var(--cs-text-muted)', fontSize: 12 }}>{fmtDate(item.created_at)}</span>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={onRegenerate} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 12 }}>↻ Regenerate</button>
+          <button onClick={() => setShowRepurpose(true)} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(0,182,255,0.3)', background: 'rgba(0,182,255,0.06)', color: '#00B6FF', fontSize: 12, fontWeight: 600 }}>♻ Repurpose</button>
           {item.output_file && (
             <button onClick={() => window.open(`/api/download/${item.job_id}`, '_blank')} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.06)', color: '#16a34a', fontSize: 12, fontWeight: 600 }}>⬇ Download</button>
           )}
@@ -497,6 +718,7 @@ function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose })
           )}
         </div>
       </div>
+      <CommentsPanel jobId={item.job_id} />
     </div>
   )
 }
@@ -505,12 +727,15 @@ function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose })
 // ─── Platform preview chrome ─────────────────────────────────────────────────
 
 const PLATFORM_META = {
-  linkedin:  { name: 'LinkedIn',  color: '#0077B5', icon: 'in' },
-  youtube:   { name: 'YouTube',   color: '#FF0000', icon: '▶'  },
-  tiktok:    { name: 'TikTok',    color: '#ff2d55', icon: '♪'  },
-  instagram: { name: 'Instagram', color: '#E1306C', icon: '◻'  },
-  facebook:  { name: 'Facebook',  color: '#1877F2', icon: 'f'  },
-  twitter:   { name: 'X',         color: '#000000', icon: '✕'  },
+  linkedin:  { name: 'LinkedIn',        color: '#0077B5', icon: 'in' },
+  youtube:   { name: 'YouTube',         color: '#FF0000', icon: '▶'  },
+  tiktok:    { name: 'TikTok',          color: '#ff2d55', icon: '♪'  },
+  instagram: { name: 'Instagram',       color: '#E1306C', icon: '◻'  },
+  facebook:  { name: 'Facebook',        color: '#1877F2', icon: 'f'  },
+  twitter:   { name: 'X',               color: '#000000', icon: '✕'  },
+  bluesky:   { name: 'Bluesky',         color: '#0085ff', icon: '☁'  },
+  pinterest: { name: 'Pinterest',       color: '#E60023', icon: 'P'  },
+  gmb:       { name: 'Google Business', color: '#4285F4', icon: 'G'  },
 }
 
 // Format compatibility hints per platform
@@ -521,6 +746,9 @@ const PLATFORM_FORMAT_COMPAT = {
   instagram: { '16:9': 'Feed landscape', '9:16': 'Reel', '1:1': 'Square post', '4:5': 'Portrait post' },
   facebook:  { '16:9': 'Feed video', '9:16': 'Reel', '1:1': 'Square post' },
   twitter:   { '16:9': 'Tweet video', '9:16': 'Vertical tweet', '1:1': 'Square tweet' },
+  bluesky:   { '16:9': 'Post with video', '9:16': 'Vertical post', '1:1': 'Square post' },
+  pinterest: { '16:9': 'Pin (landscape)', '9:16': 'Pin (portrait)', '1:1': 'Pin (square)' },
+  gmb:       { '16:9': 'Google post', '1:1': 'Google post' },
 }
 
 function ContentThumbnail({ item, slides, height = 220, borderRadius = 0 }) {

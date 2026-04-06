@@ -10,12 +10,17 @@ const PLATFORM_COLORS = {
   tiktok:    '#69C9D0',
   youtube:   '#FF4444',
   facebook:  '#1877F2',
+  twitter:   '#1DA1F2',
+  bluesky:   '#0085ff',
+  pinterest: '#E60023',
+  gmb:       '#4285F4',
   pending:   '#C8A96E',
 }
 
 const PLATFORM_LABELS = {
   linkedin: 'LinkedIn', instagram: 'Instagram', tiktok: 'TikTok',
-  youtube: 'YouTube', facebook: 'Facebook',
+  youtube: 'YouTube', facebook: 'Facebook', twitter: 'Twitter',
+  bluesky: 'Bluesky', pinterest: 'Pinterest', gmb: 'Google Business',
 }
 
 const TIME_SLOTS = [
@@ -416,6 +421,8 @@ export default function Schedule() {
   const [apiError, setApiError]         = useState(false)
   const [detailEntry, setDetailEntry]   = useState(null)
   const [scheduleSlot, setScheduleSlot] = useState(null)
+  const [gapData, setGapData]           = useState(null)
+  const [gapDismissed, setGapDismissed] = useState(false)
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
@@ -440,8 +447,23 @@ export default function Schedule() {
     } catch { setLibrary([]) }
   }, [])
 
+  const loadGaps = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/schedule/gaps')
+      if (!res.ok) return
+      const data = await res.json()
+      if ((data.gaps?.length || 0) + (data.warnings?.length || 0) > 0) {
+        setGapData(data)
+        setGapDismissed(false)
+      } else {
+        setGapData(null)
+      }
+    } catch { /* silent */ }
+  }, [])
+
   useEffect(() => { loadWeek(weekStart) }, [weekStart, loadWeek])
   useEffect(() => { loadLibrary() }, [loadLibrary])
+  useEffect(() => { loadGaps() }, [loadGaps])
 
   const prevWeek = () => setWeekStart(d => addDays(d, -7))
   const nextWeek = () => setWeekStart(d => addDays(d, 7))
@@ -512,6 +534,36 @@ export default function Schedule() {
           <NavBtn onClick={nextWeek}>›</NavBtn>
         </div>
       </div>
+
+      {/* Gap detection banner */}
+      {gapData && !gapDismissed && (
+        <div style={{ marginBottom: 16, background: 'rgba(200,169,110,0.08)', border: '1px solid rgba(200,169,110,0.3)', borderRadius: 10, padding: '12px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <span style={{ fontSize: 15 }}>⚠️</span>
+              <span style={{ color: '#C8A96E', fontSize: 12, fontWeight: 700 }}>Content gaps detected</span>
+            </div>
+            <button onClick={() => setGapDismissed(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 14, lineHeight: 1, padding: 2, flexShrink: 0 }}>✕</button>
+          </div>
+          <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {gapData.warnings?.map((w, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--cs-text-sub)' }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#C8A96E', flexShrink: 0, display: 'inline-block' }} />
+                {w.message}
+              </div>
+            ))}
+            {gapData.gaps?.slice(0, 5).map((g, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--cs-text-sub)' }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: g.severity === 'high' ? '#f87171' : '#C8A96E', flexShrink: 0, display: 'inline-block' }} />
+                <span><strong style={{ color: 'var(--cs-text)' }}>{g.weekday} {g.date}</strong> — no content for: {g.missing_platforms.map(p => PLATFORM_LABELS[p] || p).join(', ')}</span>
+              </div>
+            ))}
+            {gapData.gaps?.length > 5 && (
+              <div style={{ fontSize: 11, color: 'var(--cs-text-muted)', paddingLeft: 13 }}>+{gapData.gaps.length - 5} more days with gaps</div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Status bar */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
