@@ -125,12 +125,20 @@ function parseArgs() {
     template:     get('--template') || 'rodschinson_premium',
     scene:        get('--scene') ? parseInt(get('--scene')) : null,
     quality:      get('--quality') || 'h',
-    brandPrimary: get('--brand-primary') || null,
-    brandAccent:  get('--brand-accent')  || null,
-    brandName:    get('--brand-name')    || null,
-    brandLogo:    get('--brand-logo')    || null,
-    transition:   get('--transition')   || 'none',
-    captionStyle: get('--caption-style') || 'none',
+    brandPrimary:     get('--brand-primary')   || null,
+    brandAccent:      get('--brand-accent')    || null,
+    brandName:        get('--brand-name')      || null,
+    brandLogo:        get('--brand-logo')      || null,
+    brandBg:          get('--brand-bg')        || null,
+    headingFont:      get('--heading-font')    || null,
+    bodyFont:         get('--body-font')       || null,
+    headingSize:      get('--heading-size')    || null,
+    bodySize:         get('--body-size')       || null,
+    captionSize:      get('--caption-size')    || null,
+    headingWeight:    get('--heading-weight')  || null,
+    bodyWeight:       get('--body-weight')     || null,
+    transition:       get('--transition')      || 'none',
+    captionStyle:     get('--caption-style')   || 'none',
   };
 }
 
@@ -378,19 +386,37 @@ async function renderScene(browser, rawScene, opts) {
 
     // ── Inject brand colours + identity before loadScene() ──────────────────
     if (brand) {
+      // Inject Google Font if a custom heading or body font is specified
+      const fontsToLoad = [...new Set([brand.headingFont, brand.bodyFont].filter(Boolean))];
+      if (fontsToLoad.length) {
+        const families = fontsToLoad.map(f => encodeURIComponent(f) + ':wght@300;400;500;600;700;800').join('&family=');
+        await page.addStyleTag({ url: `https://fonts.googleapis.com/css2?family=${families}&display=swap` })
+          .catch(() => {}); // non-fatal if offline
+      }
+
       await page.evaluate((b) => {
         const root = document.documentElement;
         const pairs = [
-          ['--brand-primary', b.primary], ['--brand-accent', b.accent],
-          ['--brand-text',    b.text],
-          ['--blue',          b.primary], ['--dark-blue',   b.primary],
-          ['--blue2',         b.primary], ['--bg',          b.primary],
-          ['--sky',           b.accent],  ['--sky-blue',    b.accent],
-          ['--gold',          b.accent],  ['--accent',      b.accent],
+          ['--brand-primary',      b.primary],
+          ['--brand-accent',       b.accent],
+          ['--brand-text',         b.text],
+          ['--brand-bg',           b.bg],
+          ['--blue',               b.primary], ['--dark-blue',      b.primary],
+          ['--blue2',              b.primary], ['--bg',             b.bg],
+          ['--sky',                b.accent],  ['--sky-blue',       b.accent],
+          ['--gold',               b.accent],  ['--accent',         b.accent],
+          ['--font-heading',       b.headingFont  || 'inherit'],
+          ['--font-body',          b.bodyFont     || 'inherit'],
+          ['--font-size-heading',  b.headingSize  ? b.headingSize + 'px' : null],
+          ['--font-size-body',     b.bodySize     ? b.bodySize    + 'px' : null],
+          ['--font-size-caption',  b.captionSize  ? b.captionSize + 'px' : null],
+          ['--font-weight-heading',b.headingWeight || null],
+          ['--font-weight-body',   b.bodyWeight    || null],
         ];
-        pairs.forEach(([k,v]) => root.style.setProperty(k, v));
-        document.body.style.background = b.primary;
+        pairs.forEach(([k,v]) => { if (v) root.style.setProperty(k, v); });
+        document.body.style.background = b.bg;
         document.body.style.color      = b.text;
+        if (b.bodyFont) document.body.style.fontFamily = `'${b.bodyFont}', sans-serif`;
         window.__brand = b;
       }, brand);
     }
@@ -611,12 +637,20 @@ async function main() {
   const brandAccent  = args.brandAccent  || meta.brand_accent  || '#C8A96E';
   const brandName    = args.brandName    || meta.brand_name    || meta.brand || 'Rodschinson';
   const brand = {
-    primary: brandPrimary,
-    accent:  brandAccent,
-    text:    contrastText(brandPrimary),
-    name:    brandName,
-    initial: brandName.charAt(0).toUpperCase(),
-    logo:    args.brandLogo || meta.brand_logo || null,
+    primary:      brandPrimary,
+    accent:       brandAccent,
+    text:         contrastText(brandPrimary),
+    bg:           args.brandBg       || meta.brand_bg       || brandPrimary,
+    name:         brandName,
+    initial:      brandName.charAt(0).toUpperCase(),
+    logo:         args.brandLogo     || meta.brand_logo     || null,
+    headingFont:  args.headingFont   || meta.heading_font   || null,
+    bodyFont:     args.bodyFont      || meta.body_font      || null,
+    headingSize:  args.headingSize   || meta.heading_size   || null,
+    bodySize:     args.bodySize      || meta.body_size      || null,
+    captionSize:  args.captionSize   || meta.caption_size   || null,
+    headingWeight:args.headingWeight || meta.heading_weight || null,
+    bodyWeight:   args.bodyWeight    || meta.body_weight    || null,
   };
 
   console.log(`  🎬  ${meta.titre || 'Rodschinson Video'}`);

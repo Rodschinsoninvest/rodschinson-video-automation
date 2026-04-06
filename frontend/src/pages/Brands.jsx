@@ -4,6 +4,24 @@ import { useToast } from '../contexts/ToastContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { Plus, Pencil, Trash2, Upload, Globe, Tag } from 'lucide-react'
 
+// ─── Font options ─────────────────────────────────────────────────────────────
+const FONT_OPTIONS = [
+  { group: 'Sans-serif', fonts: ['Inter', 'Poppins', 'Montserrat', 'Raleway', 'Oswald', 'Roboto', 'Open Sans', 'Lato', 'Nunito', 'Space Grotesk'] },
+  { group: 'Serif',      fonts: ['Playfair Display', 'Merriweather', 'Cormorant Garamond', 'Libre Baskerville', 'Lora', 'Georgia'] },
+  { group: 'Display',    fonts: ['Bebas Neue', 'Anton', 'Righteous', 'Black Han Sans'] },
+  { group: 'Monospace',  fonts: ['JetBrains Mono', 'Fira Code', 'Space Mono'] },
+]
+
+const WEIGHT_OPTIONS = [
+  { value: '300', label: '300 — Light' },
+  { value: '400', label: '400 — Regular' },
+  { value: '500', label: '500 — Medium' },
+  { value: '600', label: '600 — Semi-bold' },
+  { value: '700', label: '700 — Bold' },
+  { value: '800', label: '800 — Extra-bold' },
+  { value: '900', label: '900 — Black' },
+]
+
 // ─── Color swatch picker ──────────────────────────────────────────────────────
 function ColorField({ label, value, onChange }) {
   return (
@@ -16,6 +34,58 @@ function ColorField({ label, value, onChange }) {
         </div>
         <input value={value} onChange={e => onChange(e.target.value)}
           style={{ flex: 1, background: 'var(--cs-input-bg)', border: '1px solid var(--cs-border)', borderRadius: 6, padding: '6px 10px', color: 'var(--cs-text)', fontSize: 12, fontFamily: 'monospace', outline: 'none' }} />
+      </div>
+    </div>
+  )
+}
+
+// ─── Font selector ────────────────────────────────────────────────────────────
+function FontField({ label, value, onChange }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <label style={{ color: 'var(--cs-text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{label}</label>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        style={{ background: 'var(--cs-input-bg)', border: '1px solid var(--cs-border)', borderRadius: 6, padding: '7px 10px', color: 'var(--cs-text)', fontSize: 12, outline: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+        {FONT_OPTIONS.map(group => (
+          <optgroup key={group.group} label={group.group}>
+            {group.fonts.map(f => <option key={f} value={f}>{f}</option>)}
+          </optgroup>
+        ))}
+        <optgroup label="Custom">
+          <option value={value && !FONT_OPTIONS.flatMap(g => g.fonts).includes(value) ? value : 'Custom…'}>
+            {value && !FONT_OPTIONS.flatMap(g => g.fonts).includes(value) ? value : 'Custom…'}
+          </option>
+        </optgroup>
+      </select>
+    </div>
+  )
+}
+
+// ─── Weight selector ──────────────────────────────────────────────────────────
+function WeightField({ label, value, onChange }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <label style={{ color: 'var(--cs-text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{label}</label>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        style={{ background: 'var(--cs-input-bg)', border: '1px solid var(--cs-border)', borderRadius: 6, padding: '7px 10px', color: 'var(--cs-text)', fontSize: 12, outline: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+        {WEIGHT_OPTIONS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+      </select>
+    </div>
+  )
+}
+
+// ─── Size field ───────────────────────────────────────────────────────────────
+function SizeField({ label, value, onChange, min = 8, max = 120 }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <label style={{ color: 'var(--cs-text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+        {label} <span style={{ color: 'var(--cs-text-sub)', fontWeight: 400, textTransform: 'none' }}>{value}px</span>
+      </label>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <input type="range" min={min} max={max} value={value} onChange={e => onChange(e.target.value)}
+          style={{ flex: 1, accentColor: '#00B6FF', cursor: 'pointer' }} />
+        <input type="number" min={min} max={max} value={value} onChange={e => onChange(e.target.value)}
+          style={{ width: 52, background: 'var(--cs-input-bg)', border: '1px solid var(--cs-border)', borderRadius: 6, padding: '5px 8px', color: 'var(--cs-text)', fontSize: 12, fontVariantNumeric: 'tabular-nums', outline: 'none', textAlign: 'center', fontFamily: 'inherit' }} />
       </div>
     </div>
   )
@@ -72,14 +142,22 @@ function BrandModal({ brand, onClose, onSaved }) {
   const [saving, setSaving] = useState(false)
   const [logoFile, setLogoFile] = useState(null)
   const [form, setForm] = useState({
-    name:         brand?.name         || '',
-    shortName:    brand?.shortName    || '',
-    primaryColor: brand?.primaryColor || '#08316F',
-    accentColor:  brand?.accentColor  || '#C8A96E',
-    textColor:    brand?.textColor    || '#FFFFFF',
-    website:      brand?.website      || '',
-    tagline:      brand?.tagline      || '',
-    context:      brand?.context      || '',
+    name:            brand?.name            || '',
+    shortName:       brand?.shortName       || '',
+    primaryColor:    brand?.primaryColor    || '#08316F',
+    accentColor:     brand?.accentColor     || '#C8A96E',
+    textColor:       brand?.textColor       || '#FFFFFF',
+    backgroundColor: brand?.backgroundColor || brand?.primaryColor || '#08316F',
+    headingFont:     brand?.headingFont     || 'Montserrat',
+    bodyFont:        brand?.bodyFont        || 'Inter',
+    headingFontSize: brand?.headingFontSize || '64',
+    bodyFontSize:    brand?.bodyFontSize    || '18',
+    captionFontSize: brand?.captionFontSize || '14',
+    headingWeight:   brand?.headingWeight   || '700',
+    bodyWeight:      brand?.bodyWeight      || '400',
+    website:         brand?.website         || '',
+    tagline:         brand?.tagline         || '',
+    context:         brand?.context         || '',
   })
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -170,10 +248,45 @@ function BrandModal({ brand, onClose, onSaved }) {
           {/* Colors */}
           <div>
             <div style={{ color: 'var(--cs-text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>Brand colors</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+              <ColorField label="Primary"    value={form.primaryColor}    onChange={v => set('primaryColor', v)} />
+              <ColorField label="Accent"     value={form.accentColor}     onChange={v => set('accentColor', v)} />
+              <ColorField label="Text"       value={form.textColor}       onChange={v => set('textColor', v)} />
+              <ColorField label="Background" value={form.backgroundColor} onChange={v => set('backgroundColor', v)} />
+            </div>
+          </div>
+
+          {/* Typography */}
+          <div>
+            <div style={{ color: 'var(--cs-text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>Typography</div>
+
+            {/* Live preview */}
+            <div style={{ background: form.backgroundColor, borderRadius: 8, padding: '16px 20px', marginBottom: 14, border: '1px solid var(--cs-border)', overflow: 'hidden' }}>
+              <div style={{ fontFamily: `'${form.headingFont}', sans-serif`, fontSize: Math.min(parseInt(form.headingFontSize) * 0.45 || 28, 36) + 'px', fontWeight: form.headingWeight, color: form.textColor, lineHeight: 1.15, marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {form.name || 'Heading Preview'}
+              </div>
+              <div style={{ fontFamily: `'${form.bodyFont}', sans-serif`, fontSize: parseInt(form.bodyFontSize) * 0.8 || 14, fontWeight: form.bodyWeight, color: form.accentColor, lineHeight: 1.5, marginBottom: 4 }}>
+                {form.tagline || 'Body text — your brand tagline goes here'}
+              </div>
+              <div style={{ fontFamily: `'${form.bodyFont}', sans-serif`, fontSize: parseInt(form.captionFontSize) * 0.85 || 11, color: form.textColor + '80', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Caption / label text
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <FontField label="Heading font" value={form.headingFont} onChange={v => set('headingFont', v)} />
+              <FontField label="Body font"    value={form.bodyFont}    onChange={v => set('bodyFont', v)} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <WeightField label="Heading weight" value={form.headingWeight} onChange={v => set('headingWeight', v)} />
+              <WeightField label="Body weight"    value={form.bodyWeight}    onChange={v => set('bodyWeight', v)} />
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-              <ColorField label="Primary" value={form.primaryColor} onChange={v => set('primaryColor', v)} />
-              <ColorField label="Accent"  value={form.accentColor}  onChange={v => set('accentColor', v)} />
-              <ColorField label="Text"    value={form.textColor}    onChange={v => set('textColor', v)} />
+              <SizeField label="Heading size" value={form.headingFontSize} onChange={v => set('headingFontSize', String(v))} min={20} max={120} />
+              <SizeField label="Body size"    value={form.bodyFontSize}    onChange={v => set('bodyFontSize',    String(v))} min={10} max={48}  />
+              <SizeField label="Caption size" value={form.captionFontSize} onChange={v => set('captionFontSize', String(v))} min={8}  max={32}  />
             </div>
           </div>
 
@@ -239,12 +352,32 @@ function BrandCard({ brand, onEdit, onDelete }) {
         </div>
 
         {/* Color swatches */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-          {[brand.primaryColor, brand.accentColor, brand.textColor].map((c, i) => (
-            <div key={i} title={c} style={{ width: 20, height: 20, borderRadius: 5, background: c, border: '1px solid var(--cs-border)', flexShrink: 0 }} />
+        <div style={{ display: 'flex', gap: 6, marginBottom: 10, alignItems: 'center' }}>
+          {[brand.primaryColor, brand.accentColor, brand.textColor, brand.backgroundColor].filter(Boolean).map((c, i) => (
+            <div key={i} title={c} style={{ width: 18, height: 18, borderRadius: 4, background: c, border: '1px solid var(--cs-border)', flexShrink: 0 }} />
           ))}
           <span style={{ color: 'var(--cs-text-muted)', fontSize: 10, marginLeft: 4, alignSelf: 'center', fontFamily: 'monospace' }}>{brand.primaryColor}</span>
         </div>
+
+        {/* Typography */}
+        {(brand.headingFont || brand.bodyFont) && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            {brand.headingFont && (
+              <div style={{ padding: '3px 8px', borderRadius: 5, background: 'var(--cs-hover)', border: '1px solid var(--cs-border)' }}>
+                <span style={{ color: 'var(--cs-text-muted)', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Hd </span>
+                <span style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: parseInt(brand.headingWeight||'700') }}>{brand.headingFont}</span>
+                <span style={{ color: 'var(--cs-text-muted)', fontSize: 9, marginLeft: 4 }}>{brand.headingFontSize}px · {brand.headingWeight}</span>
+              </div>
+            )}
+            {brand.bodyFont && (
+              <div style={{ padding: '3px 8px', borderRadius: 5, background: 'var(--cs-hover)', border: '1px solid var(--cs-border)' }}>
+                <span style={{ color: 'var(--cs-text-muted)', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Bd </span>
+                <span style={{ color: 'var(--cs-text-sub)', fontSize: 11 }}>{brand.bodyFont}</span>
+                <span style={{ color: 'var(--cs-text-muted)', fontSize: 9, marginLeft: 4 }}>{brand.bodyFontSize}px</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Meta */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>

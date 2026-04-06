@@ -345,6 +345,14 @@ _DEFAULT_BRANDS = [
         "primaryColor": "#08316F",
         "accentColor": "#C8A96E",
         "textColor": "#FFFFFF",
+        "backgroundColor": "#08316F",
+        "headingFont": "Montserrat",
+        "bodyFont": "Inter",
+        "headingFontSize": "64",
+        "bodyFontSize": "18",
+        "captionFontSize": "14",
+        "headingWeight": "700",
+        "bodyWeight": "400",
         "logoUrl": None,
         "website": "rodschinson.com",
         "tagline": "Premium CRE & M&A Advisory",
@@ -359,6 +367,14 @@ _DEFAULT_BRANDS = [
         "primaryColor": "#1a1a2e",
         "accentColor": "#00B6FF",
         "textColor": "#FFFFFF",
+        "backgroundColor": "#1a1a2e",
+        "headingFont": "Playfair Display",
+        "bodyFont": "Inter",
+        "headingFontSize": "60",
+        "bodyFontSize": "18",
+        "captionFontSize": "14",
+        "headingWeight": "700",
+        "bodyWeight": "400",
         "logoUrl": None,
         "website": "",
         "tagline": "Entrepreneur & Investor",
@@ -485,8 +501,16 @@ async def _run_pipeline(job_id: str, data: dict, logo_path: Path | None) -> None
         _brand_meta   = await _brand_lookup(brand) or {}
         brand_display = _brand_meta.get("name") or ("Rachid Chikhi" if brand == "rachid" else "Rodschinson Investment")
         brand_context = _brand_meta.get("context") or brand_display
-        brand_primary = _brand_meta.get("primaryColor", "#08316F")
-        brand_accent  = _brand_meta.get("accentColor",  "#C8A96E")
+        brand_primary      = _brand_meta.get("primaryColor",    "#08316F")
+        brand_accent       = _brand_meta.get("accentColor",     "#C8A96E")
+        brand_bg           = _brand_meta.get("backgroundColor", brand_primary)
+        brand_heading_font = _brand_meta.get("headingFont",     "Inter")
+        brand_body_font    = _brand_meta.get("bodyFont",        "Inter")
+        brand_heading_size = _brand_meta.get("headingFontSize", "64")
+        brand_body_size    = _brand_meta.get("bodyFontSize",    "18")
+        brand_caption_size = _brand_meta.get("captionFontSize", "14")
+        brand_heading_wt   = _brand_meta.get("headingWeight",   "700")
+        brand_body_wt      = _brand_meta.get("bodyWeight",      "400")
         # Auto-use brand's saved logo if none uploaded with this request
         if logo_path is None:
             _candidate = BRAND_LOGOS / f"{brand}.png"
@@ -972,11 +996,19 @@ Hard rules — violations will crash the render pipeline with no recovery:
 
             node_cmd = ["node", str(PUPPET / "renderer.js"),
                         "--script", str(script_path), "--template", template,
-                        "--brand-primary", brand_primary,
-                        "--brand-accent",  brand_accent,
-                        "--brand-name",    brand_display,
-                        "--transition",    transition,
-                        "--caption-style", caption_style]
+                        "--brand-primary",   brand_primary,
+                        "--brand-accent",    brand_accent,
+                        "--brand-name",      brand_display,
+                        "--brand-bg",        brand_bg,
+                        "--heading-font",    brand_heading_font,
+                        "--body-font",       brand_body_font,
+                        "--heading-size",    brand_heading_size,
+                        "--body-size",       brand_body_size,
+                        "--caption-size",    brand_caption_size,
+                        "--heading-weight",  brand_heading_wt,
+                        "--body-weight",     brand_body_wt,
+                        "--transition",      transition,
+                        "--caption-style",   caption_style]
             if logo_path:
                 node_cmd += ["--logo", str(logo_path), "--brand-logo", str(logo_path)]
             await step("Rendering scenes", 35, node_cmd, cwd=PUPPET)
@@ -1186,9 +1218,17 @@ Rules:
                     "--template", carousel_tmpl,
                     "--out", str(carousel_dir),
                     "--prefix", job_prefix,
-                    "--brand-primary", brand_primary,
-                    "--brand-accent",  brand_accent,
-                    "--brand-name",    brand_display,
+                    "--brand-primary",  brand_primary,
+                    "--brand-accent",   brand_accent,
+                    "--brand-name",     brand_display,
+                    "--brand-bg",       brand_bg,
+                    "--heading-font",   brand_heading_font,
+                    "--body-font",      brand_body_font,
+                    "--heading-size",   brand_heading_size,
+                    "--body-size",      brand_body_size,
+                    "--caption-size",   brand_caption_size,
+                    "--heading-weight", brand_heading_wt,
+                    "--body-weight",    brand_body_wt,
                 ]
                 if logo_path:
                     _carousel_cmd += ["--brand-logo", str(logo_path)]
@@ -2158,18 +2198,26 @@ async def create_brand(data: str = Form(...), logo: Optional[UploadFile] = File(
         logo_url = f"/api/brands/{brand_id}/logo"
 
     brand = {
-        "id":           brand_id,
-        "name":         body["name"].strip(),
-        "shortName":    body.get("shortName", body["name"][:2].upper()),
-        "slug":         brand_id,
-        "primaryColor": body.get("primaryColor", "#08316F"),
-        "accentColor":  body.get("accentColor",  "#C8A96E"),
-        "textColor":    body.get("textColor",     "#FFFFFF"),
-        "logoUrl":      logo_url,
-        "website":      body.get("website",  ""),
-        "tagline":      body.get("tagline",  ""),
-        "context":      body.get("context",  body["name"].strip()),
-        "createdAt":    _now(),
+        "id":               brand_id,
+        "name":             body["name"].strip(),
+        "shortName":        body.get("shortName", body["name"][:2].upper()),
+        "slug":             brand_id,
+        "primaryColor":     body.get("primaryColor",     "#08316F"),
+        "accentColor":      body.get("accentColor",      "#C8A96E"),
+        "textColor":        body.get("textColor",        "#FFFFFF"),
+        "backgroundColor":  body.get("backgroundColor",  body.get("primaryColor", "#08316F")),
+        "headingFont":      body.get("headingFont",      "Inter"),
+        "bodyFont":         body.get("bodyFont",         "Inter"),
+        "headingFontSize":  body.get("headingFontSize",  "64"),
+        "bodyFontSize":     body.get("bodyFontSize",     "18"),
+        "captionFontSize":  body.get("captionFontSize",  "14"),
+        "headingWeight":    body.get("headingWeight",    "700"),
+        "bodyWeight":       body.get("bodyWeight",       "400"),
+        "logoUrl":          logo_url,
+        "website":          body.get("website",  ""),
+        "tagline":          body.get("tagline",  ""),
+        "context":          body.get("context",  body["name"].strip()),
+        "createdAt":        _now(),
     }
     brands.append(brand)
     await _brands_save(brands)
@@ -2189,7 +2237,11 @@ async def update_brand(brand_id: str, data: str = Form(...), logo: Optional[Uplo
         raise HTTPException(404, "Brand not found")
 
     brand = brands[idx]
-    for field in ("name", "shortName", "primaryColor", "accentColor", "textColor", "website", "tagline", "context"):
+    for field in ("name", "shortName", "primaryColor", "accentColor", "textColor",
+                  "backgroundColor", "headingFont", "bodyFont",
+                  "headingFontSize", "bodyFontSize", "captionFontSize",
+                  "headingWeight", "bodyWeight",
+                  "website", "tagline", "context"):
         if field in body:
             brand[field] = body[field]
 
