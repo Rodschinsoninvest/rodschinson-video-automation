@@ -62,6 +62,9 @@ const TEMPLATES = {
   reel_bold:           'reel_bold.html',
   reel_minimal:        'reel_minimal.html',
   reel_gradient:       'reel_gradient.html',
+  // Real Estate Light — architectural, clear background
+  realestate_light:    'realestate_light.html',
+  reel_realestate:     'reel_realestate.html',
 };
 
 // ── STRICT SCENE TYPE ALLOWLIST PER TEMPLATE ─────────────────────────────────
@@ -81,6 +84,9 @@ const TEMPLATE_ALLOWED_TYPES = {
   reel_bold:           ['title_card', 'big_number',   'text_bullets', 'bar_chart',     'cta_screen'],
   reel_minimal:        ['title_card', 'big_number',   'text_bullets', 'bar_chart',     'cta_screen'],
   reel_gradient:       ['title_card', 'big_number',   'text_bullets', 'bar_chart',     'cta_screen'],
+  // Real Estate Light — architectural, clear background
+  realestate_light:    ['title_card', 'big_number',   'bar_chart',    'text_bullets',  'process_steps', 'quote_card', 'split_screen', 'cta_screen'],
+  reel_realestate:     ['title_card', 'big_number',   'bar_chart',    'text_bullets',  'process_steps', 'quote_card', 'cta_screen'],
 };
 
 // ── LOAD CUSTOM TEMPLATES from external registry (no code change required) ───
