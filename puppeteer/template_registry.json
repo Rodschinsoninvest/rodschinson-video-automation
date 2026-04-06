@@ -2,7 +2,8 @@
   "templates": {
     "custom_test": "custom/custom_test.html",
     "custom_reel_new": "custom/custom_reel_new.html",
-    "custom_cofoundies": "custom/custom_cofoundies.html"
+    "custom_cofoundies": "custom/custom_cofoundies.html",
+    "custom_cofoundies_reel": "custom/custom_cofoundies_reel.html"
   },
   "allowed_types": {
     "custom_test": [
@@ -30,6 +31,16 @@
       "big_number",
       "bar_chart",
       "split_screen",
+      "cta_screen"
+    ],
+    "custom_cofoundies_reel": [
+      "title_card",
+      "text_bullets",
+      "big_number",
+      "bar_chart",
+      "split_screen",
+      "process_steps",
+      "quote_card",
       "cta_screen"
     ]
   }
