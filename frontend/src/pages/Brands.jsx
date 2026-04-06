@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useBrands } from '../contexts/BrandContext'
 import { useToast } from '../contexts/ToastContext'
 import { useTheme } from '../contexts/ThemeContext'
+import { apiFetch } from '../utils/apiFetch'
 import { Plus, Pencil, Trash2, Upload, Globe, Tag } from 'lucide-react'
 
 // ─── Font options ─────────────────────────────────────────────────────────────
@@ -181,7 +182,7 @@ function BrandModal({ brand, onClose, onSaved }) {
 
       const url    = isEdit ? `/api/brands/${brand.id}` : '/api/brands'
       const method = isEdit ? 'PUT' : 'POST'
-      const res    = await fetch(url, { method, body: fd })
+      const res    = await apiFetch(url, { method, body: fd })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.detail || `Error ${res.status}`)
@@ -415,7 +416,7 @@ function DeleteConfirm({ brand, onClose, onDeleted }) {
   const handleDelete = async () => {
     setDeleting(true)
     try {
-      const res = await fetch(`/api/brands/${brand.id}`, { method: 'DELETE' })
+      const res = await apiFetch(`/api/brands/${brand.id}`, { method: 'DELETE' })
       if (!res.ok && res.status !== 204) throw new Error(`Error ${res.status}`)
       success(`"${brand.name}" deleted`)
       onDeleted()
