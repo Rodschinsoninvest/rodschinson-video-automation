@@ -1626,7 +1626,7 @@ Rules:
             lang_label = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(language, "English")
 
             type_summary = ", ".join(f"{s['label']} ({len(s['properties'])})" for s in sections)
-            portfolio_prompt = f"""You are preparing a professional property investment portfolio document for {brand_display}.
+            portfolio_prompt = f"""You are preparing a professional property investment portfolio document.
 
 PORTFOLIO CONTENTS: {total_count} properties across {len(sections)} asset types: {type_summary}
 
@@ -1634,14 +1634,15 @@ LANGUAGE: {lang_label}
 
 Generate a JSON object with:
 {{
-  "title": "Portfolio title (max 50 chars, in {lang_label})",
-  "subtitle": "One-line subtitle (in {lang_label})",
-  "summary_title": "Summary section title (in {lang_label})",
+  "title": "Portfolio title (max 50 chars, in {lang_label}) — DO NOT include any company name or brand name",
+  "subtitle": "One-line subtitle (in {lang_label}) — DO NOT include any company name or brand name",
   "disclaimer": "Legal disclaimer (2-3 sentences, in {lang_label})"
 }}
 
 Rules:
 - Professional, institutional tone
+- The title should describe the portfolio content (e.g. 'Property Portfolio', 'Investment Opportunities')
+- NEVER include brand names like 'Rodschinson' in the title or subtitle
 - All text in {lang_label}
 - Return ONLY valid JSON, no markdown
 """
@@ -1662,37 +1663,12 @@ Rules:
             from datetime import datetime
             date_str = datetime.now().strftime("%B %Y")
 
-            # Summary stats
-            total_value = sum(p.get("price_raw", 0) or 0 for p in all_properties)
-            summary_stats = [
-                {"label": "Total Properties", "value": str(total_count)},
-                {"label": "Asset Types", "value": str(len(sections))},
-            ]
-            if total_value > 0:
-                if total_value >= 1_000_000_000:
-                    fv = f"\u20ac{total_value / 1_000_000_000:.1f}B"
-                elif total_value >= 1_000_000:
-                    fv = f"\u20ac{total_value / 1_000_000:.1f}M"
-                else:
-                    fv = f"\u20ac{total_value:,.0f}"
-                summary_stats.append({"label": "Total Portfolio Value", "value": fv})
-
-            # Add per-type counts
-            for s in sections[:4]:
-                summary_stats.append({"label": s["label"], "value": str(len(s["properties"]))})
-
             portfolio_json = {
                 "title": portfolio_meta.get("title", "Property Portfolio"),
                 "subtitle": portfolio_meta.get("subtitle", "Exclusive Investment Opportunities"),
                 "date": date_str,
                 "disclaimer": portfolio_meta.get("disclaimer", "This document is confidential and for informational purposes only."),
                 "sections": sections,
-                "summary": {
-                    "title": portfolio_meta.get("summary_title", "Portfolio Summary"),
-                    "total_properties": total_count,
-                    "total_types": len(sections),
-                    "stats": summary_stats,
-                },
             }
 
             # Write portfolio JSON

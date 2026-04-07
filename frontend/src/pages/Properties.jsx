@@ -330,7 +330,7 @@ function PortfolioModal({ properties, selectedIds, brands, onClose, onGenerate, 
             </div>
           )}
           <div style={{ marginTop: 10, fontSize: 12, fontWeight: 600, color: '#00B6FF' }}>
-            {targetProps.length} properties — ~{Math.ceil(targetProps.length / 3) + 3} pages
+            {targetProps.length} properties — ~{Math.ceil(targetProps.length / 4) + 3} pages
           </div>
         </div>
 
