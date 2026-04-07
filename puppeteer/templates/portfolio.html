@@ -240,29 +240,24 @@ html, body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
-  flex: 1;
+  align-content: start;
 }
 .grid-card {
   background: var(--white);
   border: 1px solid rgba(8,49,111,0.08);
   border-radius: 10px;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
   box-shadow: 0 1px 4px rgba(8,49,111,0.04);
 }
 .grid-card-img {
   width: 100%;
-  height: 120px;
+  height: 100px;
   object-fit: cover;
   display: block;
   background: linear-gradient(135deg, rgba(8,49,111,0.06) 0%, rgba(0,182,255,0.06) 100%);
 }
 .grid-card-body {
   padding: 14px 16px 16px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
 }
 .grid-card-ref {
   font-family: var(--heading); font-weight: 600; font-size: 8px;
@@ -278,9 +273,8 @@ html, body {
   color: var(--navy); margin-bottom: 8px;
 }
 .grid-card-desc {
-  font-family: var(--body); font-weight: 400; font-size: 9.5px;
-  line-height: 1.55; color: var(--muted); margin-bottom: 6px;
-  flex: 1;
+  font-family: var(--body); font-weight: 400; font-size: 11px;
+  line-height: 1.6; color: var(--muted); margin-bottom: 6px;
 }
 .grid-card-desc ul {
   list-style: none; padding: 0; margin: 4px 0 0;
@@ -588,22 +582,21 @@ window.loadPortfolio = function(data, brandName) {
     }
 
     html += '<div class="props-grid">';
-    pg.cards.forEach(function(p) {
+    pg.cards.forEach(function(p, cardIdx) {
       var agentName = extractAgentName(p.agent);
       var descHtml = buildDescHtml(p.description || '');
       var imgUrl = p.image_url || '';
+      var uniqueSeed = (p.odoo_id || 0) + cardIdx * 7;
 
       html += '<div class="grid-card">';
 
-      // Image placeholder with SVG illustration
+      // Image: unique cityscape SVG per card
       if (imgUrl) {
         html += '<img class="grid-card-img" src="' + escapeHtml(imgUrl) + '" alt="" />';
       } else {
-        // Generate a subtle SVG based on asset type
-        html += '<div class="grid-card-img" style="display:flex;align-items:center;justify-content:center;">';
-        html += '<svg width="80" height="60" viewBox="0 0 80 60" fill="none">';
-        html += buildPropertySvg(p.asset_type);
-        html += '</svg></div>';
+        html += '<div class="grid-card-img" style="display:flex;align-items:flex-end;justify-content:center;overflow:hidden;">';
+        html += buildCityscapeSvg(p.asset_type, uniqueSeed);
+        html += '</div>';
       }
 
       html += '<div class="grid-card-body">';
@@ -673,81 +666,89 @@ window.loadPortfolio = function(data, brandName) {
   return true;
 };
 
-/* Generate a simple SVG illustration per asset type */
-function buildPropertySvg(assetType) {
+/**
+ * Generate a unique cityscape SVG for each property card.
+ * Uses a seed number to vary building heights, positions, and colors.
+ * Full-width illustration that sits at the bottom of the image area.
+ */
+function buildCityscapeSvg(assetType, seed) {
+  var W = 340, H = 100;
   var navy = '#08316F';
   var sky = '#00B6FF';
-  switch (assetType) {
-    case 'hotel':
-      return '<rect x="20" y="10" width="40" height="50" rx="2" fill="' + navy + '" opacity="0.08"/>' +
-        '<rect x="30" y="5" width="20" height="8" rx="1" fill="' + navy + '" opacity="0.06"/>' +
-        '<rect x="26" y="18" width="6" height="5" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="37" y="18" width="6" height="5" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="48" y="18" width="6" height="5" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="26" y="28" width="6" height="5" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="37" y="28" width="6" height="5" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="48" y="28" width="6" height="5" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="26" y="38" width="6" height="5" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="37" y="38" width="6" height="5" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="48" y="38" width="6" height="5" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="35" y="50" width="10" height="10" rx="1" fill="' + navy + '" opacity="0.06"/>';
-    case 'warehouse': case 'logistics': case 'industrial':
-      return '<rect x="10" y="25" width="60" height="35" rx="1" fill="' + navy + '" opacity="0.08"/>' +
-        '<polygon points="10,25 40,8 70,25" fill="' + navy + '" opacity="0.06"/>' +
-        '<rect x="30" y="40" width="20" height="20" rx="1" fill="' + sky + '" opacity="0.1"/>' +
-        '<line x1="40" y1="40" x2="40" y2="60" stroke="' + navy + '" stroke-width="0.5" opacity="0.1"/>';
-    case 'residential': case 'senior': case 'student':
-      return '<rect x="20" y="20" width="40" height="40" rx="2" fill="' + navy + '" opacity="0.08"/>' +
-        '<polygon points="15,22 40,5 65,22" fill="' + navy + '" opacity="0.06"/>' +
-        '<rect x="28" y="28" width="8" height="8" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="44" y="28" width="8" height="8" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="34" y="45" width="12" height="15" rx="1" fill="' + navy + '" opacity="0.06"/>';
-    case 'clinic': case 'pharmacy':
-      return '<rect x="18" y="15" width="44" height="45" rx="2" fill="' + navy + '" opacity="0.08"/>' +
-        '<rect x="35" y="22" width="10" height="2" rx="1" fill="' + sky + '" opacity="0.2"/>' +
-        '<rect x="39" y="18" width="2" height="10" rx="1" fill="' + sky + '" opacity="0.2"/>' +
-        '<rect x="24" y="35" width="8" height="6" rx="1" fill="' + sky + '" opacity="0.1"/>' +
-        '<rect x="36" y="35" width="8" height="6" rx="1" fill="' + sky + '" opacity="0.1"/>' +
-        '<rect x="48" y="35" width="8" height="6" rx="1" fill="' + sky + '" opacity="0.1"/>';
-    case 'resort':
-      return '<rect x="15" y="25" width="50" height="35" rx="2" fill="' + navy + '" opacity="0.08"/>' +
-        '<polygon points="15,25 40,12 65,25" fill="' + navy + '" opacity="0.06"/>' +
-        '<circle cx="60" cy="15" r="6" fill="' + sky + '" opacity="0.1"/>' +
-        '<rect x="22" y="45" width="8" height="10" rx="1" fill="' + sky + '" opacity="0.1"/>' +
-        '<rect x="36" y="45" width="8" height="10" rx="1" fill="' + sky + '" opacity="0.1"/>';
-    case 'retail':
-      return '<rect x="10" y="20" width="60" height="40" rx="2" fill="' + navy + '" opacity="0.08"/>' +
-        '<rect x="10" y="18" width="60" height="6" rx="1" fill="' + navy + '" opacity="0.06"/>' +
-        '<rect x="18" y="30" width="18" height="25" rx="1" fill="' + sky + '" opacity="0.1"/>' +
-        '<rect x="44" y="30" width="18" height="25" rx="1" fill="' + sky + '" opacity="0.1"/>';
-    case 'parking':
-      return '<rect x="15" y="15" width="50" height="45" rx="2" fill="' + navy + '" opacity="0.08"/>' +
-        '<text x="40" y="45" text-anchor="middle" font-family="Montserrat" font-weight="700" font-size="20" fill="' + sky + '" opacity="0.15">P</text>';
-    case 'gym': case 'fitness':
-      return '<rect x="10" y="20" width="60" height="40" rx="2" fill="' + navy + '" opacity="0.08"/>' +
-        '<rect x="10" y="18" width="60" height="6" rx="1" fill="' + sky + '" opacity="0.06"/>' +
-        '<rect x="25" y="35" width="30" height="4" rx="2" fill="' + navy + '" opacity="0.1"/>' +
-        '<circle cx="22" cy="37" r="5" fill="' + sky + '" opacity="0.1"/>' +
-        '<circle cx="58" cy="37" r="5" fill="' + sky + '" opacity="0.1"/>';
-    case 'land':
-      return '<rect x="5" y="50" width="70" height="10" rx="1" fill="' + navy + '" opacity="0.06"/>' +
-        '<line x1="15" y1="15" x2="15" y2="50" stroke="' + sky + '" stroke-width="0.8" opacity="0.15"/>' +
-        '<line x1="15" y1="15" x2="65" y2="15" stroke="' + sky + '" stroke-width="0.8" opacity="0.15" stroke-dasharray="3,2"/>' +
-        '<line x1="65" y1="15" x2="65" y2="50" stroke="' + sky + '" stroke-width="0.8" opacity="0.15"/>';
-    default: // building / office / mixed
-      return '<rect x="15" y="10" width="24" height="50" rx="1" fill="' + navy + '" opacity="0.08"/>' +
-        '<rect x="42" y="22" width="24" height="38" rx="1" fill="' + navy + '" opacity="0.06"/>' +
-        '<rect x="20" y="18" width="5" height="4" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="28" y="18" width="5" height="4" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="20" y="28" width="5" height="4" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="28" y="28" width="5" height="4" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="20" y="38" width="5" height="4" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="28" y="38" width="5" height="4" rx="1" fill="' + sky + '" opacity="0.12"/>' +
-        '<rect x="47" y="30" width="5" height="4" rx="1" fill="' + sky + '" opacity="0.1"/>' +
-        '<rect x="55" y="30" width="5" height="4" rx="1" fill="' + sky + '" opacity="0.1"/>' +
-        '<rect x="47" y="40" width="5" height="4" rx="1" fill="' + sky + '" opacity="0.1"/>' +
-        '<rect x="55" y="40" width="5" height="4" rx="1" fill="' + sky + '" opacity="0.1"/>';
+  // Simple seeded pseudo-random
+  var s = (seed || 0) + 1;
+  function rnd() { s = (s * 16807 + 5) % 2147483647; return (s & 0xffff) / 0xffff; }
+
+  var svg = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" fill="none" xmlns="http://www.w3.org/2000/svg">';
+
+  // Sky gradient background
+  var hue1 = Math.round(200 + rnd() * 20);
+  var hue2 = Math.round(210 + rnd() * 15);
+  svg += '<defs><linearGradient id="sky' + seed + '" x1="0" y1="0" x2="0" y2="1">';
+  svg += '<stop offset="0%" stop-color="hsl(' + hue1 + ',30%,95%)"/>';
+  svg += '<stop offset="100%" stop-color="hsl(' + hue2 + ',25%,90%)"/>';
+  svg += '</linearGradient></defs>';
+  svg += '<rect width="' + W + '" height="' + H + '" fill="url(#sky' + seed + ')"/>';
+
+  // Ground
+  svg += '<rect x="0" y="' + (H - 6) + '" width="' + W + '" height="6" fill="' + navy + '" opacity="0.04"/>';
+
+  // Generate 5-8 buildings with varied heights and styles
+  var numBuildings = 5 + Math.floor(rnd() * 4);
+  var bx = 10 + Math.floor(rnd() * 20);
+
+  for (var i = 0; i < numBuildings; i++) {
+    var bw = 22 + Math.floor(rnd() * 30);
+    var bh = 30 + Math.floor(rnd() * 55);
+    var by = H - 6 - bh;
+    var op = 0.06 + rnd() * 0.06;
+    var isAccent = rnd() > 0.65;
+    var fillColor = isAccent ? sky : navy;
+
+    // Building body
+    svg += '<rect x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" rx="1" fill="' + fillColor + '" opacity="' + op.toFixed(2) + '"/>';
+
+    // Top features — vary by building
+    var topStyle = Math.floor(rnd() * 4);
+    if (topStyle === 0 && bw > 25) {
+      // Antenna/spire
+      var ax = bx + bw / 2;
+      svg += '<line x1="' + ax + '" y1="' + by + '" x2="' + ax + '" y2="' + (by - 8 - Math.floor(rnd() * 6)) + '" stroke="' + navy + '" stroke-width="1" opacity="0.08"/>';
+    } else if (topStyle === 1 && bw > 28) {
+      // Setback top
+      var sw = bw * 0.5;
+      var sx = bx + (bw - sw) / 2;
+      svg += '<rect x="' + sx + '" y="' + (by - 8) + '" width="' + sw + '" height="8" rx="0.5" fill="' + fillColor + '" opacity="' + (op * 0.9).toFixed(2) + '"/>';
+    } else if (topStyle === 2) {
+      // Peaked roof
+      svg += '<polygon points="' + bx + ',' + by + ' ' + (bx + bw / 2) + ',' + (by - 6 - Math.floor(rnd() * 4)) + ' ' + (bx + bw) + ',' + by + '" fill="' + fillColor + '" opacity="' + (op * 0.8).toFixed(2) + '"/>';
+    }
+
+    // Windows — rows of small rectangles
+    if (bh > 25 && bw > 18) {
+      var winCols = Math.max(2, Math.floor(bw / 10));
+      var winRows = Math.max(2, Math.floor(bh / 14));
+      var winW = 4, winH = 3;
+      var winGapX = (bw - winCols * winW) / (winCols + 1);
+      var winGapY = (bh - 8 - winRows * winH) / (winRows + 1);
+      for (var wr = 0; wr < winRows; wr++) {
+        for (var wc = 0; wc < winCols; wc++) {
+          if (rnd() > 0.25) {
+            var wx = bx + winGapX + wc * (winW + winGapX);
+            var wy = by + 6 + winGapY + wr * (winH + winGapY);
+            var winOp = isAccent ? 0.15 : 0.06;
+            svg += '<rect x="' + wx.toFixed(1) + '" y="' + wy.toFixed(1) + '" width="' + winW + '" height="' + winH + '" rx="0.5" fill="' + (isAccent ? navy : sky) + '" opacity="' + winOp + '"/>';
+          }
+        }
+      }
+    }
+
+    bx += bw + 6 + Math.floor(rnd() * 16);
+    if (bx > W - 20) break;
   }
+
+  svg += '</svg>';
+  return svg;
 }
 </script>
 
