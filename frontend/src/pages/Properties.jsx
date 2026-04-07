@@ -520,8 +520,6 @@ export default function Properties() {
     return true
   })
 
-  const bg = dark ? '#0e0e0e' : '#fafaf8'
-  const cardBg = dark ? 'rgba(255,255,255,0.03)' : '#fff'
   const text = dark ? '#fff' : '#0D1F3C'
   const muted = dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
   const border = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
