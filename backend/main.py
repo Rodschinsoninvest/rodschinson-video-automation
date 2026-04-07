@@ -1576,6 +1576,20 @@ Rules:
             if not all_properties:
                 raise RuntimeError("No properties found. Please sync from Odoo first.")
 
+            # Clean property data for portfolio rendering
+            import re
+            for p in all_properties:
+                # Strip HTML from description
+                desc = p.get("description", "")
+                if desc and ("<" in desc):
+                    desc = re.sub(r"<br\s*/?>", " \u2022 ", desc)
+                    desc = re.sub(r"<[^>]+>", "", desc)
+                    p["description"] = desc.strip()
+                # Extract agent name from [id, name] array
+                agent = p.get("agent")
+                if isinstance(agent, list):
+                    p["agent"] = next((a for a in agent if isinstance(a, str)), "")
+
             # Filter to selected property IDs (if provided), else all
             selected_ids = data.get("selected_property_ids")
             if selected_ids and isinstance(selected_ids, list) and len(selected_ids) > 0:

@@ -330,7 +330,7 @@ function PortfolioModal({ properties, selectedIds, brands, onClose, onGenerate, 
             </div>
           )}
           <div style={{ marginTop: 10, fontSize: 12, fontWeight: 600, color: '#00B6FF' }}>
-            {targetProps.length} properties — ~{Math.ceil(targetProps.length / 5) + 3} pages
+            {targetProps.length} properties — ~{Math.ceil(targetProps.length / 3) + 3} pages
           </div>
         </div>
 
@@ -601,6 +601,15 @@ export default function Properties() {
             />
             Select all
           </label>
+        )}
+        {selectedIds.length > 0 && (
+          <button onClick={() => setSelectedIds([])} style={{
+            padding: '4px 12px', borderRadius: 6, cursor: 'pointer',
+            border: '1px solid rgba(220,38,38,0.3)', background: 'rgba(220,38,38,0.06)',
+            color: '#dc2626', fontSize: 11, fontWeight: 600,
+          }}>
+            Clear ({selectedIds.length})
+          </button>
         )}
         <span style={{ fontSize: 12, color: muted }}>{filtered.length} shown</span>
       </div>

@@ -58,23 +58,32 @@ html, body {
   left: 60px;
 }
 
-.cover-brand {
+.cover-logo {
+  text-align: center;
+  margin-bottom: 50px;
+}
+.cover-logo-main {
   font-family: var(--heading);
   font-weight: 700;
-  font-size: 28px;
+  font-size: 32px;
   letter-spacing: 8px;
   text-transform: uppercase;
   color: var(--white);
-  margin-bottom: 6px;
+  line-height: 1;
 }
-.cover-brand-sub {
+.cover-logo-line {
+  width: 200px;
+  height: 2px;
+  background: var(--sky);
+  margin: 8px auto;
+}
+.cover-logo-sub {
   font-family: var(--heading);
   font-weight: 400;
-  font-size: 13px;
-  letter-spacing: 6px;
+  font-size: 12px;
+  letter-spacing: 7px;
   text-transform: uppercase;
   color: var(--sky);
-  margin-bottom: 50px;
 }
 
 .cover-rule {
@@ -256,79 +265,78 @@ html, body {
   display: flex;
   gap: 0;
   background: var(--white);
-  border: 1px solid rgba(8,49,111,0.08);
-  border-radius: 8px;
+  border: 1px solid rgba(8,49,111,0.1);
+  border-radius: 10px;
   overflow: hidden;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
   break-inside: avoid;
+  box-shadow: 0 1px 4px rgba(8,49,111,0.04);
 }
 .prop-card-accent {
-  width: 4px;
+  width: 5px;
   background: linear-gradient(180deg, var(--sky), var(--navy));
   flex-shrink: 0;
 }
 .prop-card-body {
   flex: 1;
-  padding: 16px 20px;
+  padding: 22px 26px;
 }
 .prop-card-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 .prop-card-title {
   font-family: var(--heading);
   font-weight: 700;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--navy);
-  line-height: 1.25;
+  line-height: 1.3;
   flex: 1;
 }
 .prop-card-ref {
-  font-family: var(--body);
-  font-weight: 500;
-  font-size: 9px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: rgba(8,49,111,0.04);
-  padding: 3px 8px;
-  border-radius: 3px;
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--navy);
+  background: rgba(0,182,255,0.08);
+  border: 1px solid rgba(0,182,255,0.2);
+  padding: 4px 12px;
+  border-radius: 4px;
   flex-shrink: 0;
   margin-left: 12px;
+  white-space: nowrap;
 }
 .prop-card-price {
   font-family: var(--heading);
   font-weight: 700;
-  font-size: 18px;
+  font-size: 22px;
   color: var(--navy);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .prop-card-desc {
   font-family: var(--body);
   font-weight: 400;
-  font-size: 10.5px;
-  line-height: 1.6;
+  font-size: 11.5px;
+  line-height: 1.65;
   color: var(--muted);
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  margin-bottom: 4px;
 }
 .prop-card-meta {
   display: flex;
-  gap: 16px;
-  margin-top: 8px;
+  gap: 20px;
+  margin-top: 12px;
   flex-wrap: wrap;
 }
 .prop-card-meta-item {
   font-family: var(--body);
-  font-size: 9px;
+  font-size: 10px;
   color: var(--muted);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 .prop-card-meta-item strong {
   color: var(--navy);
@@ -337,11 +345,11 @@ html, body {
 .prop-card-status {
   font-family: var(--heading);
   font-weight: 600;
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: 3px;
+  padding: 3px 10px;
+  border-radius: 4px;
   flex-shrink: 0;
   margin-left: 8px;
 }
@@ -453,8 +461,11 @@ html, body {
     <line x1="0" y1="25" x2="50" y2="25" stroke="#00B6FF" stroke-width="0.6" opacity="0.3"/>
   </svg>
 
-  <div class="cover-brand" id="cover-brand">RODSCHINSON</div>
-  <div class="cover-brand-sub">I N V E S T M E N T</div>
+  <div class="cover-logo" id="cover-logo">
+    <div class="cover-logo-main" id="cover-logo-main">RODSCHINSON</div>
+    <div class="cover-logo-line"></div>
+    <div class="cover-logo-sub">I N V E S T M E N T</div>
+  </div>
   <div class="cover-rule"></div>
   <div class="cover-title" id="cover-title">Property Portfolio</div>
   <div class="cover-subtitle" id="cover-subtitle">Exclusive Investment Opportunities</div>
@@ -507,6 +518,31 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function stripHtml(str) {
+  if (!str) return '';
+  var div = document.createElement('div');
+  div.innerHTML = str;
+  // Replace <br> tags with newlines, then get text
+  var html = div.innerHTML;
+  html = html.replace(/<br\s*\/?>/gi, ' \u2022 ');
+  html = html.replace(/<\/p>\s*<p>/gi, ' ');
+  div.innerHTML = html;
+  return (div.textContent || div.innerText || '').trim();
+}
+
+function extractAgentName(agent) {
+  if (!agent) return '';
+  if (Array.isArray(agent)) {
+    // Agent is [id, name] — return only the name
+    for (var i = 0; i < agent.length; i++) {
+      if (typeof agent[i] === 'string') return agent[i];
+    }
+    return '';
+  }
+  if (typeof agent === 'string') return agent;
+  return '';
+}
+
 function statusClass(s) {
   if (!s) return 'status-other';
   var sl = s.toLowerCase();
@@ -540,9 +576,9 @@ window.loadPortfolio = function(data, brandName) {
     }
   */
 
-  // Cover
+  // Cover logo
   if (brandName) {
-    document.getElementById('cover-brand').textContent = brandName.toUpperCase();
+    document.getElementById('cover-logo-main').textContent = brandName.toUpperCase();
     document.getElementById('toc-footer-brand').textContent = brandName.toUpperCase();
   }
   if (data.title) document.getElementById('cover-title').textContent = data.title;
@@ -571,8 +607,8 @@ window.loadPortfolio = function(data, brandName) {
       '<span class="toc-page-num">p.' + pageNum + '</span>';
     tocList.appendChild(li);
 
-    // Each section can span multiple pages; estimate ~5 cards per page
-    var cardsPerPage = 5;
+    // Each section can span multiple pages; 3 cards per page
+    var cardsPerPage = 3;
     var numPages = Math.max(1, Math.ceil((sec.properties || []).length / cardsPerPage));
     pageNum += numPages;
   });
@@ -585,7 +621,7 @@ window.loadPortfolio = function(data, brandName) {
   sections.forEach(function(sec) {
     var props = sec.properties || [];
     var icon = ASSET_ICONS[sec.asset_type] || sec.icon || '\u{1F3E2}';
-    var cardsPerPage = 5;
+    var cardsPerPage = 3;
 
     for (var chunk = 0; chunk < props.length; chunk += cardsPerPage) {
       var pageProps = props.slice(chunk, chunk + cardsPerPage);
@@ -606,7 +642,8 @@ window.loadPortfolio = function(data, brandName) {
       }
 
       pageProps.forEach(function(p) {
-        var st = p.status || 'Sale';
+        var agentName = extractAgentName(p.agent);
+        var cleanDesc = stripHtml(p.description);
         html +=
           '<div class="prop-card">' +
             '<div class="prop-card-accent"></div>' +
@@ -614,13 +651,11 @@ window.loadPortfolio = function(data, brandName) {
               '<div class="prop-card-top">' +
                 '<div class="prop-card-title">' + escapeHtml(p.title || 'Unnamed Property') + '</div>' +
                 (p.reference ? '<div class="prop-card-ref">' + escapeHtml(p.reference) + '</div>' : '') +
-                '<span class="prop-card-status ' + statusClass(st) + '">' + escapeHtml(st) + '</span>' +
               '</div>' +
               (p.price ? '<div class="prop-card-price">' + escapeHtml(p.price) + '</div>' : '') +
-              (p.description ? '<div class="prop-card-desc">' + escapeHtml(p.description) + '</div>' : '') +
+              (cleanDesc ? '<div class="prop-card-desc">' + escapeHtml(cleanDesc) + '</div>' : '') +
               '<div class="prop-card-meta">' +
-                (p.agent ? '<div class="prop-card-meta-item"><strong>Agent:</strong> ' + escapeHtml(p.agent) + '</div>' : '') +
-                (p.sectors ? '<div class="prop-card-meta-item"><strong>Sectors:</strong> ' + escapeHtml(p.sectors) + '</div>' : '') +
+                (agentName ? '<div class="prop-card-meta-item"><strong>Agent:</strong> ' + escapeHtml(agentName) + '</div>' : '') +
               '</div>' +
             '</div>' +
           '</div>';
