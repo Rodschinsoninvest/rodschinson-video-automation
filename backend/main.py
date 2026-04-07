@@ -2,6 +2,7 @@
 Rodschinson Content Studio — FastAPI Backend
 """
 import asyncio
+import html as html_mod
 import io
 import json
 import os
@@ -1577,8 +1578,6 @@ Rules:
                 raise RuntimeError("No properties found. Please sync from Odoo first.")
 
             # Clean property data for portfolio rendering
-            import re
-            import html as html_mod
             for p in all_properties:
                 # Strip HTML tags and decode entities from description
                 desc = p.get("description", "")
@@ -1721,13 +1720,11 @@ Rules:
             methods_str = ", ".join(methods)
 
             # Clean property data
-            import re as _re
-            import html as _html_mod
             desc = property_data.get("description", "")
             if desc:
-                desc = _re.sub(r"<br\s*/?>", " \u2022 ", desc)
-                desc = _re.sub(r"<[^>]+>", "", desc)
-                desc = _html_mod.unescape(desc).replace("\xa0", " ").strip()
+                desc = re.sub(r"<br\s*/?>", " \u2022 ", desc)
+                desc = re.sub(r"<[^>]+>", "", desc)
+                desc = html_mod.unescape(desc).replace("\xa0", " ").strip()
             agent = property_data.get("agent")
             if isinstance(agent, list):
                 agent = next((a for a in agent if isinstance(a, str)), "")
@@ -3477,8 +3474,7 @@ async def add_canva_template(body: CanvaTemplateCreate):
     # Extract design ID from URL for embed
     # e.g. https://www.canva.com/design/DAxxxxxx/view
     design_id = ""
-    import re as _re
-    m = _re.search(r"/design/([A-Za-z0-9_-]+)", body.url)
+    m = re.search(r"/design/([A-Za-z0-9_-]+)", body.url)
     if m:
         design_id = m.group(1)
 
