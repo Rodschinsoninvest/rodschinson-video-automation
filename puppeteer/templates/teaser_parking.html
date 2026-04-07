@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=794, height=1123">
+<title>Parking – Investment Teaser</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:  #08316F;
+  --gold:  #C8A96E;
+  --bg:    #F5F2ED;
+  --muted: rgba(8,49,111,0.45);
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans:  'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+}
+
+html, body {
+  width: 794px; height: 1123px;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: var(--sans);
+  color: var(--navy);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── BLUEPRINT GRID OVERLAY ── */
+.blueprint-grid {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(8,49,111,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(8,49,111,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── CORNER BRACKETS ── */
+.corner-bracket {
+  position: absolute; z-index: 1; pointer-events: none;
+}
+.corner-bracket.tl { top: 20px; left: 20px; }
+.corner-bracket.tr { top: 20px; right: 20px; transform: scaleX(-1); }
+.corner-bracket.bl { bottom: 20px; left: 20px; transform: scaleY(-1); }
+.corner-bracket.br { bottom: 20px; right: 20px; transform: scale(-1, -1); }
+
+/* ── MAIN CONTENT ── */
+.page {
+  position: relative; z-index: 2;
+  width: 794px; height: 1123px;
+  padding: 40px 52px 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── BRAND HEADER ── */
+.brand-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 56px;
+  flex-shrink: 0;
+}
+.brand-name {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: var(--navy);
+}
+.memo-tag {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: 5px 14px;
+  border-radius: 2px;
+}
+
+/* ── GRADIENT RULE ── */
+.gradient-rule {
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--navy) 50%, var(--gold) 100%);
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-bottom: 24px;
+}
+
+/* ── HEADLINE ── */
+.property-headline {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 46px;
+  line-height: 1.1;
+  color: var(--navy);
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+.property-subheadline {
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+
+/* ── HERO SVG ── */
+.hero-svg {
+  width: 100%;
+  height: 170px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+
+/* ── METRICS GRID ── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+  flex-shrink: 0;
+}
+.metric-card {
+  border-left: 3px solid var(--gold);
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.45);
+  border-radius: 0 4px 4px 0;
+}
+.metric-label {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.metric-value {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.15;
+  color: var(--navy);
+}
+
+/* ── HIGHLIGHTS ── */
+.highlights-section {
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+.section-header {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(200,169,110,0.25);
+}
+.highlights-list {
+  list-style: none;
+  padding: 0;
+  columns: 2;
+  column-gap: 28px;
+}
+.highlights-list li {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--navy);
+  margin-bottom: 6px;
+  padding-left: 16px;
+  position: relative;
+  break-inside: avoid;
+}
+.highlights-list li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 6px;
+  width: 6px; height: 6px;
+  background: var(--gold);
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+
+/* ── DESCRIPTION / OVERVIEW ── */
+.overview-section {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.overview-text {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: rgba(8,49,111,0.78);
+}
+.overview-text p {
+  margin-bottom: 8px;
+}
+
+/* ── FOOTER ── */
+.footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--gold);
+  padding-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.footer-brand {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--navy);
+}
+.footer-disclaimer {
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 7.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 420px;
+  text-align: right;
+}
+</style>
+</head>
+<body>
+
+<!-- Blueprint grid -->
+<div class="blueprint-grid"></div>
+
+<!-- Architectural corner brackets -->
+<svg class="corner-bracket tl" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <path d="M2 34 L2 2 L34 2" stroke="#C8A96E" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M8 28 L8 8 L28 8" stroke="#08316F" stroke-width="0.6" stroke-linecap="round" opacity="0.15"/>
+</svg>
+<svg class="corner-bracket tr" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <path d="M2 34 L2 2 L34 2" stroke="#C8A96E" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M8 28 L8 8 L28 8" stroke="#08316F" stroke-width="0.6" stroke-linecap="round" opacity="0.15"/>
+</svg>
+<svg class="corner-bracket bl" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <path d="M2 34 L2 2 L34 2" stroke="#C8A96E" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M8 28 L8 8 L28 8" stroke="#08316F" stroke-width="0.6" stroke-linecap="round" opacity="0.15"/>
+</svg>
+<svg class="corner-bracket br" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <path d="M2 34 L2 2 L34 2" stroke="#C8A96E" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M8 28 L8 8 L28 8" stroke="#08316F" stroke-width="0.6" stroke-linecap="round" opacity="0.15"/>
+</svg>
+
+<div class="page">
+
+  <!-- 1. Brand header -->
+  <div class="brand-header">
+    <div class="brand-name" id="brand-name">RODSCHINSON</div>
+    <div class="memo-tag">INVESTMENT MEMORANDUM</div>
+  </div>
+
+  <!-- 2. Gradient rule -->
+  <div class="gradient-rule"></div>
+
+  <!-- 3. Headline -->
+  <h1 class="property-headline" id="headline">Multi-Level Car Park</h1>
+
+  <!-- 4. Subheadline -->
+  <p class="property-subheadline" id="subheadline">Structured Parking Facility &mdash; City Centre</p>
+
+  <!-- 5. Hero SVG — Multi-level parking structure -->
+  <div class="hero-svg">
+    <svg viewBox="0 0 680 170" width="680" height="170" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Main parking structure -->
+      <rect x="80" y="20" width="280" height="150" rx="2" fill="#08316F" opacity="0.08"/>
+      <!-- Level dividers (floors) -->
+      <line x1="80" y1="58" x2="360" y2="58" stroke="#08316F" stroke-width="1" opacity="0.06"/>
+      <line x1="80" y1="95" x2="360" y2="95" stroke="#08316F" stroke-width="1" opacity="0.06"/>
+      <line x1="80" y1="132" x2="360" y2="132" stroke="#08316F" stroke-width="1" opacity="0.06"/>
+      <!-- Ramp left side -->
+      <polygon points="40,170 80,132 80,170" fill="#08316F" opacity="0.06"/>
+      <polygon points="40,132 80,95 80,132" fill="#08316F" opacity="0.05"/>
+      <polygon points="40,95 80,58 80,95" fill="#08316F" opacity="0.04"/>
+      <!-- Large P sign -->
+      <rect x="180" y="30" width="80" height="52" rx="6" fill="#08316F" opacity="0.06"/>
+      <text x="220" y="70" font-family="DM Sans, Arial, sans-serif" font-weight="700" font-size="36" fill="#08316F" opacity="0.10" text-anchor="middle">P</text>
+      <!-- Car silhouettes — Level 1 (bottom) -->
+      <rect x="100" y="148" width="28" height="10" rx="4" fill="#08316F" opacity="0.05"/>
+      <rect x="104" y="144" width="20" height="6" rx="2" fill="#08316F" opacity="0.04"/>
+      <rect x="145" y="148" width="28" height="10" rx="4" fill="#08316F" opacity="0.05"/>
+      <rect x="149" y="144" width="20" height="6" rx="2" fill="#08316F" opacity="0.04"/>
+      <rect x="190" y="148" width="28" height="10" rx="4" fill="#08316F" opacity="0.05"/>
+      <rect x="194" y="144" width="20" height="6" rx="2" fill="#08316F" opacity="0.04"/>
+      <rect x="280" y="148" width="28" height="10" rx="4" fill="#08316F" opacity="0.05"/>
+      <rect x="284" y="144" width="20" height="6" rx="2" fill="#08316F" opacity="0.04"/>
+      <rect x="320" y="148" width="28" height="10" rx="4" fill="#08316F" opacity="0.05"/>
+      <rect x="324" y="144" width="20" height="6" rx="2" fill="#08316F" opacity="0.04"/>
+      <!-- Car silhouettes — Level 2 -->
+      <rect x="100" y="110" width="28" height="10" rx="4" fill="#08316F" opacity="0.04"/>
+      <rect x="104" y="106" width="20" height="6" rx="2" fill="#08316F" opacity="0.03"/>
+      <rect x="145" y="110" width="28" height="10" rx="4" fill="#08316F" opacity="0.04"/>
+      <rect x="190" y="110" width="28" height="10" rx="4" fill="#08316F" opacity="0.04"/>
+      <rect x="280" y="110" width="28" height="10" rx="4" fill="#08316F" opacity="0.04"/>
+      <rect x="320" y="110" width="28" height="10" rx="4" fill="#08316F" opacity="0.04"/>
+      <!-- Car silhouettes — Level 3 -->
+      <rect x="100" y="72" width="28" height="10" rx="4" fill="#08316F" opacity="0.04"/>
+      <rect x="145" y="72" width="28" height="10" rx="4" fill="#08316F" opacity="0.04"/>
+      <rect x="280" y="72" width="28" height="10" rx="4" fill="#08316F" opacity="0.04"/>
+      <rect x="320" y="72" width="28" height="10" rx="4" fill="#08316F" opacity="0.04"/>
+      <!-- Secondary structure — smaller annex -->
+      <rect x="400" y="60" width="140" height="110" rx="2" fill="#08316F" opacity="0.06"/>
+      <line x1="400" y1="95" x2="540" y2="95" stroke="#08316F" stroke-width="0.8" opacity="0.05"/>
+      <line x1="400" y1="132" x2="540" y2="132" stroke="#08316F" stroke-width="0.8" opacity="0.05"/>
+      <!-- Ramp connector -->
+      <polygon points="360,132 400,110 400,132" fill="#08316F" opacity="0.04"/>
+      <polygon points="360,170 400,148 400,170" fill="#08316F" opacity="0.05"/>
+      <!-- Annex car silhouettes -->
+      <rect x="415" y="148" width="28" height="10" rx="4" fill="#08316F" opacity="0.04"/>
+      <rect x="460" y="148" width="28" height="10" rx="4" fill="#08316F" opacity="0.04"/>
+      <rect x="500" y="148" width="28" height="10" rx="4" fill="#08316F" opacity="0.04"/>
+      <rect x="415" y="110" width="28" height="10" rx="4" fill="#08316F" opacity="0.03"/>
+      <rect x="460" y="110" width="28" height="10" rx="4" fill="#08316F" opacity="0.03"/>
+      <rect x="500" y="110" width="28" height="10" rx="4" fill="#08316F" opacity="0.03"/>
+      <!-- Entry barrier -->
+      <rect x="560" y="140" width="40" height="30" rx="1" fill="#08316F" opacity="0.05"/>
+      <line x1="580" y1="140" x2="580" y2="128" stroke="#08316F" stroke-width="1.5" opacity="0.06"/>
+      <line x1="580" y1="128" x2="610" y2="128" stroke="#C8A96E" stroke-width="1.5" opacity="0.15"/>
+      <!-- Ground line -->
+      <line x1="30" y1="170" x2="650" y2="170" stroke="#08316F" stroke-width="0.5" opacity="0.06"/>
+    </svg>
+  </div>
+
+  <!-- 6. Metrics grid -->
+  <div class="metrics-grid" id="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-label">Asking Price</div>
+      <div class="metric-value">&euro;12.8M</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Total Spaces</div>
+      <div class="metric-value">850</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Occupancy</div>
+      <div class="metric-value">91.5%</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Net Initial Yield</div>
+      <div class="metric-value">6.20%</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Levels</div>
+      <div class="metric-value">4</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Year Built</div>
+      <div class="metric-value">2015</div>
+    </div>
+  </div>
+
+  <!-- 7. Highlights -->
+  <div class="highlights-section">
+    <div class="section-header">Key Highlights</div>
+    <ul class="highlights-list" id="highlights-list">
+      <li>Prime city-centre location adjacent to retail district</li>
+      <li>EV charging infrastructure on every level</li>
+      <li>Long-term concession agreement with municipality</li>
+      <li>Automated parking guidance and ANPR systems</li>
+      <li>Below-market tariffs with indexed escalation clauses</li>
+      <li>Structural capacity for two additional levels</li>
+    </ul>
+  </div>
+
+  <!-- 8. Overview -->
+  <div class="overview-section">
+    <div class="section-header">Overview</div>
+    <div class="overview-text" id="overview-text">
+      <p>A compelling opportunity to acquire a modern multi-level parking facility strategically located in the city centre, directly serving the surrounding retail, office, and residential catchment area.</p>
+      <p>The structure comprises 850 parking spaces across four levels, including 60 dedicated EV charging bays. The facility operates under a 25-year municipal concession with 18 years remaining, providing secure and predictable cash flows.</p>
+      <p>Recent upgrades include automated number-plate recognition, real-time occupancy guidance, and LED lighting throughout. The reinforced structure is engineered to support the addition of two further levels, offering significant expansion potential.</p>
+    </div>
+  </div>
+
+  <!-- 9. Footer -->
+  <div class="footer">
+    <div class="footer-brand" id="footer-brand">RODSCHINSON</div>
+    <div class="footer-disclaimer" id="footer-disclaimer">This document is strictly confidential and has been prepared for informational purposes only. It does not constitute an offer, invitation, or recommendation to purchase. All figures are estimates and subject to verification. Past performance is not indicative of future results.</div>
+  </div>
+
+</div>
+
+<script>
+window.loadTeaser = function(data, brandName) {
+  // data: { headline, subheadline, asset_type_label, metrics[], highlights[], description, disclaimer }
+  // metrics[]: { label, value }
+  // brandName: string
+
+  if (brandName) {
+    document.getElementById('brand-name').textContent = brandName.toUpperCase();
+    document.getElementById('footer-brand').textContent = brandName.toUpperCase();
+  }
+
+  if (data.headline) {
+    document.getElementById('headline').textContent = data.headline;
+  }
+
+  if (data.subheadline) {
+    document.getElementById('subheadline').innerHTML = data.subheadline;
+  }
+
+  // Metrics
+  if (data.metrics && data.metrics.length) {
+    var grid = document.getElementById('metrics-grid');
+    grid.innerHTML = '';
+    data.metrics.forEach(function(m) {
+      var card = document.createElement('div');
+      card.className = 'metric-card';
+      card.innerHTML =
+        '<div class="metric-label">' + escapeHtml(m.label) + '</div>' +
+        '<div class="metric-value">' + escapeHtml(m.value) + '</div>';
+      grid.appendChild(card);
+    });
+  }
+
+  // Highlights
+  if (data.highlights && data.highlights.length) {
+    var list = document.getElementById('highlights-list');
+    list.innerHTML = '';
+    data.highlights.forEach(function(h) {
+      var li = document.createElement('li');
+      li.textContent = h;
+      list.appendChild(li);
+    });
+  }
+
+  // Description / Overview
+  if (data.description) {
+    var container = document.getElementById('overview-text');
+    if (Array.isArray(data.description)) {
+      container.innerHTML = data.description.map(function(p) {
+        return '<p>' + escapeHtml(p) + '</p>';
+      }).join('');
+    } else {
+      container.innerHTML = '<p>' + escapeHtml(data.description) + '</p>';
+    }
+  }
+
+  // Disclaimer
+  if (data.disclaimer) {
+    document.getElementById('footer-disclaimer').textContent = data.disclaimer;
+  }
+
+  return true;
+};
+
+function escapeHtml(str) {
+  if (!str) return '';
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+</script>
+
+</body>
+</html>

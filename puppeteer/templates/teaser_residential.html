@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=794, height=1123">
+<title>Residential – Investment Teaser</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:  #08316F;
+  --gold:  #C8A96E;
+  --bg:    #F6F4EF;
+  --muted: rgba(8,49,111,0.45);
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans:  'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+}
+
+html, body {
+  width: 794px; height: 1123px;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: var(--sans);
+  color: var(--navy);
+  -webkit-font-smoothing: antialiased;
+}
+
+.blueprint-grid {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(8,49,111,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(8,49,111,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.corner-bracket {
+  position: absolute; z-index: 1; pointer-events: none;
+}
+.corner-bracket.tl { top: 20px; left: 20px; }
+.corner-bracket.tr { top: 20px; right: 20px; transform: scaleX(-1); }
+.corner-bracket.bl { bottom: 20px; left: 20px; transform: scaleY(-1); }
+.corner-bracket.br { bottom: 20px; right: 20px; transform: scale(-1, -1); }
+
+.page {
+  position: relative; z-index: 2;
+  width: 794px; height: 1123px;
+  padding: 40px 52px 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 56px;
+  flex-shrink: 0;
+}
+.brand-name {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: var(--navy);
+}
+.memo-tag {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: 5px 14px;
+  border-radius: 2px;
+}
+
+.gradient-rule {
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--navy) 50%, var(--gold) 100%);
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-bottom: 24px;
+}
+
+.property-headline {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 46px;
+  line-height: 1.1;
+  color: var(--navy);
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+.property-subheadline {
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+
+.hero-svg {
+  width: 100%;
+  height: 170px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+  flex-shrink: 0;
+}
+.metric-card {
+  border-left: 3px solid var(--gold);
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.45);
+  border-radius: 0 4px 4px 0;
+}
+.metric-label {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.metric-value {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.15;
+  color: var(--navy);
+}
+
+.highlights-section {
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+.section-header {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(200,169,110,0.25);
+}
+.highlights-list {
+  list-style: none;
+  padding: 0;
+  columns: 2;
+  column-gap: 28px;
+}
+.highlights-list li {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--navy);
+  margin-bottom: 6px;
+  padding-left: 16px;
+  position: relative;
+  break-inside: avoid;
+}
+.highlights-list li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 6px;
+  width: 6px; height: 6px;
+  background: var(--gold);
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+
+.overview-section {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.overview-text {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: rgba(8,49,111,0.78);
+}
+.overview-text p {
+  margin-bottom: 8px;
+}
+
+.footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--gold);
+  padding-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.footer-brand {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--navy);
+}
+.footer-disclaimer {
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 7.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 420px;
+  text-align: right;
+}
+</style>
+</head>
+<body>
+
+<div class="blueprint-grid"></div>
+
+<svg class="corner-bracket tl" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <path d="M2 34 L2 2 L34 2" stroke="#C8A96E" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M8 28 L8 8 L28 8" stroke="#08316F" stroke-width="0.6" stroke-linecap="round" opacity="0.15"/>
+</svg>
+<svg class="corner-bracket tr" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <path d="M2 34 L2 2 L34 2" stroke="#C8A96E" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M8 28 L8 8 L28 8" stroke="#08316F" stroke-width="0.6" stroke-linecap="round" opacity="0.15"/>
+</svg>
+<svg class="corner-bracket bl" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <path d="M2 34 L2 2 L34 2" stroke="#C8A96E" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M8 28 L8 8 L28 8" stroke="#08316F" stroke-width="0.6" stroke-linecap="round" opacity="0.15"/>
+</svg>
+<svg class="corner-bracket br" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <path d="M2 34 L2 2 L34 2" stroke="#C8A96E" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M8 28 L8 8 L28 8" stroke="#08316F" stroke-width="0.6" stroke-linecap="round" opacity="0.15"/>
+</svg>
+
+<div class="page">
+
+  <div class="brand-header">
+    <div class="brand-name" id="brand-name">RODSCHINSON</div>
+    <div class="memo-tag">INVESTMENT MEMORANDUM</div>
+  </div>
+
+  <div class="gradient-rule"></div>
+
+  <h1 class="property-headline" id="headline">Residential Development</h1>
+  <p class="property-subheadline" id="subheadline">Multi-Unit Residential Complex &mdash; Urban District</p>
+
+  <!-- Hero SVG — Row of houses/apartments with garden, fences -->
+  <div class="hero-svg">
+    <svg viewBox="0 0 680 170" width="680" height="170" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- House 1 — small with pitched roof -->
+      <rect x="30" y="90" width="80" height="80" rx="2" fill="#08316F" opacity="0.06"/>
+      <polygon points="25,90 70,55 115,90" fill="#08316F" opacity="0.05"/>
+      <rect x="56" y="120" width="18" height="50" rx="1" fill="#08316F" opacity="0.05"/>
+      <rect x="38" y="100" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="82" y="100" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="38" y="120" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="82" y="120" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <!-- Chimney -->
+      <rect x="85" y="62" width="10" height="20" rx="1" fill="#08316F" opacity="0.05"/>
+
+      <!-- Apartment block — taller, central -->
+      <rect x="160" y="40" width="160" height="130" rx="3" fill="#08316F" opacity="0.07"/>
+      <rect x="220" y="20" width="40" height="20" rx="1" fill="#08316F" opacity="0.06"/>
+      <!-- Windows 4 columns x 4 rows -->
+      <rect x="172" y="52" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="195" y="52" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="275" y="52" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="298" y="52" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="172" y="72" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="195" y="72" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="275" y="72" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="298" y="72" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="172" y="92" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="195" y="92" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="275" y="92" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="298" y="92" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="172" y="112" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="195" y="112" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="275" y="112" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="298" y="112" width="10" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <!-- Entrance -->
+      <rect x="226" y="130" width="28" height="40" rx="2" fill="#08316F" opacity="0.06"/>
+
+      <!-- House 2 — medium with gable roof -->
+      <rect x="370" y="80" width="100" height="90" rx="2" fill="#08316F" opacity="0.06"/>
+      <polygon points="365,80 420,48 475,80" fill="#08316F" opacity="0.05"/>
+      <rect x="400" y="130" width="20" height="40" rx="1" fill="#08316F" opacity="0.05"/>
+      <rect x="380" y="92" width="12" height="12" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="430" y="92" width="12" height="12" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="380" y="115" width="12" height="12" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="430" y="115" width="12" height="12" rx="1" fill="#08316F" opacity="0.04"/>
+      <!-- Chimney -->
+      <rect x="440" y="54" width="10" height="18" rx="1" fill="#08316F" opacity="0.05"/>
+
+      <!-- Townhouse row — right -->
+      <rect x="520" y="70" width="55" height="100" rx="2" fill="#08316F" opacity="0.06"/>
+      <rect x="578" y="70" width="55" height="100" rx="2" fill="#08316F" opacity="0.06"/>
+      <polygon points="515,70 547,48 580,70" fill="#08316F" opacity="0.04"/>
+      <polygon points="573,70 605,48 638,70" fill="#08316F" opacity="0.04"/>
+      <!-- Windows townhouses -->
+      <rect x="530" y="82" width="8" height="8" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="555" y="82" width="8" height="8" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="530" y="100" width="8" height="8" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="555" y="100" width="8" height="8" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="588" y="82" width="8" height="8" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="613" y="82" width="8" height="8" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="588" y="100" width="8" height="8" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="613" y="100" width="8" height="8" rx="1" fill="#08316F" opacity="0.04"/>
+      <!-- Doors -->
+      <rect x="538" y="140" width="14" height="30" rx="1" fill="#08316F" opacity="0.05"/>
+      <rect x="598" y="140" width="14" height="30" rx="1" fill="#08316F" opacity="0.05"/>
+
+      <!-- Picket fence sections -->
+      <line x1="10" y1="168" x2="28" y2="168" stroke="#C8A96E" stroke-width="0.8" opacity="0.12"/>
+      <line x1="12" y1="162" x2="12" y2="170" stroke="#C8A96E" stroke-width="0.8" opacity="0.12"/>
+      <line x1="17" y1="162" x2="17" y2="170" stroke="#C8A96E" stroke-width="0.8" opacity="0.12"/>
+      <line x1="22" y1="162" x2="22" y2="170" stroke="#C8A96E" stroke-width="0.8" opacity="0.12"/>
+      <line x1="27" y1="162" x2="27" y2="170" stroke="#C8A96E" stroke-width="0.8" opacity="0.12"/>
+
+      <line x1="648" y1="168" x2="668" y2="168" stroke="#C8A96E" stroke-width="0.8" opacity="0.12"/>
+      <line x1="650" y1="162" x2="650" y2="170" stroke="#C8A96E" stroke-width="0.8" opacity="0.12"/>
+      <line x1="655" y1="162" x2="655" y2="170" stroke="#C8A96E" stroke-width="0.8" opacity="0.12"/>
+      <line x1="660" y1="162" x2="660" y2="170" stroke="#C8A96E" stroke-width="0.8" opacity="0.12"/>
+      <line x1="665" y1="162" x2="665" y2="170" stroke="#C8A96E" stroke-width="0.8" opacity="0.12"/>
+
+      <!-- Trees/garden -->
+      <circle cx="130" cy="150" r="14" fill="#08316F" opacity="0.04"/>
+      <rect x="128" y="150" width="4" height="20" rx="1" fill="#08316F" opacity="0.04"/>
+      <circle cx="350" cy="148" r="16" fill="#08316F" opacity="0.04"/>
+      <rect x="348" y="148" width="4" height="22" rx="1" fill="#08316F" opacity="0.04"/>
+      <circle cx="500" cy="152" r="12" fill="#08316F" opacity="0.03"/>
+      <rect x="498" y="152" width="3" height="18" rx="1" fill="#08316F" opacity="0.03"/>
+
+      <!-- Home icon (small house outline) -->
+      <polygon points="340,42 352,30 364,42" stroke="#C8A96E" stroke-width="1" fill="none" opacity="0.15"/>
+      <rect x="344" y="42" width="16" height="12" stroke="#C8A96E" stroke-width="0.8" fill="none" opacity="0.12"/>
+      <rect x="349" y="46" width="6" height="8" fill="#C8A96E" opacity="0.10"/>
+
+      <!-- Ground line -->
+      <line x1="10" y1="170" x2="670" y2="170" stroke="#08316F" stroke-width="0.5" opacity="0.06"/>
+    </svg>
+  </div>
+
+  <div class="metrics-grid" id="metrics-grid">
+    <div class="metric-card"><div class="metric-label">Asking Price</div><div class="metric-value">&euro;8.5M</div></div>
+    <div class="metric-card"><div class="metric-label">Total Units</div><div class="metric-value">42</div></div>
+    <div class="metric-card"><div class="metric-label">Occupancy</div><div class="metric-value">97.6%</div></div>
+    <div class="metric-card"><div class="metric-label">Net Yield</div><div class="metric-value">4.85%</div></div>
+    <div class="metric-card"><div class="metric-label">Total Area</div><div class="metric-value">3,200 m&sup2;</div></div>
+    <div class="metric-card"><div class="metric-label">Year Built</div><div class="metric-value">2021</div></div>
+  </div>
+
+  <div class="highlights-section">
+    <div class="section-header">Key Highlights</div>
+    <ul class="highlights-list" id="highlights-list">
+      <li>Mix of apartments and townhouses in established neighbourhood</li>
+      <li>High occupancy with strong tenant retention rate</li>
+      <li>Modern energy-efficient construction (EPC A)</li>
+      <li>Proximity to public transport, schools, and amenities</li>
+      <li>Indexed rental contracts with annual escalation</li>
+      <li>Professional property management in place</li>
+    </ul>
+  </div>
+
+  <div class="overview-section">
+    <div class="section-header">Overview</div>
+    <div class="overview-text" id="overview-text">
+      <p>A modern residential development comprising 42 units across apartments and townhouses, situated in a well-connected urban neighbourhood with excellent access to public transport, schools, and local amenities.</p>
+      <p>The property features energy-efficient construction to EPC A standard, with contemporary finishes throughout. The mix of unit types attracts a diverse tenant base, contributing to high occupancy and stable rental income.</p>
+      <p>All units are let on indexed residential leases, providing inflation-protected income with strong tenant retention. The development is managed by an established professional property management firm.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand" id="footer-brand">RODSCHINSON</div>
+    <div class="footer-disclaimer" id="footer-disclaimer">This document is strictly confidential and has been prepared for informational purposes only. It does not constitute an offer, invitation, or recommendation to purchase. All figures are estimates and subject to verification. Past performance is not indicative of future results.</div>
+  </div>
+
+</div>
+
+<script>
+window.loadTeaser = function(data, brandName) {
+  if (brandName) {
+    document.getElementById('brand-name').textContent = brandName.toUpperCase();
+    document.getElementById('footer-brand').textContent = brandName.toUpperCase();
+  }
+  if (data.headline) document.getElementById('headline').textContent = data.headline;
+  if (data.subheadline) document.getElementById('subheadline').innerHTML = data.subheadline;
+
+  if (data.metrics && data.metrics.length) {
+    var grid = document.getElementById('metrics-grid');
+    grid.innerHTML = '';
+    data.metrics.forEach(function(m) {
+      var card = document.createElement('div');
+      card.className = 'metric-card';
+      card.innerHTML = '<div class="metric-label">' + escapeHtml(m.label) + '</div><div class="metric-value">' + escapeHtml(m.value) + '</div>';
+      grid.appendChild(card);
+    });
+  }
+
+  if (data.highlights && data.highlights.length) {
+    var list = document.getElementById('highlights-list');
+    list.innerHTML = '';
+    data.highlights.forEach(function(h) {
+      var li = document.createElement('li');
+      li.textContent = h;
+      list.appendChild(li);
+    });
+  }
+
+  if (data.description) {
+    var container = document.getElementById('overview-text');
+    if (Array.isArray(data.description)) {
+      container.innerHTML = data.description.map(function(p) { return '<p>' + escapeHtml(p) + '</p>'; }).join('');
+    } else {
+      var paragraphs = data.description.split('\n').filter(function(p) { return p.trim(); });
+      container.innerHTML = paragraphs.map(function(p) { return '<p>' + escapeHtml(p) + '</p>'; }).join('');
+    }
+  }
+
+  if (data.disclaimer) document.getElementById('footer-disclaimer').textContent = data.disclaimer;
+  return true;
+};
+
+function escapeHtml(str) {
+  if (!str) return '';
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+</script>
+
+</body>
+</html>

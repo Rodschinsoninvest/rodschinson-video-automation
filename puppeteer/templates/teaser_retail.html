@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=794, height=1123">
+<title>Retail – Investment Teaser</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:  #08316F;
+  --gold:  #C8A96E;
+  --bg:    #F5F2ED;
+  --muted: rgba(8,49,111,0.45);
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans:  'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+}
+
+html, body {
+  width: 794px; height: 1123px;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: var(--sans);
+  color: var(--navy);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── BLUEPRINT GRID OVERLAY ── */
+.blueprint-grid {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(8,49,111,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(8,49,111,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── CORNER BRACKETS ── */
+.corner-bracket {
+  position: absolute; z-index: 1; pointer-events: none;
+}
+.corner-bracket.tl { top: 20px; left: 20px; }
+.corner-bracket.tr { top: 20px; right: 20px; transform: scaleX(-1); }
+.corner-bracket.bl { bottom: 20px; left: 20px; transform: scaleY(-1); }
+.corner-bracket.br { bottom: 20px; right: 20px; transform: scale(-1, -1); }
+
+/* ── MAIN CONTENT ── */
+.page {
+  position: relative; z-index: 2;
+  width: 794px; height: 1123px;
+  padding: 40px 52px 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── BRAND HEADER ── */
+.brand-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 56px;
+  flex-shrink: 0;
+}
+.brand-name {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: var(--navy);
+}
+.memo-tag {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: 5px 14px;
+  border-radius: 2px;
+}
+
+/* ── GRADIENT RULE ── */
+.gradient-rule {
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--navy) 50%, var(--gold) 100%);
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-bottom: 24px;
+}
+
+/* ── HEADLINE ── */
+.property-headline {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 46px;
+  line-height: 1.1;
+  color: var(--navy);
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+.property-subheadline {
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+
+/* ── HERO SVG ── */
+.hero-svg {
+  width: 100%;
+  height: 170px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+
+/* ── METRICS GRID ── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+  flex-shrink: 0;
+}
+.metric-card {
+  border-left: 3px solid var(--gold);
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.45);
+  border-radius: 0 4px 4px 0;
+}
+.metric-label {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.metric-value {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.15;
+  color: var(--navy);
+}
+
+/* ── HIGHLIGHTS ── */
+.highlights-section {
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+.section-header {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(200,169,110,0.25);
+}
+.highlights-list {
+  list-style: none;
+  padding: 0;
+  columns: 2;
+  column-gap: 28px;
+}
+.highlights-list li {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--navy);
+  margin-bottom: 6px;
+  padding-left: 16px;
+  position: relative;
+  break-inside: avoid;
+}
+.highlights-list li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 6px;
+  width: 6px; height: 6px;
+  background: var(--gold);
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+
+/* ── DESCRIPTION / OVERVIEW ── */
+.overview-section {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.overview-text {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: rgba(8,49,111,0.78);
+}
+.overview-text p {
+  margin-bottom: 8px;
+}
+
+/* ── FOOTER ── */
+.footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--gold);
+  padding-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.footer-brand {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--navy);
+}
+.footer-disclaimer {
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 7.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 420px;
+  text-align: right;
+}
+</style>
+</head>
+<body>
+
+<!-- Blueprint grid -->
+<div class="blueprint-grid"></div>
+
+<!-- Architectural corner brackets -->
+<svg class="corner-bracket tl" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <path d="M2 34 L2 2 L34 2" stroke="#C8A96E" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M8 28 L8 8 L28 8" stroke="#08316F" stroke-width="0.6" stroke-linecap="round" opacity="0.15"/>
+</svg>
+<svg class="corner-bracket tr" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <path d="M2 34 L2 2 L34 2" stroke="#C8A96E" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M8 28 L8 8 L28 8" stroke="#08316F" stroke-width="0.6" stroke-linecap="round" opacity="0.15"/>
+</svg>
+<svg class="corner-bracket bl" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <path d="M2 34 L2 2 L34 2" stroke="#C8A96E" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M8 28 L8 8 L28 8" stroke="#08316F" stroke-width="0.6" stroke-linecap="round" opacity="0.15"/>
+</svg>
+<svg class="corner-bracket br" width="36" height="36" viewBox="0 0 36 36" fill="none">
+  <path d="M2 34 L2 2 L34 2" stroke="#C8A96E" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M8 28 L8 8 L28 8" stroke="#08316F" stroke-width="0.6" stroke-linecap="round" opacity="0.15"/>
+</svg>
+
+<div class="page">
+
+  <!-- 1. Brand header -->
+  <div class="brand-header">
+    <div class="brand-name" id="brand-name">RODSCHINSON</div>
+    <div class="memo-tag">INVESTMENT MEMORANDUM</div>
+  </div>
+
+  <!-- 2. Gradient rule -->
+  <div class="gradient-rule"></div>
+
+  <!-- 3. Headline -->
+  <h1 class="property-headline" id="headline">Prime Retail Portfolio</h1>
+
+  <!-- 4. Subheadline -->
+  <p class="property-subheadline" id="subheadline">High-Street Retail Complex &mdash; Shopping District</p>
+
+  <!-- 5. Hero SVG — Shopping district storefronts with awnings -->
+  <div class="hero-svg">
+    <svg viewBox="0 0 680 170" width="680" height="170" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Storefront 1 -->
+      <rect x="50" y="60" width="110" height="110" rx="1" fill="#08316F" opacity="0.08"/>
+      <!-- Awning 1 -->
+      <path d="M45,85 L165,85 L160,100 L50,100 Z" fill="#C8A96E" opacity="0.10"/>
+      <line x1="60" y1="85" x2="55" y2="100" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <line x1="80" y1="85" x2="75" y2="100" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <line x1="100" y1="85" x2="95" y2="100" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <line x1="120" y1="85" x2="115" y2="100" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <line x1="140" y1="85" x2="135" y2="100" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <!-- Shop window 1 -->
+      <rect x="60" y="105" width="38" height="45" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="108" y="105" width="38" height="45" rx="1" fill="#08316F" opacity="0.04"/>
+      <!-- Door 1 -->
+      <rect x="98" y="130" width="12" height="40" rx="1" fill="#08316F" opacity="0.05"/>
+      <!-- Upper windows 1 -->
+      <rect x="62" y="66" width="14" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="84" y="66" width="14" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="106" y="66" width="14" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="128" y="66" width="14" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+
+      <!-- Storefront 2 — taller -->
+      <rect x="175" y="40" width="130" height="130" rx="1" fill="#08316F" opacity="0.07"/>
+      <!-- Awning 2 -->
+      <path d="M170,90 L310,90 L305,105 L175,105 Z" fill="#C8A96E" opacity="0.10"/>
+      <line x1="185" y1="90" x2="180" y2="105" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <line x1="210" y1="90" x2="205" y2="105" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <line x1="235" y1="90" x2="230" y2="105" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <line x1="260" y1="90" x2="255" y2="105" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <line x1="285" y1="90" x2="280" y2="105" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <!-- Shop window 2 -->
+      <rect x="185" y="110" width="50" height="40" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="245" y="110" width="50" height="40" rx="1" fill="#08316F" opacity="0.04"/>
+      <!-- Door 2 -->
+      <rect x="235" y="128" width="12" height="42" rx="1" fill="#08316F" opacity="0.05"/>
+      <!-- Upper windows 2 -->
+      <rect x="185" y="48" width="12" height="9" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="206" y="48" width="12" height="9" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="227" y="48" width="12" height="9" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="248" y="48" width="12" height="9" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="269" y="48" width="12" height="9" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="185" y="66" width="12" height="9" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="206" y="66" width="12" height="9" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="227" y="66" width="12" height="9" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="248" y="66" width="12" height="9" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="269" y="66" width="12" height="9" rx="1" fill="#08316F" opacity="0.04"/>
+
+      <!-- Storefront 3 -->
+      <rect x="320" y="55" width="120" height="115" rx="1" fill="#08316F" opacity="0.08"/>
+      <!-- Awning 3 -->
+      <path d="M315,85 L445,85 L440,100 L320,100 Z" fill="#C8A96E" opacity="0.10"/>
+      <line x1="330" y1="85" x2="325" y2="100" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <line x1="355" y1="85" x2="350" y2="100" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <line x1="380" y1="85" x2="375" y2="100" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <line x1="405" y1="85" x2="400" y2="100" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <line x1="430" y1="85" x2="425" y2="100" stroke="#C8A96E" stroke-width="0.5" opacity="0.12"/>
+      <!-- Shop window 3 -->
+      <rect x="330" y="105" width="42" height="45" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="382" y="105" width="42" height="45" rx="1" fill="#08316F" opacity="0.04"/>
+      <!-- Door 3 -->
+      <rect x="372" y="130" width="12" height="40" rx="1" fill="#08316F" opacity="0.05"/>
+      <!-- Upper windows 3 -->
+      <rect x="332" y="62" width="13" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="354" y="62" width="13" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="376" y="62" width="13" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="398" y="62" width="13" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+      <rect x="420" y="62" width="13" height="10" rx="1" fill="#08316F" opacity="0.04"/>
+
+      <!-- Storefront 4 — smaller -->
+      <rect x="455" y="70" width="100" height="100" rx="1" fill="#08316F" opacity="0.06"/>
+      <!-- Awning 4 -->
+      <path d="M450,95 L560,95 L555,108 L455,108 Z" fill="#C8A96E" opacity="0.08"/>
+      <line x1="465" y1="95" x2="460" y2="108" stroke="#C8A96E" stroke-width="0.5" opacity="0.10"/>
+      <line x1="490" y1="95" x2="485" y2="108" stroke="#C8A96E" stroke-width="0.5" opacity="0.10"/>
+      <line x1="515" y1="95" x2="510" y2="108" stroke="#C8A96E" stroke-width="0.5" opacity="0.10"/>
+      <line x1="540" y1="95" x2="535" y2="108" stroke="#C8A96E" stroke-width="0.5" opacity="0.10"/>
+      <!-- Shop window 4 -->
+      <rect x="462" y="112" width="35" height="38" rx="1" fill="#08316F" opacity="0.03"/>
+      <rect x="508" y="112" width="35" height="38" rx="1" fill="#08316F" opacity="0.03"/>
+      <!-- Upper windows 4 -->
+      <rect x="464" y="76" width="11" height="8" rx="1" fill="#08316F" opacity="0.03"/>
+      <rect x="484" y="76" width="11" height="8" rx="1" fill="#08316F" opacity="0.03"/>
+      <rect x="504" y="76" width="11" height="8" rx="1" fill="#08316F" opacity="0.03"/>
+      <rect x="524" y="76" width="11" height="8" rx="1" fill="#08316F" opacity="0.03"/>
+
+      <!-- Shopping bag icon -->
+      <rect x="585" y="110" width="24" height="28" rx="3" fill="#08316F" opacity="0.06"/>
+      <path d="M591,110 C591,102 603,102 603,110" stroke="#08316F" stroke-width="1.2" opacity="0.06" fill="none"/>
+      <rect x="593" y="120" width="8" height="2" rx="0.5" fill="#C8A96E" opacity="0.12"/>
+
+      <!-- Ground line -->
+      <line x1="30" y1="170" x2="650" y2="170" stroke="#08316F" stroke-width="0.5" opacity="0.06"/>
+    </svg>
+  </div>
+
+  <!-- 6. Metrics grid -->
+  <div class="metrics-grid" id="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-label">Asking Price</div>
+      <div class="metric-value">&euro;55.0M</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">GLA</div>
+      <div class="metric-value">22,400 m&sup2;</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Occupancy</div>
+      <div class="metric-value">93.7%</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Net Initial Yield</div>
+      <div class="metric-value">5.95%</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">WALT</div>
+      <div class="metric-value">5.8 yrs</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Retail Units</div>
+      <div class="metric-value">34</div>
+    </div>
+  </div>
+
+  <!-- 7. Highlights -->
+  <div class="highlights-section">
+    <div class="section-header">Key Highlights</div>
+    <ul class="highlights-list" id="highlights-list">
+      <li>Prime high-street location with 45,000 daily footfall</li>
+      <li>Anchor tenants on long-term leases with break options</li>
+      <li>Mix of national brands and high-end local retailers</li>
+      <li>Recently upgraded facades and common areas</li>
+      <li>Turnover-based rent clauses on 40% of leases</li>
+      <li>Adjacent to planned public transport hub expansion</li>
+    </ul>
+  </div>
+
+  <!-- 8. Overview -->
+  <div class="overview-section">
+    <div class="section-header">Overview</div>
+    <div class="overview-text" id="overview-text">
+      <p>A premier high-street retail portfolio comprising 34 units across a contiguous stretch of the city's most established shopping district. The assets benefit from exceptional pedestrian footfall and proximity to major transport nodes.</p>
+      <p>The portfolio includes a balanced mix of national anchor tenants and premium local retailers across fashion, food &amp; beverage, and lifestyle categories. Ground-floor retail is complemented by upper-floor office and residential uses providing diversified income streams.</p>
+      <p>Recent facade and common area refurbishments have enhanced the streetscape appeal. Several leases incorporate turnover-based rent mechanisms, offering upside participation as trading conditions improve. The planned expansion of the adjacent transport hub is expected to further increase footfall and rental values.</p>
+    </div>
+  </div>
+
+  <!-- 9. Footer -->
+  <div class="footer">
+    <div class="footer-brand" id="footer-brand">RODSCHINSON</div>
+    <div class="footer-disclaimer" id="footer-disclaimer">This document is strictly confidential and has been prepared for informational purposes only. It does not constitute an offer, invitation, or recommendation to purchase. All figures are estimates and subject to verification. Past performance is not indicative of future results.</div>
+  </div>
+
+</div>
+
+<script>
+window.loadTeaser = function(data, brandName) {
+  // data: { headline, subheadline, asset_type_label, metrics[], highlights[], description, disclaimer }
+  // metrics[]: { label, value }
+  // brandName: string
+
+  if (brandName) {
+    document.getElementById('brand-name').textContent = brandName.toUpperCase();
+    document.getElementById('footer-brand').textContent = brandName.toUpperCase();
+  }
+
+  if (data.headline) {
+    document.getElementById('headline').textContent = data.headline;
+  }
+
+  if (data.subheadline) {
+    document.getElementById('subheadline').innerHTML = data.subheadline;
+  }
+
+  // Metrics
+  if (data.metrics && data.metrics.length) {
+    var grid = document.getElementById('metrics-grid');
+    grid.innerHTML = '';
+    data.metrics.forEach(function(m) {
+      var card = document.createElement('div');
+      card.className = 'metric-card';
+      card.innerHTML =
+        '<div class="metric-label">' + escapeHtml(m.label) + '</div>' +
+        '<div class="metric-value">' + escapeHtml(m.value) + '</div>';
+      grid.appendChild(card);
+    });
+  }
+
+  // Highlights
+  if (data.highlights && data.highlights.length) {
+    var list = document.getElementById('highlights-list');
+    list.innerHTML = '';
+    data.highlights.forEach(function(h) {
+      var li = document.createElement('li');
+      li.textContent = h;
+      list.appendChild(li);
+    });
+  }
+
+  // Description / Overview
+  if (data.description) {
+    var container = document.getElementById('overview-text');
+    if (Array.isArray(data.description)) {
+      container.innerHTML = data.description.map(function(p) {
+        return '<p>' + escapeHtml(p) + '</p>';
+      }).join('');
+    } else {
+      container.innerHTML = '<p>' + escapeHtml(data.description) + '</p>';
+    }
+  }
+
+  // Disclaimer
+  if (data.disclaimer) {
+    document.getElementById('footer-disclaimer').textContent = data.disclaimer;
+  }
+
+  return true;
+};
+
+function escapeHtml(str) {
+  if (!str) return '';
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+</script>
+
+</body>
+</html>
