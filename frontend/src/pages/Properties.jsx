@@ -22,6 +22,27 @@ const ASSET_LABELS = {
   land: 'Land', industrial: 'Industrial',
 }
 
+const VALUATION_METHODS = {
+  hotel: ['Income Capitalization', 'DCF', 'Price per Room', 'RevPAR'],
+  clinic: ['Income Capitalization', 'DCF', 'Replacement Cost'],
+  pharmacy: ['Income Capitalization', 'DCF', 'Replacement Cost'],
+  building: ['Income Cap.', 'Comparables', 'Cost Approach', 'Price/m\u00b2'],
+  office: ['Income Cap.', 'Comparables', 'Cost Approach', 'Price/m\u00b2'],
+  warehouse: ['Income Cap.', 'Price/m\u00b2', 'Replacement Cost'],
+  logistics: ['Income Cap.', 'Price/m\u00b2', 'Replacement Cost'],
+  industrial: ['Income Cap.', 'Price/m\u00b2', 'Replacement Cost'],
+  retail: ['Income Cap.', 'Sales Comparison', 'Gross Rent Multiplier'],
+  residential: ['Comparables', 'Income Approach', 'Cost Approach', 'Price/Unit'],
+  student: ['Comparables', 'Income Approach', 'Cost Approach', 'Price/Unit'],
+  senior: ['Comparables', 'Income Approach', 'Cost Approach', 'Price/Unit'],
+  land: ['Comparables', 'Residual Land Value', 'Development Potential'],
+  resort: ['DCF', 'Income Cap.', 'Price per Room'],
+  parking: ['Income Cap.', 'Price per Space'],
+  gym: ['Income Cap.', 'DCF'],
+  fitness: ['Income Cap.', 'DCF'],
+  mixed: ['Income Cap.', 'Comparables', 'Weighted Multi-Method'],
+}
+
 const LANGUAGES = [
   { value: 'EN', label: 'English' },
   { value: 'FR', label: 'French' },
@@ -41,7 +62,7 @@ const FIELD_OPTIONS = [
 ]
 
 // ── Property card ─────────────────────────────────────────────────────────────
-function PropertyCard({ prop, onGenerate, dark, selected, onToggleSelect }) {
+function PropertyCard({ prop, onGenerate, onEvaluate, dark, selected, onToggleSelect }) {
   const icon = ASSET_ICONS[prop.asset_type] || '🏢'
   return (
     <div style={{
@@ -94,16 +115,27 @@ function PropertyCard({ prop, onGenerate, dark, selected, onToggleSelect }) {
         }}>{prop.description}</div>
       )}
 
-      {/* Generate button */}
-      <button onClick={() => onGenerate(prop)} style={{
-        marginTop: 'auto', padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
-        border: '1px solid rgba(200,169,110,0.4)', background: 'rgba(200,169,110,0.08)',
-        color: '#C8A96E', fontSize: 12, fontWeight: 600, letterSpacing: '0.04em',
-        transition: 'all 0.2s',
-      }}
-      onMouseEnter={e => { e.target.style.background = 'rgba(200,169,110,0.18)' }}
-      onMouseLeave={e => { e.target.style.background = 'rgba(200,169,110,0.08)' }}
-      >Generate Teaser</button>
+      {/* Action buttons */}
+      <div style={{ marginTop: 'auto', display: 'flex', gap: 8 }}>
+        <button onClick={() => onGenerate(prop)} style={{
+          flex: 1, padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+          border: '1px solid rgba(200,169,110,0.4)', background: 'rgba(200,169,110,0.08)',
+          color: '#C8A96E', fontSize: 11, fontWeight: 600, letterSpacing: '0.04em',
+          transition: 'all 0.2s',
+        }}
+        onMouseEnter={e => { e.target.style.background = 'rgba(200,169,110,0.18)' }}
+        onMouseLeave={e => { e.target.style.background = 'rgba(200,169,110,0.08)' }}
+        >Teaser</button>
+        <button onClick={() => onEvaluate(prop)} style={{
+          flex: 1, padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+          border: '1px solid rgba(0,182,255,0.4)', background: 'rgba(0,182,255,0.08)',
+          color: '#00B6FF', fontSize: 11, fontWeight: 600, letterSpacing: '0.04em',
+          transition: 'all 0.2s',
+        }}
+        onMouseEnter={e => { e.target.style.background = 'rgba(0,182,255,0.18)' }}
+        onMouseLeave={e => { e.target.style.background = 'rgba(0,182,255,0.08)' }}
+        >Evaluate</button>
+      </div>
     </div>
   )
 }
@@ -376,6 +408,128 @@ function PortfolioModal({ properties, selectedIds, brands, onClose, onGenerate, 
   )
 }
 
+// ── Valuation modal ──────────────────────────────────────────────────────────
+function ValuationModal({ prop, brands, onClose, onGenerate, dark }) {
+  const [brand, setBrand] = useState(brands[0]?.id || 'rodschinson')
+  const [language, setLanguage] = useState('EN')
+  const [loading, setLoading] = useState(false)
+
+  const methods = VALUATION_METHODS[prop.asset_type] || VALUATION_METHODS.building
+  const bg = dark ? '#1a1a1a' : '#fff'
+  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const text = dark ? '#fff' : '#0D1F3C'
+  const muted = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
+
+  const handleGenerate = async () => {
+    setLoading(true)
+    await onGenerate({ prop, brand, language })
+    setLoading(false)
+    onClose()
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+    }} onClick={onClose}>
+      <div style={{
+        background: bg, borderRadius: 16, padding: 28, maxWidth: 520, width: '90%',
+        border: `1px solid ${border}`, maxHeight: '85vh', overflowY: 'auto',
+      }} onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <span style={{ fontSize: 28 }}>{ASSET_ICONS[prop.asset_type] || '🏢'}</span>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: text }}>{prop.title}</div>
+            <div style={{ fontSize: 12, color: '#00B6FF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              AI Valuation Report
+            </div>
+          </div>
+        </div>
+
+        {/* Property info */}
+        <div style={{
+          padding: 14, borderRadius: 8, marginBottom: 18,
+          background: dark ? 'rgba(255,255,255,0.03)' : 'rgba(8,49,111,0.02)',
+          border: `1px solid ${border}`,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ fontSize: 12, color: muted }}>Asset Type</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: text }}>{prop.asset_label || prop.asset_type}</span>
+          </div>
+          {prop.price && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 12, color: muted }}>Asking Price</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: text }}>{prop.price}</span>
+            </div>
+          )}
+          {prop.reference && (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 12, color: muted }}>Reference</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#00B6FF' }}>{prop.reference}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Valuation methods */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 8 }}>
+            Valuation methods (AI-powered)
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {methods.map(m => (
+              <span key={m} style={{
+                padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 500,
+                background: 'rgba(0,182,255,0.08)', border: '1px solid rgba(0,182,255,0.15)',
+                color: '#00B6FF',
+              }}>{m}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Brand + Language */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Brand</div>
+            <select value={brand} onChange={e => setBrand(e.target.value)} style={{
+              width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13,
+              border: `1px solid ${border}`, background: bg, color: text,
+            }}>
+              {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Language</div>
+            <select value={language} onChange={e => setLanguage(e.target.value)} style={{
+              width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 13,
+              border: `1px solid ${border}`, background: bg, color: text,
+            }}>
+              {LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{
+            padding: '9px 20px', borderRadius: 8, border: `1px solid ${border}`,
+            background: 'transparent', color: muted, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+          }}>Cancel</button>
+          <button onClick={handleGenerate} disabled={loading} style={{
+            padding: '9px 24px', borderRadius: 8, border: 'none', cursor: 'pointer',
+            background: loading ? 'rgba(0,182,255,0.3)' : 'linear-gradient(135deg,#08316F,#0a4a9a)',
+            color: '#fff', fontSize: 13, fontWeight: 600, letterSpacing: '0.02em',
+          }}>
+            {loading ? 'Analyzing...' : 'Generate Valuation'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function Properties() {
   const { dark } = useTheme()
@@ -392,6 +546,7 @@ export default function Properties() {
   const [modalProp, setModalProp] = useState(null)
   const [selectedIds, setSelectedIds] = useState([])
   const [showPortfolio, setShowPortfolio] = useState(false)
+  const [valuationProp, setValuationProp] = useState(null)
 
   // Load cached properties
   const loadProperties = useCallback(async () => {
@@ -501,6 +656,33 @@ export default function Properties() {
       const { job_id } = await res.json()
       trackJob(job_id, { title: 'Property Portfolio', contentType: 'property_portfolio' })
       toast('Portfolio generation started', 'success')
+    } catch (e) {
+      toast(e.message, 'error')
+    }
+  }
+
+  // Generate valuation
+  const handleGenerateValuation = async ({ prop, brand, language }) => {
+    try {
+      const payload = {
+        subject: prop.title || 'Property Valuation',
+        brand,
+        language,
+        contentType: 'property_valuation',
+        template: 'valuation',
+        platforms: ['email'],
+        property_data: prop,
+      }
+      const fd = new FormData()
+      fd.append('payload', JSON.stringify(payload))
+      const res = await apiFetch('/api/generate', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || 'Valuation generation failed')
+      }
+      const { job_id } = await res.json()
+      trackJob(job_id, { title: `Valuation: ${prop.title}`, contentType: 'property_valuation' })
+      toast('Valuation analysis started', 'success')
     } catch (e) {
       toast(e.message, 'error')
     }
@@ -665,6 +847,7 @@ export default function Properties() {
               selected={selectedIds.includes(prop.odoo_id)}
               onToggleSelect={toggleSelect}
               onGenerate={() => setModalProp(prop)}
+              onEvaluate={() => setValuationProp(prop)}
             />
           ))}
         </div>
@@ -690,6 +873,17 @@ export default function Properties() {
           dark={dark}
           onClose={() => setShowPortfolio(false)}
           onGenerate={handleGeneratePortfolio}
+        />
+      )}
+
+      {/* Valuation modal */}
+      {valuationProp && (
+        <ValuationModal
+          prop={valuationProp}
+          brands={brands}
+          dark={dark}
+          onClose={() => setValuationProp(null)}
+          onGenerate={handleGenerateValuation}
         />
       )}
     </div>
