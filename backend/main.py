@@ -1713,6 +1713,191 @@ Rules:
             script_path = portfolio_path
             job["thumbnail"] = str(thumb_path)
 
+        # ── Property Valuation (AI-powered multi-page PDF) ───────────────────
+        elif content_type == "property_valuation":
+            property_data = data.get("property_data", {})
+            asset_type = property_data.get("asset_type", "building")
+            methods = VALUATION_METHODS.get(asset_type, VALUATION_METHODS.get("building", []))
+            methods_str = ", ".join(methods)
+
+            # Clean property data
+            import re as _re
+            import html as _html_mod
+            desc = property_data.get("description", "")
+            if desc:
+                desc = _re.sub(r"<br\s*/?>", " \u2022 ", desc)
+                desc = _re.sub(r"<[^>]+>", "", desc)
+                desc = _html_mod.unescape(desc).replace("\xa0", " ").strip()
+            agent = property_data.get("agent")
+            if isinstance(agent, list):
+                agent = next((a for a in agent if isinstance(a, str)), "")
+
+            # Build property context
+            ctx_lines = []
+            if property_data.get("title"): ctx_lines.append(f"Title: {property_data['title']}")
+            if property_data.get("price"): ctx_lines.append(f"Asking Price: {property_data['price']}")
+            if property_data.get("price_raw"): ctx_lines.append(f"Price (numeric): {property_data['price_raw']}")
+            if desc: ctx_lines.append(f"Description: {desc}")
+            if property_data.get("reference"): ctx_lines.append(f"Reference: {property_data['reference']}")
+            if property_data.get("asset_label"): ctx_lines.append(f"Asset Type: {property_data['asset_label']}")
+            if agent: ctx_lines.append(f"Agent: {agent}")
+            if property_data.get("sectors"): ctx_lines.append(f"Sectors: {property_data['sectors']}")
+            if property_data.get("nda"): ctx_lines.append(f"NDA: {property_data['nda']}")
+            property_context = "\n".join(ctx_lines) or f"Property: {subject}"
+
+            _job_update(job, status="running", step="AI valuation analysis", progress=10)
+            await _save_job(job)
+
+            api_key = os.getenv("ANTHROPIC_API_KEY", "")
+            lang_label = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(language, "English")
+            from datetime import datetime as _dt
+            date_str = _dt.now().strftime("%B %Y")
+
+            valuation_prompt = f"""You are a senior property valuation analyst at a leading real estate investment firm. You are preparing a comprehensive, professional valuation report.
+
+PROPERTY DATA:
+{property_context}
+
+LANGUAGE: {lang_label}
+ASSET TYPE: {property_data.get("asset_label", asset_type.title())}
+APPLICABLE VALUATION METHODS: {methods_str}
+
+IMPORTANT: Extract the property address/location from the title and description. Look for city names, regions, street addresses, postal codes, or geographic references. If location is mentioned in the title (e.g. "BRUSSELS", "WAVRE", "LIEGE"), use it.
+
+Generate a comprehensive JSON valuation report:
+{{
+  "property_name": "property name from title",
+  "reference": "reference code if available",
+  "valuation_date": "{date_str}",
+  "asset_type_label": "display label for asset type",
+  "location": {{
+    "address": "extracted street address or area",
+    "city": "city name",
+    "region": "region/province",
+    "country": "country",
+    "context": "1-2 sentences about the location's investment context"
+  }},
+  "executive_summary": {{
+    "narrative": "3-4 sentences summarizing the valuation conclusion and key findings",
+    "estimated_value": "EUR X.XM formatted",
+    "value_range": {{ "low": "EUR X.XM", "mid": "EUR X.XM", "high": "EUR X.XM" }},
+    "key_metrics": [
+      {{ "label": "metric name", "value": "metric value" }}
+    ]
+  }},
+  "property_overview": {{
+    "description": "2-3 paragraphs describing the property and its investment characteristics",
+    "characteristics": [
+      {{ "label": "characteristic name", "value": "value" }}
+    ],
+    "operational_metrics": [
+      {{ "label": "metric name", "value": "value" }}
+    ]
+  }},
+  "valuation_methods": [
+    {{
+      "name": "Method Name",
+      "description": "1-2 paragraphs explaining the methodology and why it applies",
+      "assumptions": [
+        {{ "parameter": "param name", "value": "param value", "basis": "reasoning" }}
+      ],
+      "calculation_steps": [
+        {{ "step": "step description", "value": "calculated value" }}
+      ],
+      "result": "EUR X.XM",
+      "confidence": "high|medium|low",
+      "weight": 0.XX
+    }}
+  ],
+  "market_context": {{
+    "narrative": "2-3 paragraphs about current market conditions in this location/asset class",
+    "indicators": [
+      {{ "label": "indicator name", "value": "value", "trend": "up|stable|down" }}
+    ],
+    "comparables": [
+      {{ "description": "comparable transaction description", "value": "EUR value" }}
+    ]
+  }},
+  "risk_assessment": {{
+    "narrative": "1-2 paragraphs about the risk profile",
+    "risks": [
+      {{ "factor": "risk name", "severity": "high|medium|low", "likelihood": "high|medium|low", "mitigation": "mitigation strategy" }}
+    ],
+    "sensitivity": [
+      {{ "scenario": "what-if scenario", "impact": "impact on value" }}
+    ]
+  }},
+  "conclusion": {{
+    "recommended_value": "EUR X.XM",
+    "methodology_weights": "explanation of how methods were reconciled",
+    "next_steps": ["step 1", "step 2", "step 3"],
+    "disclaimer": "Legal disclaimer in {lang_label}"
+  }}
+}}
+
+RULES:
+- Apply each method in APPLICABLE VALUATION METHODS with realistic calculations
+- Use standard real estate valuation principles and market benchmarks
+- All monetary values in EUR with proper formatting
+- key_metrics: 4-6 relevant metrics (yield, price/m2, occupancy, etc.)
+- characteristics: 4-8 physical/legal characteristics
+- operational_metrics: 3-6 if applicable (NOI, rent, occupancy)
+- risks: 4-6 risk factors
+- sensitivity: 3-4 scenarios
+- comparables: 2-4 comparable transactions
+- weights across all valuation_methods must sum to 1.0
+- Be realistic: if data is limited, note lower confidence and wider value ranges
+- All text in {lang_label}
+- Return ONLY valid JSON, no markdown
+"""
+
+            async with _claude_semaphore:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.post(
+                        "https://api.anthropic.com/v1/messages",
+                        headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                        json={"model": "claude-sonnet-4-6", "max_tokens": 8000,
+                              "messages": [{"role": "user", "content": valuation_prompt}]},
+                        timeout=120,
+                    )
+                    resp.raise_for_status()
+
+            valuation_json = _parse_json(resp.json()["content"][0]["text"])
+
+            # Write valuation JSON
+            val_path = TEASER_DIR / f"{job_id[:8]}_valuation.json"
+            async with aiofiles.open(val_path, "w") as f:
+                await f.write(json.dumps(valuation_json, indent=2, ensure_ascii=False))
+
+            _job_update(job, status="running", step="Rendering PDF", progress=60)
+            await _save_job(job)
+
+            # Render via valuation_renderer.js
+            pdf_path   = TEASER_DIR / f"{job_id[:8]}_valuation.pdf"
+            thumb_path = TEASER_DIR / f"{job_id[:8]}_valuation_thumb.png"
+
+            render_cmd = [
+                "node", str(PUPPET / "valuation_renderer.js"),
+                "--script", str(val_path),
+                "--output-pdf", str(pdf_path),
+                "--output-thumb", str(thumb_path),
+            ]
+            brand_data = await _brand_lookup(brand_arg)
+            if brand_data:
+                render_cmd += [
+                    "--brand-name", brand_data.get("name", "Rodschinson"),
+                    "--brand-primary", brand_data.get("primaryColor", "#08316F"),
+                    "--brand-accent", brand_data.get("accentColor", "#C8A96E"),
+                ]
+
+            code, out, err = await _run(render_cmd, cwd=PUPPET, timeout=90, job_id=job_id)
+            if code != 0:
+                raise RuntimeError(f"Valuation render failed (exit {code})\n{err[-600:]}")
+
+            output_file = str(pdf_path)
+            script_path = val_path
+            job["thumbnail"] = str(thumb_path)
+
         else:
             raise RuntimeError(f"Unknown content_type: {content_type!r}")
 
@@ -5415,6 +5600,27 @@ ASSET_TYPE_MAP = {
 }
 
 TEASER_TEMPLATES = set(t["template"] for t in ASSET_TYPE_MAP.values())
+
+VALUATION_METHODS: dict[str, list[str]] = {
+    "hotel":       ["Income Capitalization", "Discounted Cash Flow (DCF)", "Price per Room", "RevPAR Analysis"],
+    "clinic":      ["Income Capitalization", "Discounted Cash Flow (DCF)", "Replacement Cost"],
+    "pharmacy":    ["Income Capitalization", "Discounted Cash Flow (DCF)", "Replacement Cost"],
+    "building":    ["Income Capitalization", "Comparable Sales", "Cost Approach", "Price per m\u00b2"],
+    "office":      ["Income Capitalization", "Comparable Sales", "Cost Approach", "Price per m\u00b2"],
+    "warehouse":   ["Income Capitalization", "Price per m\u00b2", "Replacement Cost"],
+    "logistics":   ["Income Capitalization", "Price per m\u00b2", "Replacement Cost"],
+    "industrial":  ["Income Capitalization", "Price per m\u00b2", "Replacement Cost"],
+    "retail":      ["Income Capitalization", "Sales Comparison", "Gross Rent Multiplier"],
+    "residential": ["Comparable Sales", "Income Approach", "Cost Approach", "Price per Unit"],
+    "student":     ["Comparable Sales", "Income Approach", "Cost Approach", "Price per Unit"],
+    "senior":      ["Comparable Sales", "Income Approach", "Cost Approach", "Price per Unit"],
+    "land":        ["Comparable Sales", "Residual Land Value", "Development Potential Analysis"],
+    "resort":      ["Discounted Cash Flow (DCF)", "Income Capitalization", "Price per Room"],
+    "parking":     ["Income Capitalization", "Price per Space"],
+    "gym":         ["Income Capitalization", "Discounted Cash Flow (DCF)"],
+    "fitness":     ["Income Capitalization", "Discounted Cash Flow (DCF)"],
+    "mixed":       ["Income Capitalization", "Comparable Sales", "Weighted Multi-Method"],
+}
 
 
 async def _properties_load() -> list[dict]:

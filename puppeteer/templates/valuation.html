@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=794, height=1123">
+<title>Property Valuation Report</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #08316F; --sky: #00B6FF; --gold: #C8A96E; --white: #FFFFFF;
+  --bg: #F8F9FB; --muted: rgba(8,49,111,0.45); --green: #16a34a; --red: #dc2626; --amber: #d97706;
+  --heading: 'Montserrat', sans-serif; --body: 'DM Sans', sans-serif;
+}
+html, body { width: 794px; overflow-x: hidden; background: var(--white); font-family: var(--body); color: var(--navy); -webkit-font-smoothing: antialiased; }
+.page { width: 794px; min-height: 1123px; position: relative; page-break-after: always; overflow: hidden; }
+.page:last-child { page-break-after: auto; }
+
+/* ── COVER ── */
+.cover { background: linear-gradient(160deg, #061d42 0%, var(--navy) 40%, #0a4a8a 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px; color: var(--white); }
+.cover-confidential { position: absolute; top: 50px; right: 60px; font-family: var(--heading); font-weight: 600; font-size: 7px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.2); }
+.cover-logo { text-align: center; margin-bottom: 50px; }
+.cover-logo-main { font-family: var(--heading); font-weight: 700; font-size: 28px; letter-spacing: 8px; text-transform: uppercase; color: var(--white); line-height: 1; }
+.cover-logo-line { width: 180px; height: 2px; background: var(--sky); margin: 8px auto; }
+.cover-logo-sub { font-family: var(--heading); font-weight: 400; font-size: 11px; letter-spacing: 7px; text-transform: uppercase; color: var(--sky); }
+.cover-badge { font-family: var(--heading); font-weight: 700; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--white); background: var(--sky); padding: 6px 20px; border-radius: 4px; margin-bottom: 30px; }
+.cover-title { font-family: var(--heading); font-weight: 700; font-size: 32px; line-height: 1.2; text-align: center; color: var(--white); margin-bottom: 10px; max-width: 600px; }
+.cover-subtitle { font-family: var(--body); font-weight: 300; font-size: 14px; color: rgba(255,255,255,0.5); text-align: center; margin-bottom: 8px; }
+.cover-ref { font-family: var(--heading); font-weight: 500; font-size: 10px; letter-spacing: 1.5px; color: var(--sky); margin-bottom: 30px; }
+.cover-value-box { text-align: center; border: 1px solid rgba(0,182,255,0.2); border-radius: 10px; padding: 20px 40px; background: rgba(0,182,255,0.05); margin-bottom: 30px; }
+.cover-value-label { font-family: var(--heading); font-weight: 600; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--sky); margin-bottom: 6px; }
+.cover-value { font-family: var(--heading); font-weight: 800; font-size: 42px; color: var(--white); }
+.cover-date { font-family: var(--heading); font-weight: 500; font-size: 11px; letter-spacing: 2px; color: rgba(255,255,255,0.35); }
+.cover-footer { position: absolute; bottom: 30px; left: 60px; right: 60px; text-align: center; }
+.cover-footer-text { font-family: var(--body); font-size: 8px; color: rgba(255,255,255,0.25); }
+
+/* ── CONTENT PAGES ── */
+.content-page { padding: 48px 52px 60px; display: flex; flex-direction: column; background: var(--white); }
+.page-title { font-family: var(--heading); font-weight: 800; font-size: 22px; color: var(--navy); margin-bottom: 4px; }
+.page-rule { width: 60px; height: 3px; background: linear-gradient(90deg, var(--sky), var(--navy)); border-radius: 2px; margin-bottom: 24px; }
+.section-label { font-family: var(--heading); font-weight: 700; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--sky); margin-bottom: 10px; }
+.narrative { font-family: var(--body); font-size: 11px; line-height: 1.7; color: rgba(8,49,111,0.75); margin-bottom: 16px; }
+.narrative p { margin-bottom: 8px; }
+
+/* Value highlight */
+.value-highlight { display: flex; align-items: center; justify-content: center; gap: 30px; padding: 20px; background: rgba(8,49,111,0.02); border: 1px solid rgba(8,49,111,0.06); border-radius: 10px; margin-bottom: 20px; }
+.value-main { text-align: center; }
+.value-main-label { font-family: var(--heading); font-weight: 600; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--sky); margin-bottom: 4px; }
+.value-main-amount { font-family: var(--heading); font-weight: 800; font-size: 36px; color: var(--navy); }
+.value-range { display: flex; gap: 20px; }
+.value-range-item { text-align: center; }
+.value-range-label { font-family: var(--heading); font-weight: 500; font-size: 7px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.value-range-amount { font-family: var(--heading); font-weight: 700; font-size: 16px; color: var(--navy); }
+
+/* Metrics grid */
+.metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+.metric { border-left: 3px solid var(--sky); padding: 10px 14px; background: rgba(8,49,111,0.02); border-radius: 0 6px 6px 0; }
+.metric-label { font-family: var(--heading); font-weight: 600; font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--sky); margin-bottom: 3px; }
+.metric-value { font-family: var(--heading); font-weight: 700; font-size: 18px; color: var(--navy); }
+
+/* Location card */
+.location-card { display: flex; gap: 16px; padding: 16px; background: rgba(8,49,111,0.02); border: 1px solid rgba(8,49,111,0.06); border-radius: 8px; margin-bottom: 20px; }
+.location-icon { font-size: 24px; flex-shrink: 0; }
+.location-details { flex: 1; }
+.location-address { font-family: var(--heading); font-weight: 600; font-size: 13px; color: var(--navy); margin-bottom: 4px; }
+.location-context { font-family: var(--body); font-size: 10px; color: var(--muted); line-height: 1.5; }
+
+/* Characteristics */
+.chars-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 16px; }
+.char-item { display: flex; justify-content: space-between; padding: 6px 10px; border-radius: 4px; font-size: 10px; }
+.char-item:nth-child(odd) { background: rgba(8,49,111,0.02); }
+.char-label { font-weight: 500; color: var(--muted); }
+.char-value { font-weight: 600; color: var(--navy); }
+
+/* ── VALUATION METHOD PAGE ── */
+.method-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.method-name { font-family: var(--heading); font-weight: 800; font-size: 20px; color: var(--navy); }
+.method-weight { font-family: var(--heading); font-weight: 700; font-size: 10px; color: var(--white); background: var(--sky); padding: 3px 10px; border-radius: 10px; }
+.method-confidence { font-family: var(--heading); font-weight: 600; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 3px 10px; border-radius: 10px; }
+.confidence-high { background: rgba(22,163,74,0.1); color: var(--green); }
+.confidence-medium { background: rgba(217,119,6,0.1); color: var(--amber); }
+.confidence-low { background: rgba(220,38,38,0.1); color: var(--red); }
+
+/* Assumptions table */
+.assumptions-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 10px; }
+.assumptions-table th { font-family: var(--heading); font-weight: 600; font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--sky); text-align: left; padding: 8px 10px; border-bottom: 2px solid rgba(0,182,255,0.15); }
+.assumptions-table td { padding: 7px 10px; border-bottom: 1px solid rgba(8,49,111,0.04); color: var(--navy); }
+.assumptions-table td:first-child { font-weight: 600; }
+.assumptions-table td:last-child { font-size: 9px; color: var(--muted); }
+
+/* Calculation steps */
+.calc-steps { margin-bottom: 16px; }
+.calc-step { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 4px; font-size: 10.5px; margin-bottom: 3px; }
+.calc-step:nth-child(odd) { background: rgba(8,49,111,0.02); }
+.calc-step-label { color: var(--muted); }
+.calc-step-value { font-family: var(--heading); font-weight: 600; color: var(--navy); }
+.calc-result { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(0,182,255,0.06); border: 1px solid rgba(0,182,255,0.15); border-radius: 6px; margin-bottom: 16px; }
+.calc-result-label { font-family: var(--heading); font-weight: 700; font-size: 11px; color: var(--navy); }
+.calc-result-value { font-family: var(--heading); font-weight: 800; font-size: 22px; color: var(--navy); }
+
+/* ── MARKET CONTEXT ── */
+.indicators-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+.indicator { padding: 10px 14px; background: rgba(8,49,111,0.02); border-radius: 6px; text-align: center; }
+.indicator-value { font-family: var(--heading); font-weight: 700; font-size: 16px; color: var(--navy); margin-bottom: 2px; }
+.indicator-label { font-family: var(--body); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.indicator-trend { font-family: var(--heading); font-weight: 600; font-size: 9px; }
+.trend-up { color: var(--green); }
+.trend-down { color: var(--red); }
+.trend-stable { color: var(--amber); }
+
+/* ── RISK ASSESSMENT ── */
+.risk-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 10px; }
+.risk-table th { font-family: var(--heading); font-weight: 600; font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--sky); text-align: left; padding: 8px 10px; border-bottom: 2px solid rgba(0,182,255,0.15); }
+.risk-table td { padding: 8px 10px; border-bottom: 1px solid rgba(8,49,111,0.04); vertical-align: top; }
+.risk-badge { font-family: var(--heading); font-weight: 600; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; display: inline-block; }
+.risk-high { background: rgba(220,38,38,0.1); color: var(--red); }
+.risk-medium { background: rgba(217,119,6,0.1); color: var(--amber); }
+.risk-low { background: rgba(22,163,74,0.1); color: var(--green); }
+
+/* Sensitivity */
+.sensitivity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.sensitivity-item { padding: 10px 14px; background: rgba(8,49,111,0.02); border-radius: 6px; font-size: 10px; }
+.sensitivity-scenario { font-weight: 600; color: var(--navy); margin-bottom: 3px; }
+.sensitivity-impact { color: var(--muted); }
+
+/* ── CONCLUSION ── */
+.conclusion-value { text-align: center; padding: 24px; background: linear-gradient(135deg, rgba(8,49,111,0.04), rgba(0,182,255,0.04)); border: 1px solid rgba(0,182,255,0.12); border-radius: 12px; margin-bottom: 20px; }
+.conclusion-value-label { font-family: var(--heading); font-weight: 600; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--sky); margin-bottom: 6px; }
+.conclusion-value-amount { font-family: var(--heading); font-weight: 800; font-size: 40px; color: var(--navy); margin-bottom: 4px; }
+.conclusion-value-sub { font-family: var(--body); font-size: 10px; color: var(--muted); }
+.next-steps { list-style: none; padding: 0; margin-bottom: 16px; }
+.next-steps li { padding: 8px 12px 8px 28px; position: relative; font-size: 11px; color: var(--navy); margin-bottom: 4px; border-radius: 4px; }
+.next-steps li:nth-child(odd) { background: rgba(8,49,111,0.02); }
+.next-steps li::before { content: attr(data-num); position: absolute; left: 8px; top: 8px; font-family: var(--heading); font-weight: 700; font-size: 10px; color: var(--sky); }
+.disclaimer-box { padding: 14px 16px; background: rgba(8,49,111,0.02); border-left: 3px solid var(--sky); border-radius: 0 6px 6px 0; font-family: var(--body); font-size: 8.5px; line-height: 1.6; color: var(--muted); }
+
+/* ── PAGE FOOTER ── */
+.page-footer { position: absolute; bottom: 24px; left: 52px; right: 52px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(8,49,111,0.06); padding-top: 8px; }
+.page-footer-brand { font-family: var(--heading); font-weight: 700; font-size: 7px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--navy); }
+.page-footer-text { font-family: var(--body); font-size: 7px; color: var(--muted); }
+.page-footer-num { font-family: var(--heading); font-weight: 600; font-size: 8px; color: var(--sky); }
+</style>
+</head>
+<body>
+
+<!-- Cover page -->
+<div class="page cover" id="cover-page">
+  <div class="cover-confidential">CONFIDENTIAL</div>
+  <div class="cover-logo">
+    <div class="cover-logo-main" id="cover-logo-main">RODSCHINSON</div>
+    <div class="cover-logo-line"></div>
+    <div class="cover-logo-sub">I N V E S T M E N T</div>
+  </div>
+  <div class="cover-badge" id="cover-badge">VALUATION REPORT</div>
+  <div class="cover-title" id="cover-title">Property Valuation</div>
+  <div class="cover-subtitle" id="cover-subtitle">Office Building</div>
+  <div class="cover-ref" id="cover-ref"></div>
+  <div class="cover-value-box">
+    <div class="cover-value-label">Estimated Market Value</div>
+    <div class="cover-value" id="cover-value">-</div>
+  </div>
+  <div class="cover-date" id="cover-date"></div>
+  <div class="cover-footer"><div class="cover-footer-text">rodschinson.com | +32 2 550 36 87</div></div>
+</div>
+
+<!-- Content pages injected by JS -->
+<div id="pages-container"></div>
+
+<script>
+function escapeHtml(s) { if (!s) return ''; var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+
+function trendClass(t) {
+  if (!t) return 'trend-stable';
+  var tl = t.toLowerCase();
+  if (tl === 'up' || tl === 'positive') return 'trend-up';
+  if (tl === 'down' || tl === 'negative') return 'trend-down';
+  return 'trend-stable';
+}
+function trendArrow(t) {
+  if (!t) return '-';
+  var tl = t.toLowerCase();
+  if (tl === 'up' || tl === 'positive') return '\u2191';
+  if (tl === 'down' || tl === 'negative') return '\u2193';
+  return '\u2192';
+}
+function riskClass(r) {
+  if (!r) return 'risk-medium';
+  var rl = r.toLowerCase();
+  if (rl === 'high') return 'risk-high';
+  if (rl === 'low') return 'risk-low';
+  return 'risk-medium';
+}
+function confClass(c) {
+  if (!c) return 'confidence-medium';
+  var cl = c.toLowerCase();
+  if (cl === 'high') return 'confidence-high';
+  if (cl === 'low') return 'confidence-low';
+  return 'confidence-medium';
+}
+
+function makeFooter(brand, section, num) {
+  return '<div class="page-footer"><div class="page-footer-brand">' + escapeHtml(brand) + '</div><div class="page-footer-text">' + escapeHtml(section) + '</div><div class="page-footer-num">' + num + '</div></div>';
+}
+
+window.loadValuation = function(data, brandName) {
+  var logoName = (brandName || 'RODSCHINSON').toUpperCase().replace(/\s*INVESTMENT\s*/i, '').trim() || 'RODSCHINSON';
+  var footerBrand = logoName + ' INVESTMENT';
+  document.getElementById('cover-logo-main').textContent = logoName;
+
+  // Cover
+  document.getElementById('cover-title').textContent = data.property_name || 'Property Valuation';
+  document.getElementById('cover-subtitle').textContent = data.asset_type_label || '';
+  if (data.reference) document.getElementById('cover-ref').textContent = data.reference;
+  if (data.executive_summary && data.executive_summary.estimated_value) {
+    document.getElementById('cover-value').textContent = data.executive_summary.estimated_value;
+  }
+  if (data.valuation_date) document.getElementById('cover-date').textContent = data.valuation_date;
+
+  var container = document.getElementById('pages-container');
+  container.innerHTML = '';
+  var pageNum = 2;
+
+  // ── PAGE 2: Executive Summary ──
+  var esHtml = '<div class="page content-page"><div class="page-title">Executive Summary</div><div class="page-rule"></div>';
+  var es = data.executive_summary || {};
+  if (es.narrative) esHtml += '<div class="narrative"><p>' + escapeHtml(es.narrative) + '</p></div>';
+
+  // Value highlight
+  esHtml += '<div class="value-highlight"><div class="value-main"><div class="value-main-label">Estimated Value</div><div class="value-main-amount">' + escapeHtml(es.estimated_value || '-') + '</div></div>';
+  if (es.value_range) {
+    esHtml += '<div class="value-range">';
+    esHtml += '<div class="value-range-item"><div class="value-range-label">Low</div><div class="value-range-amount">' + escapeHtml(es.value_range.low || '-') + '</div></div>';
+    esHtml += '<div class="value-range-item"><div class="value-range-label">Mid</div><div class="value-range-amount">' + escapeHtml(es.value_range.mid || '-') + '</div></div>';
+    esHtml += '<div class="value-range-item"><div class="value-range-label">High</div><div class="value-range-amount">' + escapeHtml(es.value_range.high || '-') + '</div></div>';
+    esHtml += '</div>';
+  }
+  esHtml += '</div>';
+
+  // Key metrics
+  if (es.key_metrics && es.key_metrics.length) {
+    esHtml += '<div class="section-label">Key Metrics</div><div class="metrics-grid">';
+    es.key_metrics.forEach(function(m) {
+      esHtml += '<div class="metric"><div class="metric-label">' + escapeHtml(m.label) + '</div><div class="metric-value">' + escapeHtml(m.value) + '</div></div>';
+    });
+    esHtml += '</div>';
+  }
+  esHtml += makeFooter(footerBrand, 'Executive Summary', pageNum) + '</div>';
+  container.innerHTML += esHtml;
+  pageNum++;
+
+  // ── PAGE 3: Property Overview ──
+  var po = data.property_overview || {};
+  var poHtml = '<div class="page content-page"><div class="page-title">Property Overview</div><div class="page-rule"></div>';
+
+  // Location
+  var loc = data.location || {};
+  if (loc.address || loc.city) {
+    poHtml += '<div class="location-card"><div class="location-icon">\u{1F4CD}</div><div class="location-details">';
+    poHtml += '<div class="location-address">' + escapeHtml([loc.address, loc.city, loc.region, loc.country].filter(Boolean).join(', ')) + '</div>';
+    if (loc.context) poHtml += '<div class="location-context">' + escapeHtml(loc.context) + '</div>';
+    poHtml += '</div></div>';
+  }
+
+  if (po.description) poHtml += '<div class="narrative"><p>' + escapeHtml(po.description) + '</p></div>';
+
+  // Characteristics
+  if (po.characteristics && po.characteristics.length) {
+    poHtml += '<div class="section-label">Key Characteristics</div><div class="chars-grid">';
+    po.characteristics.forEach(function(c) {
+      poHtml += '<div class="char-item"><span class="char-label">' + escapeHtml(c.label) + '</span><span class="char-value">' + escapeHtml(c.value) + '</span></div>';
+    });
+    poHtml += '</div>';
+  }
+
+  // Operational metrics
+  if (po.operational_metrics && po.operational_metrics.length) {
+    poHtml += '<div class="section-label">Operational Metrics</div><div class="metrics-grid">';
+    po.operational_metrics.forEach(function(m) {
+      poHtml += '<div class="metric"><div class="metric-label">' + escapeHtml(m.label) + '</div><div class="metric-value">' + escapeHtml(m.value) + '</div></div>';
+    });
+    poHtml += '</div>';
+  }
+  poHtml += makeFooter(footerBrand, 'Property Overview', pageNum) + '</div>';
+  container.innerHTML += poHtml;
+  pageNum++;
+
+  // ── PAGES 4-N: Valuation Methods ──
+  var methods = data.valuation_methods || [];
+  // Fit 2 methods per page when they're short enough
+  for (var mi = 0; mi < methods.length; mi++) {
+    var m = methods[mi];
+    var mHtml = '<div class="page content-page">';
+    mHtml += '<div class="method-header"><div class="method-name">' + escapeHtml(m.name) + '</div>';
+    if (m.weight) mHtml += '<div class="method-weight">Weight: ' + Math.round((m.weight || 0) * 100) + '%</div>';
+    if (m.confidence) mHtml += '<div class="method-confidence ' + confClass(m.confidence) + '">' + escapeHtml(m.confidence) + '</div>';
+    mHtml += '</div><div class="page-rule"></div>';
+
+    if (m.description) mHtml += '<div class="narrative"><p>' + escapeHtml(m.description) + '</p></div>';
+
+    // Assumptions
+    if (m.assumptions && m.assumptions.length) {
+      mHtml += '<div class="section-label">Assumptions</div><table class="assumptions-table"><thead><tr><th>Parameter</th><th>Value</th><th>Basis</th></tr></thead><tbody>';
+      m.assumptions.forEach(function(a) {
+        mHtml += '<tr><td>' + escapeHtml(a.parameter) + '</td><td>' + escapeHtml(a.value) + '</td><td>' + escapeHtml(a.basis || '') + '</td></tr>';
+      });
+      mHtml += '</tbody></table>';
+    }
+
+    // Calculation steps
+    if (m.calculation_steps && m.calculation_steps.length) {
+      mHtml += '<div class="section-label">Calculation</div><div class="calc-steps">';
+      m.calculation_steps.forEach(function(s) {
+        mHtml += '<div class="calc-step"><span class="calc-step-label">' + escapeHtml(s.step) + '</span><span class="calc-step-value">' + escapeHtml(s.value) + '</span></div>';
+      });
+      mHtml += '</div>';
+    }
+
+    // Result
+    if (m.result) {
+      mHtml += '<div class="calc-result"><div class="calc-result-label">Indicated Value</div><div class="calc-result-value">' + escapeHtml(m.result) + '</div></div>';
+    }
+
+    mHtml += makeFooter(footerBrand, m.name, pageNum) + '</div>';
+    container.innerHTML += mHtml;
+    pageNum++;
+  }
+
+  // ── MARKET CONTEXT ──
+  var mc = data.market_context || {};
+  if (mc.narrative || (mc.indicators && mc.indicators.length)) {
+    var mcHtml = '<div class="page content-page"><div class="page-title">Market Context</div><div class="page-rule"></div>';
+    if (mc.narrative) mcHtml += '<div class="narrative"><p>' + escapeHtml(mc.narrative) + '</p></div>';
+
+    if (mc.indicators && mc.indicators.length) {
+      mcHtml += '<div class="section-label">Market Indicators</div><div class="indicators-grid">';
+      mc.indicators.forEach(function(ind) {
+        mcHtml += '<div class="indicator"><div class="indicator-label">' + escapeHtml(ind.label) + '</div><div class="indicator-value">' + escapeHtml(ind.value) + '</div><div class="indicator-trend ' + trendClass(ind.trend) + '">' + trendArrow(ind.trend) + ' ' + escapeHtml(ind.trend || 'Stable') + '</div></div>';
+      });
+      mcHtml += '</div>';
+    }
+
+    if (mc.comparables && mc.comparables.length) {
+      mcHtml += '<div class="section-label">Comparable Transactions</div><table class="assumptions-table"><thead><tr><th>Description</th><th>Value</th></tr></thead><tbody>';
+      mc.comparables.forEach(function(c) {
+        mcHtml += '<tr><td>' + escapeHtml(c.description) + '</td><td>' + escapeHtml(c.value) + '</td></tr>';
+      });
+      mcHtml += '</tbody></table>';
+    }
+    mcHtml += makeFooter(footerBrand, 'Market Context', pageNum) + '</div>';
+    container.innerHTML += mcHtml;
+    pageNum++;
+  }
+
+  // ── RISK ASSESSMENT ──
+  var ra = data.risk_assessment || {};
+  if (ra.narrative || (ra.risks && ra.risks.length)) {
+    var raHtml = '<div class="page content-page"><div class="page-title">Risk Assessment</div><div class="page-rule"></div>';
+    if (ra.narrative) raHtml += '<div class="narrative"><p>' + escapeHtml(ra.narrative) + '</p></div>';
+
+    if (ra.risks && ra.risks.length) {
+      raHtml += '<div class="section-label">Risk Matrix</div><table class="risk-table"><thead><tr><th>Risk Factor</th><th>Severity</th><th>Likelihood</th><th>Mitigation</th></tr></thead><tbody>';
+      ra.risks.forEach(function(r) {
+        raHtml += '<tr><td>' + escapeHtml(r.factor) + '</td><td><span class="risk-badge ' + riskClass(r.severity) + '">' + escapeHtml(r.severity) + '</span></td><td><span class="risk-badge ' + riskClass(r.likelihood) + '">' + escapeHtml(r.likelihood) + '</span></td><td>' + escapeHtml(r.mitigation || '') + '</td></tr>';
+      });
+      raHtml += '</tbody></table>';
+    }
+
+    if (ra.sensitivity && ra.sensitivity.length) {
+      raHtml += '<div class="section-label">Sensitivity Analysis</div><div class="sensitivity-grid">';
+      ra.sensitivity.forEach(function(s) {
+        raHtml += '<div class="sensitivity-item"><div class="sensitivity-scenario">' + escapeHtml(s.scenario) + '</div><div class="sensitivity-impact">' + escapeHtml(s.impact) + '</div></div>';
+      });
+      raHtml += '</div>';
+    }
+    raHtml += makeFooter(footerBrand, 'Risk Assessment', pageNum) + '</div>';
+    container.innerHTML += raHtml;
+    pageNum++;
+  }
+
+  // ── CONCLUSION ──
+  var conc = data.conclusion || {};
+  var concHtml = '<div class="page content-page"><div class="page-title">Conclusion</div><div class="page-rule"></div>';
+  concHtml += '<div class="conclusion-value"><div class="conclusion-value-label">Recommended Market Value</div><div class="conclusion-value-amount">' + escapeHtml(conc.recommended_value || es.estimated_value || '-') + '</div>';
+  if (conc.methodology_weights) concHtml += '<div class="conclusion-value-sub">' + escapeHtml(conc.methodology_weights) + '</div>';
+  concHtml += '</div>';
+
+  if (conc.next_steps && conc.next_steps.length) {
+    concHtml += '<div class="section-label">Recommended Next Steps</div><ul class="next-steps">';
+    conc.next_steps.forEach(function(s, i) {
+      concHtml += '<li data-num="' + (i + 1) + '.">' + escapeHtml(s) + '</li>';
+    });
+    concHtml += '</ul>';
+  }
+
+  if (conc.disclaimer) {
+    concHtml += '<div class="section-label">Disclaimer</div><div class="disclaimer-box">' + escapeHtml(conc.disclaimer) + '</div>';
+  }
+  concHtml += makeFooter(footerBrand, 'Conclusion', pageNum) + '</div>';
+  container.innerHTML += concHtml;
+
+  return true;
+};
+</script>
+</body>
+</html>
