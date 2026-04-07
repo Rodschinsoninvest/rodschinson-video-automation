@@ -1848,16 +1848,20 @@ RULES:
 - Return ONLY valid JSON, no markdown
 """
 
+            log.info("[%s] Calling Claude API for valuation (key: %s...)", job_id[:8], api_key[:8] if api_key else "MISSING")
             async with _claude_semaphore:
+                log.info("[%s] Semaphore acquired, sending request", job_id[:8])
                 async with httpx.AsyncClient() as client:
                     resp = await client.post(
                         "https://api.anthropic.com/v1/messages",
                         headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
                         json={"model": "claude-sonnet-4-6", "max_tokens": 8000,
                               "messages": [{"role": "user", "content": valuation_prompt}]},
-                        timeout=120,
+                        timeout=180,
                     )
-                    resp.raise_for_status()
+                    log.info("[%s] Claude responded: %d", job_id[:8], resp.status_code)
+                    if resp.status_code != 200:
+                        raise RuntimeError(f"Claude API error {resp.status_code}: {resp.text[:500]}")
 
             valuation_json = _parse_json(resp.json()["content"][0]["text"])
 
@@ -1932,8 +1936,10 @@ RULES:
         _job_update(job, status="aborted", step="Aborted", detail="Generation cancelled by user.")
         await _save_job(job)
     except Exception as exc:
-        log.error("[%s] Pipeline error: %s", job_id[:8], exc)
-        _job_update(job, status="error", step="Failed", detail=str(exc))
+        import traceback
+        err_detail = str(exc) or f"{type(exc).__name__}: {traceback.format_exc()[-500:]}"
+        log.error("[%s] Pipeline error (%s): %s", job_id[:8], type(exc).__name__, err_detail)
+        _job_update(job, status="error", step="Failed", detail=err_detail)
         await _save_job(job)
     finally:
         _job_tasks.pop(job_id, None)
