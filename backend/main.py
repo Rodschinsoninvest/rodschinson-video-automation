@@ -4634,7 +4634,7 @@ async def _claude_strategy(prompt: str, model: str = "claude-haiku-4-5-20251001"
         max_tokens=4096,
         messages=[{"role": "user", "content": prompt}],
     )
-    return next((getattr(b, "text") for b in msg.content if hasattr(b, "text")), "")
+    return next((getattr(b, "text", "") for b in msg.content if getattr(b, "text", None)), "")
 
 
 # ── 1. Content Strategy Generator ─────────────────────────────────────────────
@@ -5301,7 +5301,7 @@ def _map_odoo_property(raw: dict, type_names: dict[int, str] | None = None) -> d
     }
 
 
-async def _odoo_get_uid() -> int | None:
+async def _odoo_get_uid():
     """Authenticate with Odoo via XML-RPC (supports API keys). Returns uid."""
     import xmlrpc.client
     def _auth():
@@ -5318,7 +5318,7 @@ async def _odoo_get_uid() -> int | None:
         return None
 
 
-async def _odoo_search_read(uid: int, model: str, domain: list, fields: list, limit: int = 200) -> list:
+async def _odoo_search_read(uid, model: str, domain: list, fields: list, limit: int = 200):
     """Fetch records via Odoo XML-RPC object endpoint."""
     import xmlrpc.client
     def _fetch():
@@ -5350,17 +5350,19 @@ async def sync_properties_from_odoo():
             _ODOO_FIELDS, limit=200,
         )
 
+        records = list(records)  # ensure list (XML-RPC returns _Marshallable)
+
         # Resolve property.type many2many IDs to names
-        all_type_ids = set()
+        all_type_ids: set[int] = set()
         for r in records:
             all_type_ids.update(r.get("type_prop") or [])
         type_names: dict[int, str] = {}
         if all_type_ids:
-            type_records = await _odoo_search_read(
+            type_records = list(await _odoo_search_read(
                 uid, "property.type",
                 [["id", "in", list(all_type_ids)]],
                 ["id", "name"], limit=500,
-            )
+            ))
             type_names = {t["id"]: t["name"] for t in type_records}
             _property_type_cache.update(type_names)
 
