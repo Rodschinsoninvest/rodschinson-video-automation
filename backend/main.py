@@ -114,21 +114,34 @@ _APP_SECRET    = os.getenv("APP_SECRET", "")     # must be set in .env — no in
 _TOKEN_TTL     = int(os.getenv("AUTH_TOKEN_TTL", str(60 * 60 * 24 * 7)))  # 7 days
 
 def _parse_json(raw: str):
-    """Parse JSON from a string that may have extra text after the first object.
-    Strips markdown fences, then uses raw_decode to ignore trailing content."""
+    """Parse JSON from a string that may have extra text around it.
+    Strips markdown fences, then finds the largest valid JSON object."""
     s = raw.strip()
     if s.startswith("```"):
         s = re.sub(r"^```[a-z]*\n?", "", s)
         s = re.sub(r"\n?```\s*$", "", s.strip())
         s = s.strip()
-    # Find first { or [ and try raw_decode from there
+    # Try full string first (most common case)
+    try:
+        return json.loads(s)
+    except json.JSONDecodeError:
+        pass
+    # Find the largest valid JSON object (not just the first one)
+    decoder = json.JSONDecoder()
+    best = None
+    best_len = 0
     for start in range(len(s)):
         if s[start] in ('{', '['):
             try:
-                obj, _ = json.JSONDecoder().raw_decode(s, start)
-                return obj
+                obj, end = decoder.raw_decode(s, start)
+                span = end - start
+                if span > best_len:
+                    best = obj
+                    best_len = span
             except json.JSONDecodeError:
                 continue
+    if best is not None:
+        return best
     raise json.JSONDecodeError("No JSON object found", s, 0)
 
 
