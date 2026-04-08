@@ -115,33 +115,45 @@ _TOKEN_TTL     = int(os.getenv("AUTH_TOKEN_TTL", str(60 * 60 * 24 * 7)))  # 7 da
 
 def _parse_json(raw: str):
     """Parse JSON from a string that may have extra text around it.
-    Strips markdown fences, then finds the largest valid JSON object."""
+    Strips markdown fences, then finds the largest valid JSON dict (prefers {} over [])."""
     s = raw.strip()
-    if s.startswith("```"):
-        s = re.sub(r"^```[a-z]*\n?", "", s)
-        s = re.sub(r"\n?```\s*$", "", s.strip())
+    # Strip markdown fences
+    if "```" in s:
+        s = re.sub(r"```[a-z]*\s*\n?", "", s)
+        s = re.sub(r"\n?\s*```", "", s)
         s = s.strip()
     # Try full string first (most common case)
     try:
-        return json.loads(s)
+        result = json.loads(s)
+        if isinstance(result, dict):
+            return result
     except json.JSONDecodeError:
         pass
-    # Find the largest valid JSON object (not just the first one)
+    # Find the largest valid JSON dict (prefer {} over [])
     decoder = json.JSONDecoder()
-    best = None
-    best_len = 0
+    best_dict = None
+    best_dict_len = 0
+    best_any = None
+    best_any_len = 0
     for start in range(len(s)):
-        if s[start] in ('{', '['):
-            try:
-                obj, end = decoder.raw_decode(s, start)
-                span = end - start
-                if span > best_len:
-                    best = obj
-                    best_len = span
-            except json.JSONDecodeError:
-                continue
-    if best is not None:
-        return best
+        if s[start] not in ('{', '['):
+            continue
+        try:
+            obj, end = decoder.raw_decode(s, start)
+            span = end - start
+            if isinstance(obj, dict) and span > best_dict_len:
+                best_dict = obj
+                best_dict_len = span
+            if span > best_any_len:
+                best_any = obj
+                best_any_len = span
+        except json.JSONDecodeError:
+            continue
+    # Prefer the largest dict; fall back to largest anything
+    if best_dict is not None:
+        return best_dict
+    if best_any is not None:
+        return best_any
     raise json.JSONDecodeError("No JSON object found", s, 0)
 
 
