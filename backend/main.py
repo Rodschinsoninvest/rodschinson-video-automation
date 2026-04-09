@@ -160,12 +160,45 @@ def _parse_json(raw: str):
                 end_pos = i
                 break
     if end_pos == -1:
-        # Braces not balanced — Claude likely truncated. Try raw_decode from first {
+        # Braces not balanced — Claude likely truncated the response.
+        # Try to repair by closing open braces/brackets
+        truncated = s[first_brace:]
+        # Count unclosed structures
+        repair_depth = 0
+        in_str = False
+        esc = False
+        stack = []
+        for c in truncated:
+            if esc:
+                esc = False
+                continue
+            if c == '\\':
+                esc = True
+                continue
+            if c == '"':
+                in_str = not in_str
+                continue
+            if in_str:
+                continue
+            if c in ('{', '['):
+                stack.append('}' if c == '{' else ']')
+            elif c in ('}', ']') and stack:
+                stack.pop()
+        # Close all open structures
+        if in_str:
+            truncated += '"'
+        # Remove trailing comma or partial value
+        truncated = re.sub(r',\s*$', '', truncated)
+        truncated += ''.join(reversed(stack))
         try:
-            obj, _ = json.JSONDecoder().raw_decode(s, first_brace)
-            return obj
+            return json.loads(truncated)
         except json.JSONDecodeError:
-            raise json.JSONDecodeError("Unbalanced JSON braces", s, first_brace)
+            # Last resort: raw_decode
+            try:
+                obj, _ = json.JSONDecoder().raw_decode(s, first_brace)
+                return obj
+            except json.JSONDecodeError:
+                raise json.JSONDecodeError("Could not parse truncated JSON", s, first_brace)
     candidate = s[first_brace:end_pos + 1]
     try:
         return json.loads(candidate)
@@ -1901,7 +1934,7 @@ RULES:
                         resp = await client.post(
                             "https://api.anthropic.com/v1/messages",
                             headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-                            json={"model": "claude-sonnet-4-6", "max_tokens": 8000,
+                            json={"model": "claude-sonnet-4-6", "max_tokens": 16000,
                                   "messages": [{"role": "user", "content": valuation_prompt}]},
                             timeout=180,
                         )
