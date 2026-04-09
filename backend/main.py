@@ -114,8 +114,8 @@ _APP_SECRET    = os.getenv("APP_SECRET", "")     # must be set in .env — no in
 _TOKEN_TTL     = int(os.getenv("AUTH_TOKEN_TTL", str(60 * 60 * 24 * 7)))  # 7 days
 
 def _parse_json(raw: str):
-    """Parse JSON from a string that may have extra text around it.
-    Strips markdown fences, then finds the largest valid JSON dict (prefers {} over [])."""
+    """Parse JSON from Claude's response. Strips markdown fences,
+    finds the outermost {…} block, and parses it."""
     s = raw.strip()
     # Strip markdown fences
     if "```" in s:
@@ -124,37 +124,55 @@ def _parse_json(raw: str):
         s = s.strip()
     # Try full string first (most common case)
     try:
-        result = json.loads(s)
-        if isinstance(result, dict):
-            return result
+        return json.loads(s)
     except json.JSONDecodeError:
         pass
-    # Find the largest valid JSON dict (prefer {} over [])
-    decoder = json.JSONDecoder()
-    best_dict = None
-    best_dict_len = 0
-    best_any = None
-    best_any_len = 0
-    for start in range(len(s)):
-        if s[start] not in ('{', '['):
+    # Find the FIRST top-level { and its matching } by counting braces
+    first_brace = s.find("{")
+    if first_brace == -1:
+        first_brace = s.find("[")
+    if first_brace == -1:
+        raise json.JSONDecodeError("No JSON found", s, 0)
+    open_char = s[first_brace]
+    close_char = "}" if open_char == "{" else "]"
+    depth = 0
+    in_string = False
+    escape_next = False
+    end_pos = -1
+    for i in range(first_brace, len(s)):
+        c = s[i]
+        if escape_next:
+            escape_next = False
             continue
+        if c == "\\":
+            escape_next = True
+            continue
+        if c == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if c == open_char:
+            depth += 1
+        elif c == close_char:
+            depth -= 1
+            if depth == 0:
+                end_pos = i
+                break
+    if end_pos == -1:
+        # Braces not balanced — Claude likely truncated. Try raw_decode from first {
         try:
-            obj, end = decoder.raw_decode(s, start)
-            span = end - start
-            if isinstance(obj, dict) and span > best_dict_len:
-                best_dict = obj
-                best_dict_len = span
-            if span > best_any_len:
-                best_any = obj
-                best_any_len = span
+            obj, _ = json.JSONDecoder().raw_decode(s, first_brace)
+            return obj
         except json.JSONDecodeError:
-            continue
-    # Prefer the largest dict; fall back to largest anything
-    if best_dict is not None:
-        return best_dict
-    if best_any is not None:
-        return best_any
-    raise json.JSONDecodeError("No JSON object found", s, 0)
+            raise json.JSONDecodeError("Unbalanced JSON braces", s, first_brace)
+    candidate = s[first_brace:end_pos + 1]
+    try:
+        return json.loads(candidate)
+    except json.JSONDecodeError:
+        # Last resort: raw_decode from first brace
+        obj, _ = json.JSONDecoder().raw_decode(s, first_brace)
+        return obj
 
 
 def _make_token(username: str) -> str:
@@ -1875,19 +1893,31 @@ RULES:
 """
 
             log.info("[%s] Calling Claude API for valuation (key: %s...)", job_id[:8], api_key[:8] if api_key else "MISSING")
-            async with _claude_semaphore:
-                log.info("[%s] Semaphore acquired, sending request", job_id[:8])
-                async with httpx.AsyncClient() as client:
-                    resp = await client.post(
-                        "https://api.anthropic.com/v1/messages",
-                        headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-                        json={"model": "claude-sonnet-4-6", "max_tokens": 8000,
-                              "messages": [{"role": "user", "content": valuation_prompt}]},
-                        timeout=180,
-                    )
-                    log.info("[%s] Claude responded: %d", job_id[:8], resp.status_code)
-                    if resp.status_code != 200:
+            resp = None
+            for _attempt in range(3):
+                async with _claude_semaphore:
+                    log.info("[%s] Attempt %d — sending request", job_id[:8], _attempt + 1)
+                    async with httpx.AsyncClient() as client:
+                        resp = await client.post(
+                            "https://api.anthropic.com/v1/messages",
+                            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                            json={"model": "claude-sonnet-4-6", "max_tokens": 8000,
+                                  "messages": [{"role": "user", "content": valuation_prompt}]},
+                            timeout=180,
+                        )
+                        log.info("[%s] Claude responded: %d", job_id[:8], resp.status_code)
+                        if resp.status_code == 200:
+                            break
+                        if resp.status_code in (529, 503, 429):
+                            wait = 10 * (_attempt + 1)
+                            log.warning("[%s] API overloaded (%d), retrying in %ds", job_id[:8], resp.status_code, wait)
+                            _job_update(job, step=f"API busy, retrying in {wait}s...")
+                            await _save_job(job)
+                            await asyncio.sleep(wait)
+                            continue
                         raise RuntimeError(f"Claude API error {resp.status_code}: {resp.text[:500]}")
+            if resp is None or resp.status_code != 200:
+                raise RuntimeError(f"Claude API failed after 3 attempts: {resp.status_code if resp else 'no response'}")
 
             valuation_json = _parse_json(resp.json()["content"][0]["text"])
 
