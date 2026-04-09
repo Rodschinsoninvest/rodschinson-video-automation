@@ -62,7 +62,7 @@ html, body {
 /* ── TITLE SLIDE ── */
 .slide-title {
   padding:72px 52px 56px;
-  justify-content:space-between;
+  justify-content:flex-start;
 }
 /* Faint watermark year */
 .watermark-yr {
@@ -83,8 +83,8 @@ html, body {
   font-family:'DM Serif Display', serif;
   font-size:88px; font-weight:400; line-height:0.95;
   color:#fff; letter-spacing:-0.01em;
-  position:relative; z-index:1; flex:1;
-  display:flex; align-items:center;
+  position:relative; z-index:1;
+  margin-top:40px; margin-bottom:auto;
 }
 .t-divider {
   width:64px; height:1px; background:var(--sky-blue);
@@ -106,7 +106,7 @@ html, body {
 /* ── CONTENT SLIDE ── */
 .slide-content {
   padding:72px 52px 56px;
-  justify-content:space-between;
+  justify-content:flex-start;
 }
 .c-tag-row {
   display:flex; align-items:center; gap:20px; margin-bottom:36px;
@@ -129,7 +129,7 @@ html, body {
   font-family:'DM Serif Display', serif;
   font-size:58px; font-weight:400; line-height:1.05;
   color:#fff; letter-spacing:-0.01em;
-  flex:1; position:relative; z-index:1;
+  margin-bottom:auto; position:relative; z-index:1;
 }
 .c-rule { width:32px; height:1px; background:rgba(255,255,255,0.2); margin:28px 0; }
 .c-body {

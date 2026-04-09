@@ -66,7 +66,7 @@ html, body {
 /* ── TITLE SLIDE ── */
 .slide-title {
   padding:71px 48px 48px;
-  flex-direction:column; justify-content:space-between;
+  flex-direction:column; justify-content:flex-start;
   position:relative;
 }
 .ticker {
@@ -81,7 +81,7 @@ html, body {
   font-family:'Space Grotesk', sans-serif;
   font-size:78px; font-weight:700; line-height:0.95;
   color:#fff; letter-spacing:-0.025em;
-  flex:1; display:flex; align-items:center; position:relative; z-index:1;
+  margin-top:60px; margin-bottom:40px; position:relative; z-index:1;
 }
 .t-rule {
   width:0; height:3px; background:var(--sky-blue);
@@ -105,7 +105,7 @@ html, body {
 /* ── CONTENT SLIDE ── */
 .slide-content {
   padding:71px 48px 48px;
-  flex-direction:column; justify-content:space-between;
+  flex-direction:column; justify-content:flex-start;
 }
 .data-tag {
   display:inline-flex; align-items:center; gap:10px;
@@ -123,8 +123,8 @@ html, body {
 }
 .c-headline {
   font-size:54px; font-weight:700; line-height:1.0;
-  color:#fff; letter-spacing:-0.02em; flex:1;
-  display:flex; align-items:flex-start;
+  color:#fff; letter-spacing:-0.02em;
+  margin-bottom:auto;
 }
 .c-body {
   font-size:18px; font-weight:400; line-height:1.7;
