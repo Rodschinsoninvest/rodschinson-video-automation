@@ -1988,6 +1988,114 @@ RULES:
             script_path = val_path
             job["thumbnail"] = str(thumb_path)
 
+        # ── Property Long Teaser (with photos/plans) ────────────────────────
+        elif content_type == "property_long_teaser":
+            property_data = data.get("property_data", {})
+            extra = data.get("long_teaser_fields", {})
+
+            _job_update(job, status="running", step="Preparing long teaser", progress=10)
+            await _save_job(job)
+
+            # Clean description
+            desc = property_data.get("description", "")
+            if desc:
+                desc = re.sub(r"<br\s*/?>", " \u2022 ", desc)
+                desc = re.sub(r"<[^>]+>", "", desc)
+                desc = html_mod.unescape(desc).replace("\xa0", " ").strip()
+            agent = property_data.get("agent")
+            if isinstance(agent, list):
+                agent = next((a for a in agent if isinstance(a, str)), "")
+
+            # Save uploaded photos and plans to disk, collect file:// paths
+            upload_dir = TEASER_DIR / f"{job_id[:8]}_long_assets"
+            upload_dir.mkdir(parents=True, exist_ok=True)
+
+            photo_paths: list[str] = []
+            plan_paths: list[str] = []
+
+            # Photos and plans are passed as base64 data URIs or file paths
+            for i, photo in enumerate(data.get("photos", [])):
+                if photo.startswith("data:"):
+                    import base64 as _b64
+                    header, b64data = photo.split(",", 1)
+                    ext = "jpg" if "jpeg" in header or "jpg" in header else "png"
+                    fpath = upload_dir / f"photo_{i:02d}.{ext}"
+                    fpath.write_bytes(_b64.b64decode(b64data))
+                    photo_paths.append(f"file://{fpath}")
+                else:
+                    photo_paths.append(photo)
+
+            for i, plan in enumerate(data.get("plans", [])):
+                if plan.startswith("data:"):
+                    import base64 as _b64
+                    header, b64data = plan.split(",", 1)
+                    ext = "jpg" if "jpeg" in header or "jpg" in header else "png"
+                    fpath = upload_dir / f"plan_{i:02d}.{ext}"
+                    fpath.write_bytes(_b64.b64decode(b64data))
+                    plan_paths.append(f"file://{fpath}")
+                else:
+                    plan_paths.append(plan)
+
+            lang_label = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(language, "English")
+
+            # Build teaser JSON
+            teaser_data = {
+                "title": property_data.get("title", subject),
+                "reference": property_data.get("reference", ""),
+                "price": property_data.get("price", ""),
+                "description": desc,
+                "address": extra.get("address", ""),
+                "address_label": {"EN": "Address:", "FR": "Adresse :", "NL": "Adres:"}.get(language, "Address:"),
+                "description_label": {"EN": "Description:", "FR": "Description :", "NL": "Beschrijving:"}.get(language, "Description:"),
+                "price_label": {"EN": "Price:", "FR": "Prix :", "NL": "Prijs:"}.get(language, "Price:"),
+                "plans_label": {"EN": "Plans:", "FR": "Plans :", "NL": "Plannen:"}.get(language, "Plans:"),
+                "surfaces_label": {"EN": "SURFACE DETAILS", "FR": "D\u00c9TAIL DES SUPERFICIES", "NL": "OPPERVLAKTEDETAILS"}.get(language, "SURFACE DETAILS"),
+                "surface_col1": {"EN": "Floor", "FR": "\u00c9tage", "NL": "Verdieping"}.get(language, "Floor"),
+                "surface_col2": {"EN": "Area in m\u00b2", "FR": "Superficie en m\u00b2", "NL": "Oppervlakte in m\u00b2"}.get(language, "Area"),
+                "payment_terms": extra.get("payment_terms", ""),
+                "sharepoint_url": extra.get("sharepoint_url", ""),
+                "sharepoint_label": {"EN": "Access full dossier", "FR": "Acc\u00e9der au dossier complet", "NL": "Volledig dossier openen"}.get(language, "Access full dossier"),
+                "expertise_url": extra.get("expertise_url", ""),
+                "map_url": extra.get("map_url", ""),
+                "surfaces": extra.get("surfaces", []),
+                "photos": photo_paths,
+                "plans": plan_paths,
+            }
+
+            _job_update(job, status="running", step="Rendering PDF", progress=50)
+            await _save_job(job)
+
+            # Write teaser JSON
+            teaser_path = TEASER_DIR / f"{job_id[:8]}_long_teaser.json"
+            async with aiofiles.open(teaser_path, "w") as f:
+                await f.write(json.dumps(teaser_data, indent=2, ensure_ascii=False))
+
+            # Render PDF
+            pdf_path   = TEASER_DIR / f"{job_id[:8]}_long_teaser.pdf"
+            thumb_path = TEASER_DIR / f"{job_id[:8]}_long_teaser_thumb.png"
+
+            render_cmd = [
+                "node", str(PUPPET / "long_teaser_renderer.js"),
+                "--script", str(teaser_path),
+                "--output-pdf", str(pdf_path),
+                "--output-thumb", str(thumb_path),
+            ]
+            brand_data = await _brand_lookup(brand_arg)
+            if brand_data:
+                render_cmd += [
+                    "--brand-name", brand_data.get("name", "Rodschinson"),
+                    "--brand-primary", brand_data.get("primaryColor", "#08316F"),
+                    "--brand-accent", brand_data.get("accentColor", "#C8A96E"),
+                ]
+
+            code, out, err = await _run(render_cmd, cwd=PUPPET, timeout=90, job_id=job_id)
+            if code != 0:
+                raise RuntimeError(f"Long teaser render failed (exit {code})\n{err[-600:]}")
+
+            output_file = str(pdf_path)
+            script_path = teaser_path
+            job["thumbnail"] = str(thumb_path)
+
         else:
             raise RuntimeError(f"Unknown content_type: {content_type!r}")
 
