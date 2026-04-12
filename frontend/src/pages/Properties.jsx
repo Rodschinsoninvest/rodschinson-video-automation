@@ -62,7 +62,7 @@ const FIELD_OPTIONS = [
 ]
 
 // ── Property card ─────────────────────────────────────────────────────────────
-function PropertyCard({ prop, onGenerate, onEvaluate, dark, selected, onToggleSelect }) {
+function PropertyCard({ prop, onGenerate, onEvaluate, onLongTeaser, dark, selected, onToggleSelect }) {
   const icon = ASSET_ICONS[prop.asset_type] || '🏢'
   return (
     <div style={{
@@ -116,16 +116,25 @@ function PropertyCard({ prop, onGenerate, onEvaluate, dark, selected, onToggleSe
       )}
 
       {/* Action buttons */}
-      <div style={{ marginTop: 'auto', display: 'flex', gap: 8 }}>
+      <div style={{ marginTop: 'auto', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <button onClick={() => onGenerate(prop)} style={{
-          flex: 1, padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+          flex: 1, padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
           border: '1px solid rgba(200,169,110,0.4)', background: 'rgba(200,169,110,0.08)',
-          color: '#C8A96E', fontSize: 11, fontWeight: 600, letterSpacing: '0.04em',
-          transition: 'all 0.2s',
+          color: '#C8A96E', fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',
+          transition: 'all 0.2s', minWidth: 70,
         }}
         onMouseEnter={e => { e.target.style.background = 'rgba(200,169,110,0.18)' }}
         onMouseLeave={e => { e.target.style.background = 'rgba(200,169,110,0.08)' }}
         >Teaser</button>
+        <button onClick={() => onLongTeaser(prop)} style={{
+          flex: 1, padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
+          border: '1px solid rgba(8,49,111,0.3)', background: 'rgba(8,49,111,0.06)',
+          color: '#08316F', fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',
+          transition: 'all 0.2s', minWidth: 70,
+        }}
+        onMouseEnter={e => { e.target.style.background = 'rgba(8,49,111,0.12)' }}
+        onMouseLeave={e => { e.target.style.background = 'rgba(8,49,111,0.06)' }}
+        >Long Teaser</button>
         <button onClick={() => onEvaluate(prop)} style={{
           flex: 1, padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
           border: '1px solid rgba(0,182,255,0.4)', background: 'rgba(0,182,255,0.08)',
@@ -408,6 +417,158 @@ function PortfolioModal({ properties, selectedIds, brands, onClose, onGenerate, 
   )
 }
 
+// ── Long Teaser modal ────────────────────────────────────────────────────────
+function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
+  const [brand, setBrand] = useState(brands[0]?.id || 'rodschinson')
+  const [language, setLanguage] = useState('FR')
+  const [loading, setLoading] = useState(false)
+  const [address, setAddress] = useState('')
+  const [paymentTerms, setPaymentTerms] = useState('')
+  const [sharepointUrl, setSharepointUrl] = useState('')
+  const [expertiseUrl, setExpertiseUrl] = useState('')
+  const [surfaces, setSurfaces] = useState([])
+  const [photos, setPhotos] = useState([])
+  const [plans, setPlans] = useState([])
+
+  const bg = dark ? '#1a1a1a' : '#fff'
+  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const text = dark ? '#fff' : '#0D1F3C'
+  const muted = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
+  const inputStyle = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 12, border: `1px solid ${border}`, background: bg, color: text }
+
+  const addSurface = () => setSurfaces(prev => [...prev, { floor: '', area: '' }])
+  const removeSurface = (i) => setSurfaces(prev => prev.filter((_, idx) => idx !== i))
+  const updateSurface = (i, key, val) => setSurfaces(prev => prev.map((s, idx) => idx === i ? { ...s, [key]: val } : s))
+
+  const handleFiles = (e, setter) => {
+    const files = Array.from(e.target.files)
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = () => setter(prev => [...prev, reader.result])
+      reader.readAsDataURL(file)
+    })
+    e.target.value = ''
+  }
+
+  const removeFile = (setter, i) => setter(prev => prev.filter((_, idx) => idx !== i))
+
+  const handleGenerate = async () => {
+    setLoading(true)
+    await onGenerate({ prop, brand, language, photos, plans, fields: { address, paymentTerms, sharepointUrl, expertiseUrl, surfaces } })
+    setLoading(false)
+    onClose()
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div style={{ background: bg, borderRadius: 16, padding: 24, maxWidth: 640, width: '92%', border: `1px solid ${border}`, maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+          <span style={{ fontSize: 24 }}>{ASSET_ICONS[prop.asset_type] || '🏢'}</span>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: text }}>{prop.title}</div>
+            <div style={{ fontSize: 11, color: '#08316F', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Long Teaser — Detailed PDF</div>
+          </div>
+        </div>
+
+        {/* Photos upload */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Photos (exterior + interior)</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+            {photos.map((p, i) => (
+              <div key={i} style={{ position: 'relative', width: 64, height: 48, borderRadius: 4, overflow: 'hidden', border: `1px solid ${border}` }}>
+                <img src={p} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button onClick={() => removeFile(setPhotos, i)} style={{ position: 'absolute', top: 1, right: 1, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 16, height: 16, fontSize: 10, cursor: 'pointer', lineHeight: '14px' }}>x</button>
+              </div>
+            ))}
+            <label style={{ width: 64, height: 48, borderRadius: 4, border: `2px dashed ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: muted }}>
+              +
+              <input type="file" accept="image/*" multiple onChange={e => handleFiles(e, setPhotos)} style={{ display: 'none' }} />
+            </label>
+          </div>
+        </div>
+
+        {/* Plans upload */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Floor Plans</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+            {plans.map((p, i) => (
+              <div key={i} style={{ position: 'relative', width: 64, height: 48, borderRadius: 4, overflow: 'hidden', border: `1px solid ${border}` }}>
+                <img src={p} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button onClick={() => removeFile(setPlans, i)} style={{ position: 'absolute', top: 1, right: 1, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 16, height: 16, fontSize: 10, cursor: 'pointer', lineHeight: '14px' }}>x</button>
+              </div>
+            ))}
+            <label style={{ width: 64, height: 48, borderRadius: 4, border: `2px dashed ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: muted }}>
+              +
+              <input type="file" accept="image/*" multiple onChange={e => handleFiles(e, setPlans)} style={{ display: 'none' }} />
+            </label>
+          </div>
+        </div>
+
+        {/* Address */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>Full Address</div>
+          <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Street, Postal Code, City" style={inputStyle} />
+        </div>
+
+        {/* Surface table */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>Surface Details</div>
+            <button onClick={addSurface} style={{ padding: '3px 10px', borderRadius: 4, border: `1px solid ${border}`, background: 'transparent', color: '#00B6FF', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>+ Add Floor</button>
+          </div>
+          {surfaces.map((s, i) => (
+            <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+              <input value={s.floor} onChange={e => updateSurface(i, 'floor', e.target.value)} placeholder="Floor name" style={{ ...inputStyle, flex: 1 }} />
+              <input value={s.area} onChange={e => updateSurface(i, 'area', e.target.value)} placeholder="Area (m2)" style={{ ...inputStyle, width: 100 }} />
+              <button onClick={() => removeSurface(i)} style={{ padding: '4px 8px', borderRadius: 4, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>x</button>
+            </div>
+          ))}
+        </div>
+
+        {/* Links */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>SharePoint Dossier URL</div>
+            <input value={sharepointUrl} onChange={e => setSharepointUrl(e.target.value)} placeholder="https://..." style={inputStyle} />
+          </div>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>Expertise PDF URL</div>
+            <input value={expertiseUrl} onChange={e => setExpertiseUrl(e.target.value)} placeholder="https://..." style={inputStyle} />
+          </div>
+        </div>
+
+        {/* Payment terms */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>Payment Terms (optional)</div>
+          <input value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} placeholder="e.g. credit vendeur sur 24 mois" style={inputStyle} />
+        </div>
+
+        {/* Brand + Language */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>Brand</div>
+            <select value={brand} onChange={e => setBrand(e.target.value)} style={inputStyle}>{brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
+          </div>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>Language</div>
+            <select value={language} onChange={e => setLanguage(e.target.value)} style={inputStyle}>{LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}</select>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '9px 20px', borderRadius: 8, border: `1px solid ${border}`, background: 'transparent', color: muted, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Cancel</button>
+          <button onClick={handleGenerate} disabled={loading} style={{ padding: '9px 24px', borderRadius: 8, border: 'none', cursor: 'pointer', background: loading ? 'rgba(8,49,111,0.3)' : 'linear-gradient(135deg,#08316F,#0a4a9a)', color: '#fff', fontSize: 13, fontWeight: 600 }}>
+            {loading ? 'Generating...' : 'Generate Long Teaser'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Valuation modal ──────────────────────────────────────────────────────────
 function ValuationModal({ prop, brands, onClose, onGenerate, dark }) {
   const [brand, setBrand] = useState(brands[0]?.id || 'rodschinson')
@@ -547,6 +708,7 @@ export default function Properties() {
   const [selectedIds, setSelectedIds] = useState([])
   const [showPortfolio, setShowPortfolio] = useState(false)
   const [valuationProp, setValuationProp] = useState(null)
+  const [longTeaserProp, setLongTeaserProp] = useState(null)
 
   // Load cached properties
   const loadProperties = useCallback(async () => {
@@ -683,6 +845,42 @@ export default function Properties() {
       const { job_id } = await res.json()
       trackJob(job_id, { title: `Valuation: ${prop.title}`, contentType: 'property_valuation' })
       toast('Valuation analysis started', 'success')
+    } catch (e) {
+      toast(e.message, 'error')
+    }
+  }
+
+  // Generate long teaser
+  const handleGenerateLongTeaser = async ({ prop, brand, language, photos, plans, fields }) => {
+    try {
+      const payload = {
+        subject: prop.title || 'Property Long Teaser',
+        brand,
+        language,
+        contentType: 'property_long_teaser',
+        template: 'teaser_long',
+        platforms: ['email'],
+        property_data: prop,
+        photos,
+        plans,
+        long_teaser_fields: {
+          address: fields.address,
+          payment_terms: fields.paymentTerms,
+          sharepoint_url: fields.sharepointUrl,
+          expertise_url: fields.expertiseUrl,
+          surfaces: fields.surfaces,
+        },
+      }
+      const fd = new FormData()
+      fd.append('payload', JSON.stringify(payload))
+      const res = await apiFetch('/api/generate', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || 'Long teaser generation failed')
+      }
+      const { job_id } = await res.json()
+      trackJob(job_id, { title: `Long Teaser: ${prop.title}`, contentType: 'property_long_teaser' })
+      toast('Long teaser generation started', 'success')
     } catch (e) {
       toast(e.message, 'error')
     }
@@ -848,6 +1046,7 @@ export default function Properties() {
               onToggleSelect={toggleSelect}
               onGenerate={() => setModalProp(prop)}
               onEvaluate={() => setValuationProp(prop)}
+              onLongTeaser={() => setLongTeaserProp(prop)}
             />
           ))}
         </div>
@@ -884,6 +1083,17 @@ export default function Properties() {
           dark={dark}
           onClose={() => setValuationProp(null)}
           onGenerate={handleGenerateValuation}
+        />
+      )}
+
+      {/* Long Teaser modal */}
+      {longTeaserProp && (
+        <LongTeaserModal
+          prop={longTeaserProp}
+          brands={brands}
+          dark={dark}
+          onClose={() => setLongTeaserProp(null)}
+          onGenerate={handleGenerateLongTeaser}
         />
       )}
     </div>
