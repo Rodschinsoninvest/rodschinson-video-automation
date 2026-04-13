@@ -65,7 +65,25 @@ async function main() {
     }, data, opts.brandName);
 
     if (!loaded) { console.error('loadLongTeaser() returned false'); process.exit(1); }
-    await new Promise(r => setTimeout(r, 500));
+
+    // Wait for <img> tags and CSS background-images to fully load
+    await page.evaluate(async () => {
+      const imgPromises = Array.from(document.images).map(img =>
+        img.complete ? Promise.resolve() : new Promise(r => { img.onload = img.onerror = () => r(); })
+      );
+      const bgUrls = [];
+      document.querySelectorAll('[style*="background-image"]').forEach(el => {
+        const m = (el.getAttribute('style') || '').match(/url\(['"]?([^'")]+)['"]?\)/);
+        if (m && m[1]) bgUrls.push(m[1]);
+      });
+      const bgPromises = bgUrls.map(u => new Promise(r => {
+        const im = new Image(); im.onload = im.onerror = () => r(); im.src = u;
+      }));
+      await Promise.all([...imgPromises, ...bgPromises]);
+    });
+    // Rotate portrait plan images now that natural dimensions are known
+    await page.evaluate(() => { if (typeof window.rotatePortraitPlans === 'function') window.rotatePortraitPlans(); });
+    await new Promise(r => setTimeout(r, 600));
 
     const pdfPath = opts.outputPdf || opts.script.replace(/\.json$/, '.pdf');
     await page.pdf({ path: pdfPath, format: 'A4', landscape: true, printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 } });

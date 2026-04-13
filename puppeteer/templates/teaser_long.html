@@ -11,31 +11,35 @@
   --cyan:#00B6FF;
   --grey-text:#6b7280;
   --border:#e5e7eb;
+  --page-w:1123px;
+  --page-h:794px;
+  --body-pad:48px;
 }
 @page{ size:A4 landscape; margin:0; }
 html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montserrat',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 
 .page{
-  width:1123px;height:794px;position:relative;overflow:hidden;page-break-after:always;background:#fff;
+  width:1123px;height:794px;position:relative;overflow:hidden;background:#fff;
+  page-break-after:always;page-break-inside:avoid;break-inside:avoid;
 }
 .page:last-child{page-break-after:auto}
 
-/* ── HEADER (gradient bar) ── */
+/* ── HEADER ── */
 .pg-header{
   position:absolute;top:0;left:0;right:0;height:90px;
   background:linear-gradient(90deg,#1FB6FF 0%,#0A66C2 45%,#08316F 100%);
   display:flex;align-items:center;padding:0 0 0 48px;color:#fff;z-index:5;
 }
-.pg-header .logo{width:170px;display:flex;flex-direction:column;justify-content:center}
+.pg-header .logo{width:170px}
 .pg-header .logo .l1{font-family:'Montserrat';font-weight:400;font-size:18px;color:#fff;letter-spacing:0.32em;line-height:1}
 .pg-header .logo .l2{font-family:'Montserrat';font-weight:300;font-size:8px;color:#fff;letter-spacing:0.6em;margin-top:3px;line-height:1}
 .pg-header .sep{width:1px;height:60px;background:rgba(255,255,255,0.3);margin:0 28px}
-.pg-header .title-block{flex:1;min-width:0}
-.pg-header .title-block .ttl{font-family:'Montserrat';font-weight:700;font-size:14px;line-height:1.25;color:#fff;margin-bottom:4px}
+.pg-header .title-block{flex:1;min-width:0;padding-right:20px}
+.pg-header .title-block .ttl{font-family:'Montserrat';font-weight:700;font-size:14px;line-height:1.25;color:#fff;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pg-header .title-block .ref{font-family:'Montserrat';font-weight:500;font-size:12px;color:rgba(255,255,255,0.9);letter-spacing:0.02em}
 .pg-header .disc{
   width:460px;padding:0 32px 0 24px;border-left:1px solid rgba(255,255,255,0.3);height:60px;
-  font-size:8px;line-height:1.35;color:rgba(255,255,255,0.85);display:flex;align-items:center;
+  font-size:8px;line-height:1.35;color:rgba(255,255,255,0.88);display:flex;align-items:center;overflow:hidden;
 }
 
 /* ── NAV TABS ── */
@@ -46,55 +50,57 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 .pg-nav .mark{width:54px;height:1px;background:var(--cyan);position:relative;margin-right:4px}
 .pg-nav .mark::before{
   content:'';position:absolute;left:30px;top:-10px;width:20px;height:20px;border-radius:50%;
-  border:1.5px solid var(--cyan);
+  border:1.5px solid var(--cyan);background:#fff;
 }
 .pg-nav .mark::after{
-  content:'+';position:absolute;left:34.5px;top:-12px;font-size:18px;color:var(--cyan);line-height:1;font-weight:300;
+  content:'+';position:absolute;left:34px;top:-12px;font-size:17px;color:var(--cyan);line-height:1;font-weight:300;z-index:1;
 }
+.pg-nav a{text-decoration:none;color:inherit}
 .pg-nav .tab{color:#9aa3af;font-weight:500;letter-spacing:0.01em}
 .pg-nav .tab.active{color:var(--navy);font-weight:700}
 .pg-nav .div{color:#cbd5e1;font-weight:300}
 
-/* ── BODY AREA ── */
-.pg-body{position:absolute;top:170px;left:48px;right:48px;bottom:40px}
+/* ── BODY AREA (hard-clamped) ── */
+.pg-body{position:absolute;top:170px;left:48px;right:48px;height:584px;overflow:hidden}
 
-/* ─────── PAGE 1 — COVER ─────── */
-.cover{position:relative;width:100%;height:100%}
+/* ─────── COVER ─────── */
+.cover{position:relative;width:100%;height:100%;background:#fff}
 .cover .hero{position:absolute;inset:0;background-size:cover;background-position:center}
+.cover .hero::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(8,49,111,0.18) 0%,rgba(8,49,111,0.45) 100%)}
 .cover .panel{
-  position:absolute;top:0;right:0;width:46%;height:100%;background:#fff;
-  clip-path:polygon(12% 0,100% 0,100% 100%,0 100%);
+  position:absolute;top:0;right:0;width:48%;height:100%;background:#fff;
+  clip-path:polygon(14% 0,100% 0,100% 100%,0 100%);z-index:2;
 }
 .cover .ref-bar{
-  position:absolute;top:0;right:0;width:46%;height:145px;background:var(--navy);
-  clip-path:polygon(22% 0,100% 0,100% 100%,0 100%);
+  position:absolute;top:0;right:0;width:48%;height:150px;background:var(--navy);
+  clip-path:polygon(24% 0,100% 0,100% 100%,0 100%);z-index:3;
   display:flex;align-items:center;justify-content:flex-end;padding:0 60px 0 0;
 }
-.cover .ref-bar .ref{color:#fff;font-family:'Montserrat';font-weight:800;font-size:28px;letter-spacing:0.02em}
-.cover .panel-inner{position:absolute;top:210px;right:60px;width:480px}
-.cover .c-loc{font-family:'Montserrat';font-weight:800;font-size:26px;color:var(--cyan);margin-bottom:22px}
-.cover .c-name{font-family:'Montserrat';font-weight:800;font-size:26px;color:var(--navy);text-transform:uppercase;line-height:1.2;margin-bottom:22px}
-.cover .c-sub{font-family:'Montserrat';font-weight:700;font-size:22px;color:var(--navy);line-height:1.3}
+.cover .ref-bar .ref{color:#fff;font-family:'Montserrat';font-weight:800;font-size:26px;letter-spacing:0.02em}
+.cover .panel-inner{position:absolute;top:215px;right:60px;width:480px;z-index:3}
+.cover .c-loc{font-family:'Montserrat';font-weight:800;font-size:26px;color:var(--cyan);margin-bottom:22px;line-height:1.2}
+.cover .c-name{font-family:'Montserrat';font-weight:800;font-size:24px;color:var(--navy);text-transform:uppercase;line-height:1.2;margin-bottom:20px}
+.cover .c-sub{font-family:'Montserrat';font-weight:700;font-size:20px;color:var(--navy);line-height:1.3}
 .cover .logo-box{
-  position:absolute;right:60px;bottom:120px;width:480px;height:90px;
+  position:absolute;right:60px;bottom:110px;width:480px;height:88px;
   border:1px solid var(--border);border-radius:4px;
-  display:flex;align-items:center;justify-content:center;gap:30px;background:#fff;
+  display:flex;align-items:center;justify-content:center;gap:36px;background:#fff;z-index:3;
 }
 .cover .logo-box .lbvr{width:1px;height:48px;background:var(--border)}
-.cover .logo-box .rod-hotels{font-family:'Montserrat';font-weight:800;font-size:18px;color:var(--navy);letter-spacing:0.02em}
+.cover .logo-box .rod-hotels{font-family:'Montserrat';font-weight:800;font-size:19px;color:var(--navy);letter-spacing:0.02em}
 .cover .logo-box .rod-hotels span{color:var(--cyan)}
 .cover .logo-box .rod-inv{font-family:'Montserrat';font-weight:400;font-size:14px;color:var(--navy);letter-spacing:0.28em;text-align:center;line-height:1.05}
-.cover .logo-box .rod-inv small{display:block;font-size:8px;letter-spacing:0.5em;font-weight:300;margin-top:2px}
+.cover .logo-box .rod-inv small{display:block;font-size:8px;letter-spacing:0.5em;font-weight:300;margin-top:3px}
 .cover .crosshair{
-  position:absolute;left:calc(54% - 18px);bottom:116px;width:36px;height:36px;border-radius:50%;
-  border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:22px;font-weight:300;line-height:1;background:#fff;z-index:3;
+  position:absolute;left:calc(52% - 18px);bottom:106px;width:36px;height:36px;border-radius:50%;
+  border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:22px;font-weight:300;line-height:1;background:#fff;z-index:4;
 }
 .cover .web{
-  position:absolute;right:48px;bottom:30px;color:#fff;font-family:'Montserrat';font-weight:500;font-size:14px;text-shadow:0 1px 4px rgba(0,0,0,0.4);
+  position:absolute;right:48px;bottom:30px;color:#fff;font-family:'Montserrat';font-weight:500;font-size:14px;text-shadow:0 1px 4px rgba(0,0,0,0.5);z-index:2;
 }
-.cover .accent-line{position:absolute;left:54%;top:145px;bottom:0;width:2px;background:var(--cyan)}
+.cover .accent-line{position:absolute;left:52%;top:150px;bottom:0;width:2px;background:var(--cyan);z-index:3}
 
-/* ─────── PAGE 2 — DIVIDER ─────── */
+/* ─────── DIVIDER ─────── */
 .divider{
   width:100%;height:100%;
   background:linear-gradient(90deg,#1FB6FF 0%,#0A66C2 50%,#08316F 100%);
@@ -103,70 +109,82 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 .divider .wm{font-family:'Montserrat';font-weight:400;font-size:34px;color:#fff;letter-spacing:0.55em;text-align:center}
 .divider .wm small{display:block;font-size:14px;letter-spacing:0.8em;font-weight:300;margin-top:8px;opacity:0.95}
 
-/* ─────── PAGE 3 — ACTIVA ─────── */
+/* ─────── ACTIVA ─────── */
 .activa{display:flex;gap:0;height:100%;align-items:stretch}
 .activa .left{
-  width:54%;border:1px solid var(--border);border-radius:4px;padding:32px 32px 28px;background:#fff;
-  display:flex;flex-direction:column;z-index:2;
+  width:55%;border:1px solid var(--border);border-radius:4px;padding:22px 26px 22px;background:#fff;
+  display:flex;flex-direction:column;z-index:2;min-height:0;
 }
-.activa .a-title{font-family:'Montserrat';font-weight:800;font-size:22px;color:var(--navy);line-height:1.25;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:20px}
-.activa .a-label{font-size:16px;color:var(--grey-text);margin-bottom:10px}
-.activa .a-val{font-size:16px;color:#111;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:20px}
-.activa .a-bullets{padding-left:18px;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:20px}
-.activa .a-bullets li{font-size:15px;color:#111;line-height:1.55;margin-bottom:6px}
-.activa .a-price{margin-top:auto;font-family:'Montserrat';font-weight:600;font-size:22px;color:var(--navy);display:flex;align-items:baseline;gap:14px}
-.activa .a-price .val{color:var(--cyan);font-weight:900;font-size:34px;letter-spacing:0.01em}
+.activa .a-title{font-family:'Montserrat';font-weight:800;font-size:18px;color:var(--navy);line-height:1.25;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-shrink:0}
+.activa .a-label{font-size:13px;color:var(--grey-text);margin-bottom:6px;flex-shrink:0}
+.activa .a-val{font-size:14px;color:#111;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-shrink:0}
+.activa .a-bullets{padding-left:18px;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:14px;overflow:hidden;flex:1;min-height:0}
+.activa .a-bullets li{font-size:12.5px;color:#111;line-height:1.45;margin-bottom:4px}
+.activa .a-price{flex-shrink:0;font-family:'Montserrat';font-weight:600;font-size:18px;color:var(--navy);display:flex;align-items:baseline;gap:12px;padding-top:4px}
+.activa .a-price .val{color:var(--cyan);font-weight:900;font-size:28px;letter-spacing:0.01em}
 .activa .right{
-  flex:1;margin-left:-40px;margin-top:40px;margin-bottom:40px;
-  background-size:cover;background-position:center;border-radius:4px;box-shadow:0 4px 18px rgba(0,0,0,0.08);
+  flex:1;margin-left:-30px;margin-top:20px;margin-bottom:20px;
+  background:#eef2f6 center/cover no-repeat;border-radius:4px;box-shadow:0 4px 18px rgba(0,0,0,0.08);
+  position:relative;
 }
 
-/* ─────── PAGE 4 — LOCATIE ─────── */
-.locatie{display:flex;gap:40px;height:100%;align-items:center;position:relative}
+/* ─────── LOCATIE ─────── */
+.locatie{display:flex;gap:44px;height:100%;align-items:center;position:relative}
 .locatie .map{
-  width:56%;height:90%;background-size:cover;background-position:center;border-radius:6px;box-shadow:0 4px 18px rgba(0,0,0,0.1);
+  width:56%;height:95%;background:#eef2f6 center/cover no-repeat;border-radius:6px;box-shadow:0 4px 18px rgba(0,0,0,0.1);
 }
-.locatie .info{flex:1;padding-right:20px}
-.locatie .info .l-title{font-family:'Montserrat';font-weight:800;font-size:22px;color:var(--navy);line-height:1.25;padding-bottom:22px;border-bottom:1px solid var(--border);margin-bottom:22px}
-.locatie .info .l-link{display:block;color:var(--cyan);font-family:'Montserrat';font-weight:700;font-size:20px;text-decoration:underline;margin-bottom:22px}
-.locatie .info .l-rule{height:1px;background:var(--border);margin-bottom:22px}
-.locatie .crosshair{
-  position:absolute;right:60px;top:40%;width:28px;height:28px;border-radius:50%;
-  border:1.5px solid var(--cyan);color:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:300;line-height:1;background:#fff;
+.locatie .info{flex:1;padding-right:20px;max-width:400px}
+.locatie .info .l-title{font-family:'Montserrat';font-weight:800;font-size:20px;color:var(--navy);line-height:1.3;padding-bottom:18px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.locatie .info .l-link{display:block;color:var(--cyan);font-family:'Montserrat';font-weight:700;font-size:19px;text-decoration:underline;margin-bottom:20px;line-height:1.3}
+.locatie .info .l-rule{height:1px;background:var(--border);margin-bottom:20px}
+.locatie .loc-crosshair{
+  position:absolute;right:10px;top:30px;width:28px;height:28px;border-radius:50%;
+  border:1.5px solid var(--cyan);color:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:300;line-height:1;background:#fff;
 }
 
-/* ─────── PHOTO PAGES ─────── */
-.photos-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%}
-.photos-2{display:grid;grid-template-columns:1fr 1fr;gap:24px;height:100%}
-.photo-tile{width:100%;height:100%;background-size:cover;background-position:center;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,0.08)}
+/* ─────── PHOTOS ─────── */
+.photos-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%;max-height:584px}
+.photos-2{display:grid;grid-template-columns:1fr 1fr;gap:24px;height:100%;max-height:584px}
+.photo-tile{width:100%;height:100%;background:#f3f4f6 center/cover no-repeat;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,0.08);overflow:hidden}
 
-/* ─────── PLAN PAGES ─────── */
-.plan-wrap{display:flex;align-items:center;justify-content:center;height:100%}
-.plan-wrap img{max-width:80%;max-height:100%;object-fit:contain}
+/* ─────── PLANS ─────── */
+.plan-wrap{position:relative;width:100%;height:100%;background:#fff;overflow:hidden}
+.plan-wrap img{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  max-width:96%;max-height:96%;
+  background:#fff;
+}
+.plan-wrap img.rotated{
+  /* rotate 90° and swap max dims so its rotated bounds fit the landscape body */
+  transform:translate(-50%,-50%) rotate(90deg);
+  max-width:560px;   /* becomes visible height after rotation */
+  max-height:1000px; /* becomes visible width after rotation */
+}
 
-/* ─────── VERKOOP (sales) ─────── */
-.sales{display:flex;gap:0;height:100%;border:1px solid var(--border);border-radius:4px;overflow:hidden}
-.sales .s-left{width:44%;display:flex;flex-direction:column;background:#fff}
-.sales .s-left .s-name{font-family:'Montserrat';font-weight:800;font-size:28px;color:var(--navy);text-align:center;padding:36px 20px 28px;border-bottom:1px solid var(--border)}
-.sales .s-left .s-role{font-size:16px;color:#111;text-align:center;padding:26px 20px;border-bottom:1px solid var(--border)}
-.sales .s-left .s-infos{padding:22px 28px 26px;border-bottom:1px solid var(--border);flex:1}
-.sales .s-left .s-infos .s-label{color:var(--grey-text);font-size:15px;margin-bottom:14px}
-.sales .s-left .s-infos a{display:block;color:var(--cyan);font-weight:600;font-size:16px;text-decoration:underline;margin-bottom:10px;word-break:break-all}
-.sales .s-left .s-price{padding:28px 28px;display:flex;align-items:baseline;gap:12px;font-family:'Montserrat';font-weight:600;font-size:20px;color:var(--navy)}
-.sales .s-left .s-price .val{color:var(--cyan);font-weight:900;font-size:32px}
-.sales .s-right{flex:1;display:flex;flex-direction:column}
-.sales .s-right .s-photo{flex:1;background-size:cover;background-position:center;min-height:0}
-.sales .s-right .s-cta{padding:22px 24px 26px;text-align:center;border-top:1px solid var(--border);background:#fff}
-.sales .s-right .s-cta .s-cta-label{color:var(--grey-text);font-size:14px;margin-bottom:14px}
+/* ─────── SALES ─────── */
+.sales{display:flex;gap:0;height:100%;max-height:584px;border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.sales .s-left{width:44%;display:flex;flex-direction:column;background:#fff;min-height:0}
+.sales .s-left .s-name{font-family:'Montserrat';font-weight:800;font-size:24px;color:var(--navy);text-align:center;padding:24px 20px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sales .s-left .s-role{font-size:14px;color:#111;text-align:center;padding:18px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sales .s-left .s-infos{padding:18px 24px 20px;border-bottom:1px solid var(--border);flex:1;min-height:0;overflow:hidden}
+.sales .s-left .s-infos .s-label{color:var(--grey-text);font-size:13px;margin-bottom:12px}
+.sales .s-left .s-infos a{display:block;color:var(--cyan);font-weight:600;font-size:15px;text-decoration:underline;margin-bottom:8px;word-break:break-all}
+.sales .s-left .s-price{padding:20px 24px;display:flex;align-items:baseline;gap:10px;font-family:'Montserrat';font-weight:600;font-size:18px;color:var(--navy);flex-shrink:0}
+.sales .s-left .s-price .val{color:var(--cyan);font-weight:900;font-size:26px}
+.sales .s-right{flex:1;display:flex;flex-direction:column;min-height:0}
+.sales .s-right .s-photo{flex:1;background:#eef2f6 center/cover no-repeat;min-height:0}
+.sales .s-right .s-cta{padding:16px 20px 18px;text-align:center;border-top:1px solid var(--border);background:#fff;flex-shrink:0}
+.sales .s-right .s-cta .s-cta-label{color:var(--grey-text);font-size:12px;margin-bottom:10px}
 .sales .s-right .s-cta a{
-  display:inline-block;background:var(--cyan);color:#fff;font-family:'Montserrat';font-weight:700;font-size:17px;
-  padding:14px 42px;border-radius:40px;text-decoration:underline;letter-spacing:0.01em;
+  display:inline-block;background:var(--cyan);color:#fff;font-family:'Montserrat';font-weight:700;font-size:15px;
+  padding:11px 34px;border-radius:40px;text-decoration:underline;letter-spacing:0.01em;
 }
 
 /* ─────── BACK COVER ─────── */
-.back{position:relative;width:100%;height:100%;overflow:hidden}
-.back .bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(0.55)}
-.back .overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,49,111,0.35) 0%,rgba(8,49,111,0.75) 100%)}
+.back{position:relative;width:100%;height:100%;overflow:hidden;background:linear-gradient(135deg,#0A66C2 0%,#08316F 100%)}
+.back .bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0.45}
+.back .overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,49,111,0.55) 0%,rgba(8,49,111,0.9) 100%)}
 .back .wm{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
   font-family:'Montserrat';font-weight:400;font-size:42px;color:#fff;letter-spacing:0.5em;text-align:center;
@@ -188,8 +206,10 @@ function fileUrl(p){
   if(!p) return '';
   const s = String(p);
   if(/^(https?:|data:|file:)/.test(s)) return s;
-  return 'file://' + s;
+  if(s.startsWith('/')) return 'file://' + s;
+  return s;
 }
+function normalize(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,''); }
 
 window.loadLongTeaser = function(data, brandName){
   data = data || {};
@@ -215,17 +235,31 @@ window.loadLongTeaser = function(data, brandName){
   const photos = (data.photos||[]).filter(Boolean);
   const plans  = (data.plans||[]).filter(Boolean);
   const maps   = (data.maps||[]).filter(Boolean);
-  const primaryMap = maps[0] || data.map_url || photos[0] || '';
+  // Map fallbacks: explicit maps array wins, then single map_url, then first photo as last resort
+  const primaryMap = maps[0] || data.map_url || '';
   const streetMap  = maps[1] || maps[0] || data.map_url || '';
-  const coverPhoto = data.cover_photo || photos[0] || primaryMap || '';
-  const backPhoto  = data.back_photo  || coverPhoto;
-  const salesPhoto = data.sales_photo || photos[photos.length-1] || coverPhoto;
+  // Cover photo: prefer explicit cover_photo, then first photo (user uploads exterior first)
+  const coverPhoto = data.cover_photo || photos[0] || '';
+  // Sales photo: prefer explicit, then a different photo from cover, else first
+  const salesPhoto = data.sales_photo || photos[1] || photos[0] || '';
+  // Back photo: optional; if absent we use gradient only
+  const backPhoto  = data.back_photo || '';
 
+  // Description bullets — filter out duplicates of title and ref
   let bullets = [];
   if(Array.isArray(data.description_bullets)) bullets = data.description_bullets.filter(Boolean);
   else if(data.description){
     bullets = String(data.description).split(/\s*•\s*|\s*\u2022\s*|\n+/).map(s=>s.trim()).filter(Boolean);
   }
+  const titleNorm = normalize(title).slice(0,40);
+  const refNorm   = normalize(ref);
+  bullets = bullets.filter(b=>{
+    const bn = normalize(b);
+    if(!bn) return false;
+    if(titleNorm && bn.includes(titleNorm)) return false;
+    if(refNorm && bn.includes(refNorm))     return false;
+    return true;
+  });
 
   const agentName  = data.agent_name  || 'Adam Meri';
   const agentRole  = data.agent_role  || 'Head of Accounts';
@@ -235,13 +269,22 @@ window.loadLongTeaser = function(data, brandName){
   const docsLabel  = data.docs_label   || 'Aanvullende documenten';
   const docsHelper = data.docs_helper  || 'Klik hier om de bestandsdocumenten te downloaden';
 
+  // Location / name split from title "LOCATION: Name"
   let loc = '', name = title;
   const mm = title.match(/^(.*?):\s*(.+)$/);
   if(mm){ loc = mm[1].trim(); name = mm[2].trim(); }
 
   const disclaimer = data.disclaimer || '*These informations are approximate and given for indicative purposes. As these elements must be confirmed, specified or corrected, no decision may be made on the basis of this document nor engage the responsibility of Rodschinson Investment. For more information, please contact one of our Investment Portfolio Managers at the Brussels office: Tel: +32 (0) 2 550 36 87, Email: assets.brussels@rodschinson.com. Rodschinson Investment - Bastion Tower - Place du Champ de Mars n°5 - 1050 Brussels (BE)';
 
+  // Anchors for clickable nav
+  const A = { activa:'sec-activa', loc:'sec-loc', photos:'sec-photos', plans:'sec-plans', sales:'sec-sales' };
+
   function header(activeTab){
+    const tab = (key, label) => {
+      const active = activeTab === key;
+      const href = key==='a'?A.activa : key==='l'?A.loc : key==='p'?A.photos : key==='pl'?A.plans : A.sales;
+      return `<a href="#${href}"><span class="tab${active?' active':''}">${esc(label)}</span></a>`;
+    };
     return `
       <div class="pg-header">
         <div class="logo">
@@ -257,171 +300,177 @@ window.loadLongTeaser = function(data, brandName){
       </div>
       <div class="pg-nav">
         <div class="mark"></div>
-        <span class="tab${activeTab==='a'?' active':''}">${esc(T.activa)}</span><span class="div">|</span>
-        <span class="tab${activeTab==='l'?' active':''}">${esc(T.loc)}</span><span class="div">|</span>
-        <span class="tab${activeTab==='p'?' active':''}">${esc(T.photos)}</span><span class="div">|</span>
-        <span class="tab${activeTab==='pl'?' active':''}">${esc(T.plans)}</span><span class="div">|</span>
-        <span class="tab${activeTab==='s'?' active':''}">${esc(T.sales)}</span>
+        ${tab('a',T.activa)}<span class="div">|</span>
+        ${tab('l',T.loc)}<span class="div">|</span>
+        ${tab('p',T.photos)}<span class="div">|</span>
+        ${tab('pl',T.plans)}<span class="div">|</span>
+        ${tab('s',T.sales)}
       </div>`;
   }
 
   const pages = [];
+  let sectionAnchor = ''; // injected into next pushed page as id="..."
+  const pushPage = (inner, extraClass) => {
+    const id = sectionAnchor ? ` id="${sectionAnchor}"` : '';
+    sectionAnchor = '';
+    pages.push(`<div class="page${extraClass?' '+extraClass:''}"${id}>${inner}</div>`);
+  };
 
   // COVER
-  pages.push(`
-    <div class="page">
-      <div class="cover">
-        <div class="hero" style="background-image:url('${esc(fileUrl(coverPhoto))}')"></div>
-        <div class="accent-line"></div>
-        <div class="panel"></div>
-        <div class="ref-bar"><div class="ref">${esc(ref)}</div></div>
-        <div class="panel-inner">
-          ${loc?`<div class="c-loc">${esc(loc)}</div>`:''}
-          <div class="c-name">${esc(name)}</div>
-          ${subtitle?`<div class="c-sub">${esc(subtitle)}</div>`:''}
-        </div>
-        <div class="logo-box">
-          <div class="rod-hotels">ROD <span>Hotels</span></div>
-          <div class="lbvr"></div>
-          <div class="rod-inv">RODSCHINSON<small>INVESTMENT</small></div>
-        </div>
-        <div class="crosshair">+</div>
-        <div class="web">www.rodschinson.com</div>
+  pushPage(`
+    <div class="cover">
+      <div class="hero" style="background-image:url('${esc(fileUrl(coverPhoto))}')"></div>
+      <div class="accent-line"></div>
+      <div class="panel"></div>
+      <div class="ref-bar"><div class="ref">${esc(ref)}</div></div>
+      <div class="panel-inner">
+        ${loc?`<div class="c-loc">${esc(loc)}</div>`:''}
+        <div class="c-name">${esc(name)}</div>
+        ${subtitle?`<div class="c-sub">${esc(subtitle)}</div>`:''}
       </div>
+      <div class="logo-box">
+        <div class="rod-hotels">ROD <span>Hotels</span></div>
+        <div class="lbvr"></div>
+        <div class="rod-inv">RODSCHINSON<small>INVESTMENT</small></div>
+      </div>
+      <div class="crosshair">+</div>
+      <div class="web">www.rodschinson.com</div>
     </div>`);
 
   // DIVIDER
-  pages.push(`
-    <div class="page">
-      <div class="divider">
-        <div class="wm">RODSCHINSON<small>INVESTMENT</small></div>
-      </div>
-    </div>`);
+  pushPage(`<div class="divider"><div class="wm">RODSCHINSON<small>INVESTMENT</small></div></div>`);
 
   // ACTIVA
-  pages.push(`
-    <div class="page">
-      ${header('a')}
-      <div class="pg-body">
-        <div class="activa">
-          <div class="left">
-            <div class="a-title">${esc(title)}</div>
-            <div class="a-label">${esc(addrLbl)}</div>
-            <div class="a-val">${esc(address)}</div>
-            <div class="a-label">${esc(descLbl)}</div>
-            <ul class="a-bullets">
-              ${bullets.map(b=>`<li>${esc(b)}</li>`).join('')}
-            </ul>
-            <div class="a-price"><span>${esc(priceLbl)}</span><span class="val">${esc(price)}</span></div>
-          </div>
-          <div class="right" style="background-image:url('${esc(fileUrl(primaryMap))}')"></div>
+  sectionAnchor = A.activa;
+  pushPage(`
+    ${header('a')}
+    <div class="pg-body">
+      <div class="activa">
+        <div class="left">
+          <div class="a-title">${esc(title)}</div>
+          <div class="a-label">${esc(addrLbl)}</div>
+          <div class="a-val">${esc(address)}</div>
+          <div class="a-label">${esc(descLbl)}</div>
+          <ul class="a-bullets">
+            ${bullets.map(b=>`<li>${esc(b)}</li>`).join('')}
+          </ul>
+          <div class="a-price"><span>${esc(priceLbl)}</span><span class="val">${esc(price)}</span></div>
         </div>
+        <div class="right" style="background-image:url('${esc(fileUrl(primaryMap))}')"></div>
       </div>
     </div>`);
 
   // LOCATIE
-  pages.push(`
-    <div class="page">
-      ${header('l')}
-      <div class="pg-body">
-        <div class="locatie">
-          <div class="map" style="background-image:url('${esc(fileUrl(streetMap))}')"></div>
-          <div class="info">
-            <div class="l-title">${esc(title)}</div>
-            <div class="l-rule"></div>
-            <a class="l-link" href="${esc(mapsUrl)}" target="_blank">${esc(mapLinkTxt)}</a>
-            <div class="l-rule"></div>
-          </div>
-          <div class="crosshair">!</div>
+  sectionAnchor = A.loc;
+  pushPage(`
+    ${header('l')}
+    <div class="pg-body">
+      <div class="locatie">
+        <div class="map" style="background-image:url('${esc(fileUrl(streetMap))}')"></div>
+        <div class="info">
+          <div class="l-title">${esc(title)}</div>
+          <div class="l-rule"></div>
+          <a class="l-link" href="${esc(mapsUrl)}" target="_blank">${esc(mapLinkTxt)}</a>
+          <div class="l-rule"></div>
         </div>
+        <div class="loc-crosshair">!</div>
       </div>
     </div>`);
 
-  // PHOTOS: first page 3 if >=3, rest 2 per page
-  let i = 0;
-  if(photos.length >= 3){
-    const trio = photos.slice(0,3);
-    pages.push(`
-      <div class="page">
+  // PHOTOS — first page 3 tiles if >=3, rest 2 per page
+  if(photos.length){
+    sectionAnchor = A.photos;
+    let i = 0;
+    if(photos.length >= 3){
+      const trio = photos.slice(0,3);
+      pushPage(`
         ${header('p')}
         <div class="pg-body">
           <div class="photos-3">
             ${trio.map(p=>`<div class="photo-tile" style="background-image:url('${esc(fileUrl(p))}')"></div>`).join('')}
           </div>
-        </div>
-      </div>`);
-    i = 3;
-  }
-  while(i < photos.length){
-    const pair = photos.slice(i, i+2);
-    pages.push(`
-      <div class="page">
+        </div>`);
+      i = 3;
+    }
+    while(i < photos.length){
+      const pair = photos.slice(i, i+2);
+      if(!sectionAnchor && i===0) sectionAnchor = A.photos;
+      pushPage(`
         ${header('p')}
         <div class="pg-body">
           <div class="photos-2">
             ${pair.map(p=>`<div class="photo-tile" style="background-image:url('${esc(fileUrl(p))}')"></div>`).join('')}
           </div>
-        </div>
-      </div>`);
-    i += 2;
+        </div>`);
+      i += 2;
+    }
   }
 
-  // PLANS — 1 per page
-  plans.forEach(pl=>{
-    pages.push(`
-      <div class="page">
+  // PLANS — 1 per page, auto-rotate portrait images
+  if(plans.length){
+    sectionAnchor = A.plans;
+    plans.forEach(pl=>{
+      pushPage(`
         ${header('pl')}
         <div class="pg-body">
-          <div class="plan-wrap"><img src="${esc(fileUrl(pl))}" alt="plan"></div>
-        </div>
-      </div>`);
-  });
+          <div class="plan-wrap"><img class="plan-img" src="${esc(fileUrl(pl))}" alt="plan"></div>
+        </div>`);
+    });
+  }
 
   // SALES
-  pages.push(`
-    <div class="page">
-      ${header('s')}
-      <div class="pg-body">
-        <div class="sales">
-          <div class="s-left">
-            <div class="s-name">${esc(agentName)}</div>
-            <div class="s-role">${esc(agentRole)}</div>
-            <div class="s-infos">
-              <div class="s-label">Infos :</div>
-              <a href="tel:${esc(agentPhone.replace(/\s+/g,''))}">${esc(agentPhone)}</a>
-              <a href="mailto:${esc(agentEmail)}">${esc(agentEmail)}</a>
-            </div>
-            <div class="s-price"><span>${esc(priceLbl)}</span><span class="val">${esc(price)}</span></div>
+  sectionAnchor = A.sales;
+  pushPage(`
+    ${header('s')}
+    <div class="pg-body">
+      <div class="sales">
+        <div class="s-left">
+          <div class="s-name">${esc(agentName)}</div>
+          <div class="s-role">${esc(agentRole)}</div>
+          <div class="s-infos">
+            <div class="s-label">Infos :</div>
+            <a href="tel:${esc(agentPhone.replace(/\s+/g,''))}">${esc(agentPhone)}</a>
+            <a href="mailto:${esc(agentEmail)}">${esc(agentEmail)}</a>
           </div>
-          <div class="s-right">
-            <div class="s-photo" style="background-image:url('${esc(fileUrl(salesPhoto))}')"></div>
-            <div class="s-cta">
-              <div class="s-cta-label">${esc(docsHelper)}</div>
-              <a href="${esc(docsUrl)}" target="_blank">${esc(docsLabel)}</a>
-            </div>
+          <div class="s-price"><span>${esc(priceLbl)}</span><span class="val">${esc(price)}</span></div>
+        </div>
+        <div class="s-right">
+          <div class="s-photo" style="background-image:url('${esc(fileUrl(salesPhoto))}')"></div>
+          <div class="s-cta">
+            <div class="s-cta-label">${esc(docsHelper)}</div>
+            <a href="${esc(docsUrl)}" target="_blank">${esc(docsLabel)}</a>
           </div>
         </div>
       </div>
     </div>`);
 
   // BACK COVER
-  pages.push(`
-    <div class="page">
-      <div class="back">
-        <div class="bg" style="background-image:url('${esc(fileUrl(backPhoto))}')"></div>
-        <div class="overlay"></div>
-        <div class="wm">RODSCHINSON<small>INVESTMENT</small></div>
-        <div class="contact-row">
-          <div class="it">${esc(agentPhone)}</div>
-          <div class="bar"></div>
-          <div class="it">assets@rodschinson.com</div>
-          <div class="bar"></div>
-          <div class="it">www.rodschinson.com</div>
-        </div>
+  pushPage(`
+    <div class="back">
+      ${backPhoto?`<div class="bg" style="background-image:url('${esc(fileUrl(backPhoto))}')"></div>`:''}
+      <div class="overlay"></div>
+      <div class="wm">RODSCHINSON<small>INVESTMENT</small></div>
+      <div class="contact-row">
+        <div class="it">${esc(agentPhone)}</div>
+        <div class="bar"></div>
+        <div class="it">assets@rodschinson.com</div>
+        <div class="bar"></div>
+        <div class="it">www.rodschinson.com</div>
       </div>
     </div>`);
 
   document.getElementById('doc').innerHTML = pages.join('');
+
+  // Auto-rotate portrait plan images (called again after images finish loading by the renderer)
+  window.rotatePortraitPlans = function(){
+    document.querySelectorAll('.plan-img').forEach(img=>{
+      if(!img.complete || !img.naturalWidth) return;
+      if(img.naturalHeight > img.naturalWidth * 1.05){
+        img.classList.add('rotated');
+      }
+    });
+  };
+
   return true;
 };
 </script>
