@@ -35,7 +35,7 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 .pg-header .logo .l2{font-family:'Montserrat';font-weight:300;font-size:8px;color:#fff;letter-spacing:0.6em;margin-top:3px;line-height:1}
 .pg-header .sep{width:1px;height:60px;background:rgba(255,255,255,0.3);margin:0 28px}
 .pg-header .title-block{flex:1;min-width:0;padding-right:20px}
-.pg-header .title-block .ttl{font-family:'Montserrat';font-weight:700;font-size:14px;line-height:1.25;color:#fff;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pg-header .title-block .ttl{font-family:'Montserrat';font-weight:700;font-size:13px;line-height:1.3;color:#fff;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .pg-header .title-block .ref{font-family:'Montserrat';font-weight:500;font-size:12px;color:rgba(255,255,255,0.9);letter-spacing:0.02em}
 .pg-header .disc{
   width:460px;padding:0 32px 0 24px;border-left:1px solid rgba(255,255,255,0.3);height:60px;
@@ -63,42 +63,29 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 /* ── BODY AREA (hard-clamped) ── */
 .pg-body{position:absolute;top:170px;left:48px;right:48px;height:584px;overflow:hidden}
 
-/* ─────── COVER ─────── */
-.cover{position:relative;width:100%;height:100%;background:#fff}
-.cover .hero{position:absolute;inset:0;background-size:cover;background-position:center}
-.cover .hero::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(8,49,111,0.18) 0%,rgba(8,49,111,0.45) 100%)}
-.cover .panel{
-  position:absolute;top:0;right:0;width:48%;height:100%;background:#fff;
-  clip-path:polygon(14% 0,100% 0,100% 100%,0 100%);z-index:2;
+/* ─────── COVER (gradient, no photo) ─────── */
+.cover{
+  position:relative;width:100%;height:100%;color:#fff;
+  background:linear-gradient(160deg,#061d42 0%,#08316F 40%,#0a4a8a 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;text-align:center;
 }
-.cover .ref-bar{
-  position:absolute;top:0;right:0;width:48%;height:150px;background:var(--navy);
-  clip-path:polygon(24% 0,100% 0,100% 100%,0 100%);z-index:3;
-  display:flex;align-items:center;justify-content:flex-end;padding:0 60px 0 0;
+.cover .ref-tag{position:absolute;top:50px;right:60px;font-family:'Montserrat';font-weight:600;font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:rgba(255,255,255,0.35)}
+.cover .wordmark{margin-bottom:40px}
+.cover .wordmark .wm-main{font-family:'Montserrat';font-weight:700;font-size:30px;letter-spacing:0.5em;color:#fff;line-height:1}
+.cover .wordmark .wm-line{width:200px;height:2px;background:var(--cyan);margin:10px auto}
+.cover .wordmark .wm-sub{font-family:'Montserrat';font-weight:400;font-size:11px;letter-spacing:0.7em;color:var(--cyan)}
+.cover .badge{
+  display:inline-block;font-family:'Montserrat';font-weight:700;font-size:10px;letter-spacing:0.25em;text-transform:uppercase;color:#fff;
+  background:var(--cyan);padding:7px 22px;border-radius:4px;margin-bottom:28px;
 }
-.cover .ref-bar .ref{color:#fff;font-family:'Montserrat';font-weight:800;font-size:26px;letter-spacing:0.02em}
-.cover .panel-inner{position:absolute;top:215px;right:60px;width:480px;z-index:3}
-.cover .c-loc{font-family:'Montserrat';font-weight:800;font-size:26px;color:var(--cyan);margin-bottom:22px;line-height:1.2}
-.cover .c-name{font-family:'Montserrat';font-weight:800;font-size:24px;color:var(--navy);text-transform:uppercase;line-height:1.2;margin-bottom:20px}
-.cover .c-sub{font-family:'Montserrat';font-weight:700;font-size:20px;color:var(--navy);line-height:1.3}
-.cover .logo-box{
-  position:absolute;right:60px;bottom:110px;width:480px;height:88px;
-  border:1px solid var(--border);border-radius:4px;
-  display:flex;align-items:center;justify-content:center;gap:36px;background:#fff;z-index:3;
+.cover .c-loc{font-family:'Montserrat';font-weight:600;font-size:14px;letter-spacing:0.18em;color:var(--cyan);text-transform:uppercase;margin-bottom:18px}
+.cover .c-title{font-family:'Montserrat';font-weight:700;font-size:32px;line-height:1.25;color:#fff;max-width:780px;margin-bottom:24px}
+.cover .price-box{
+  text-align:center;border:1px solid rgba(0,182,255,0.3);border-radius:10px;padding:18px 44px;background:rgba(0,182,255,0.08);margin-top:8px;
 }
-.cover .logo-box .lbvr{width:1px;height:48px;background:var(--border)}
-.cover .logo-box .rod-hotels{font-family:'Montserrat';font-weight:800;font-size:19px;color:var(--navy);letter-spacing:0.02em}
-.cover .logo-box .rod-hotels span{color:var(--cyan)}
-.cover .logo-box .rod-inv{font-family:'Montserrat';font-weight:400;font-size:14px;color:var(--navy);letter-spacing:0.28em;text-align:center;line-height:1.05}
-.cover .logo-box .rod-inv small{display:block;font-size:8px;letter-spacing:0.5em;font-weight:300;margin-top:3px}
-.cover .crosshair{
-  position:absolute;left:calc(52% - 18px);bottom:106px;width:36px;height:36px;border-radius:50%;
-  border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:22px;font-weight:300;line-height:1;background:#fff;z-index:4;
-}
-.cover .web{
-  position:absolute;right:48px;bottom:30px;color:#fff;font-family:'Montserrat';font-weight:500;font-size:14px;text-shadow:0 1px 4px rgba(0,0,0,0.5);z-index:2;
-}
-.cover .accent-line{position:absolute;left:52%;top:150px;bottom:0;width:2px;background:var(--cyan);z-index:3}
+.cover .price-label{font-family:'Montserrat';font-weight:600;font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--cyan);margin-bottom:6px}
+.cover .price-val{font-family:'Montserrat';font-weight:800;font-size:38px;color:#fff;letter-spacing:0.01em}
+.cover .footer{position:absolute;bottom:30px;left:60px;right:60px;text-align:center;font-family:'Montserrat';font-size:9px;letter-spacing:0.18em;color:rgba(255,255,255,0.4);text-transform:uppercase}
 
 /* ─────── DIVIDER ─────── */
 .divider{
@@ -119,7 +106,10 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 .activa .a-label{font-size:13px;color:var(--grey-text);margin-bottom:6px;flex-shrink:0}
 .activa .a-val{font-size:14px;color:#111;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-shrink:0}
 .activa .a-bullets{padding-left:18px;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:14px;overflow:hidden;flex:1;min-height:0}
-.activa .a-bullets li{font-size:12.5px;color:#111;line-height:1.45;margin-bottom:4px}
+.activa .a-bullets li{font-size:12.5px;color:#111;line-height:1.45;margin-bottom:4px;break-inside:avoid}
+.activa .a-bullets.cols-2{column-count:2;column-gap:24px;padding-left:0;list-style:none}
+.activa .a-bullets.cols-2 li{padding-left:14px;position:relative;font-size:11.5px;line-height:1.4}
+.activa .a-bullets.cols-2 li::before{content:'•';position:absolute;left:2px;color:#111}
 .activa .a-price{flex-shrink:0;font-family:'Montserrat';font-weight:600;font-size:18px;color:var(--navy);display:flex;align-items:baseline;gap:12px;padding-top:4px}
 .activa .a-price .val{color:var(--cyan);font-weight:900;font-size:28px;letter-spacing:0.01em}
 .activa .right{
@@ -316,23 +306,20 @@ window.loadLongTeaser = function(data, brandName){
     pages.push(`<div class="page${extraClass?' '+extraClass:''}"${id}>${inner}</div>`);
   };
 
-  // COVER
+  // COVER (gradient, no photo)
   pushPage(`
     <div class="cover">
-      <div class="hero" style="background-image:url('${esc(fileUrl(coverPhoto))}')"></div>
-      <div class="accent-line"></div>
-      <div class="panel"></div>
-      <div class="ref-bar"><div class="ref">${esc(ref)}</div></div>
-      <div class="panel-inner">
-        ${loc?`<div class="c-loc">${esc(loc)}</div>`:''}
-        <div class="c-name">${esc(name)}</div>
-        ${subtitle?`<div class="c-sub">${esc(subtitle)}</div>`:''}
+      ${ref?`<div class="ref-tag">${esc(ref)}</div>`:''}
+      <div class="wordmark">
+        <div class="wm-main">RODSCHINSON</div>
+        <div class="wm-line"></div>
+        <div class="wm-sub">INVESTMENT</div>
       </div>
-      <div class="logo-box">
-        <div class="rod-inv">RODSCHINSON<small>INVESTMENT</small></div>
-      </div>
-      <div class="crosshair">+</div>
-      <div class="web">www.rodschinson.com</div>
+      <div class="badge">${esc((data.cover_badge || 'Property Teaser')).toUpperCase()}</div>
+      ${loc?`<div class="c-loc">${esc(loc)}</div>`:''}
+      <div class="c-title">${esc(name || title)}</div>
+      ${price?`<div class="price-box"><div class="price-label">${esc(priceLbl)}</div><div class="price-val">${esc(price)}</div></div>`:''}
+      <div class="footer">rodschinson.com  |  +32 2 550 36 87  |  assets@rodschinson.com</div>
     </div>`);
 
   // DIVIDER
@@ -349,7 +336,7 @@ window.loadLongTeaser = function(data, brandName){
           <div class="a-label">${esc(addrLbl)}</div>
           <div class="a-val">${esc(address)}</div>
           <div class="a-label">${esc(descLbl)}</div>
-          <ul class="a-bullets">
+          <ul class="a-bullets${bullets.length>8?' cols-2':''}">
             ${bullets.map(b=>`<li>${esc(b)}</li>`).join('')}
           </ul>
           <div class="a-price"><span>${esc(priceLbl)}</span><span class="val">${esc(price)}</span></div>

@@ -2332,7 +2332,7 @@ EXTRACTION RULES:
                     "price_label": "Price:", "price_label_total": "Total price:",
                     "infos_label": "Info:", "docs_label": "Additional documents",
                     "docs_helper": "Click here to download the file documents",
-                    "map_link_text": "Click to view on Google Maps",
+                    "map_link_text": "Click to view on Google Maps", "cover_badge": "Property Teaser",
                     "disclaimer": "*These informations are approximate and given for indicative purposes. As these elements must be confirmed, specified or corrected, no decision may be made on the basis of this document nor engage the responsibility of Rodschinson Investment. For more information, please contact one of our Investment Portfolio Managers at the Brussels office: Tel: +32 (0) 2 550 36 87, Email: assets.brussels@rodschinson.com. Rodschinson Investment - Bastion Tower - Place du Champ de Mars n\u00b05 - 1050 Brussels (BE)",
                 },
                 "FR": {
@@ -2342,7 +2342,7 @@ EXTRACTION RULES:
                     "price_label": "Prix :", "price_label_total": "Prix total :",
                     "infos_label": "Infos :", "docs_label": "Documents compl\u00e9mentaires",
                     "docs_helper": "Cliquez ici pour t\u00e9l\u00e9charger les documents",
-                    "map_link_text": "Cliquez pour visualiser sur Google Maps",
+                    "map_link_text": "Cliquez pour visualiser sur Google Maps", "cover_badge": "Teaser de la propri\u00e9t\u00e9",
                     "disclaimer": "*Ces informations sont approximatives et d\u00e9livr\u00e9es \u00e0 titre indicatif. Ces \u00e9l\u00e9ments devant \u00eatre confirm\u00e9s, pr\u00e9cis\u00e9s ou corrig\u00e9s, aucune d\u00e9cision ne pourra \u00eatre prise sur base du pr\u00e9sent document et engager la responsabilit\u00e9 de Rodschinson Investment. Pour de plus amples informations, merci de contacter un de nos Investment Portfolio Managers du bureau de Bruxelles : Tel : +32 (0) 2 550 36 87, Email : assets.brussels@rodschinson.com. Rodschinson Investment - Bastion Tower - Place du Champ de Mars n\u00b05 - 1050 Bruxelles (BE)",
                 },
                 "NL": {
@@ -2352,7 +2352,7 @@ EXTRACTION RULES:
                     "price_label": "Prijs:", "price_label_total": "Totale prijs:",
                     "infos_label": "Info :", "docs_label": "Aanvullende documenten",
                     "docs_helper": "Klik hier om de bestandsdocumenten te downloaden",
-                    "map_link_text": "Klik om te bekijken op Google Maps",
+                    "map_link_text": "Klik om te bekijken op Google Maps", "cover_badge": "Eigendom Teaser",
                     "disclaimer": "*Deze informatie is benaderend en wordt ter informatie verstrekt. Aangezien deze elementen moeten worden bevestigd, gespecificeerd of gecorrigeerd, kan op basis van dit document geen beslissing worden genomen die de verantwoordelijkheid van Rodschinson Investment in gevaar brengt. Voor meer informatie kunt u contact opnemen met een van onze Investment Portfolio Managers van het kantoor in Brussel: Tel: +32 (0) 2 550 36 87, E-mail: assets.brussels@rodschinson.com. Rodschinson Investment - Bastion Tower - Place du Champ de Mars n\u00b05 - 1050 Brussel (BE)",
                 },
             }.get(language, None) or {}
@@ -2364,7 +2364,7 @@ EXTRACTION RULES:
                     "price_label": "Price:", "price_label_total": "Total price:",
                     "infos_label": "Info:", "docs_label": "Additional documents",
                     "docs_helper": "Click here to download the file documents",
-                    "map_link_text": "Click to view on Google Maps",
+                    "map_link_text": "Click to view on Google Maps", "cover_badge": "Property Teaser",
                     "disclaimer": "",
                 }
 
@@ -2383,6 +2383,7 @@ EXTRACTION RULES:
                 "docs_label": L["docs_label"],
                 "docs_helper": L["docs_helper"],
                 "map_link_text": L["map_link_text"],
+                "cover_badge": L.get("cover_badge", "Property Teaser"),
                 "disclaimer": L["disclaimer"],
                 "tab_activa": L["tab_activa"],
                 "tab_locatie": L["tab_locatie"],
