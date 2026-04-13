@@ -2323,6 +2323,51 @@ EXTRACTION RULES:
 
             lang_label = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(language, "English")
 
+            # Language-aware labels
+            L = {
+                "EN": {
+                    "tab_activa": "Asset", "tab_locatie": "Location", "tab_photos": "Photos",
+                    "tab_plans": "Plans", "tab_sales": "Sales conditions",
+                    "address_label": "Address:", "description_label": "Description:",
+                    "price_label": "Price:", "price_label_total": "Total price:",
+                    "infos_label": "Info:", "docs_label": "Additional documents",
+                    "docs_helper": "Click here to download the file documents",
+                    "map_link_text": "Click to view on Google Maps",
+                    "disclaimer": "*These informations are approximate and given for indicative purposes. As these elements must be confirmed, specified or corrected, no decision may be made on the basis of this document nor engage the responsibility of Rodschinson Investment. For more information, please contact one of our Investment Portfolio Managers at the Brussels office: Tel: +32 (0) 2 550 36 87, Email: assets.brussels@rodschinson.com. Rodschinson Investment - Bastion Tower - Place du Champ de Mars n\u00b05 - 1050 Brussels (BE)",
+                },
+                "FR": {
+                    "tab_activa": "Actif", "tab_locatie": "Localisation", "tab_photos": "Photos",
+                    "tab_plans": "Plans", "tab_sales": "Conditions de vente",
+                    "address_label": "Adresse :", "description_label": "Description :",
+                    "price_label": "Prix :", "price_label_total": "Prix total :",
+                    "infos_label": "Infos :", "docs_label": "Documents compl\u00e9mentaires",
+                    "docs_helper": "Cliquez ici pour t\u00e9l\u00e9charger les documents",
+                    "map_link_text": "Cliquez pour visualiser sur Google Maps",
+                    "disclaimer": "*Ces informations sont approximatives et d\u00e9livr\u00e9es \u00e0 titre indicatif. Ces \u00e9l\u00e9ments devant \u00eatre confirm\u00e9s, pr\u00e9cis\u00e9s ou corrig\u00e9s, aucune d\u00e9cision ne pourra \u00eatre prise sur base du pr\u00e9sent document et engager la responsabilit\u00e9 de Rodschinson Investment. Pour de plus amples informations, merci de contacter un de nos Investment Portfolio Managers du bureau de Bruxelles : Tel : +32 (0) 2 550 36 87, Email : assets.brussels@rodschinson.com. Rodschinson Investment - Bastion Tower - Place du Champ de Mars n\u00b05 - 1050 Bruxelles (BE)",
+                },
+                "NL": {
+                    "tab_activa": "Activa", "tab_locatie": "Locatie", "tab_photos": "Foto's",
+                    "tab_plans": "Plannen", "tab_sales": "Verkoopvoorwaarden",
+                    "address_label": "Adres:", "description_label": "Beschrijving:",
+                    "price_label": "Prijs:", "price_label_total": "Totale prijs:",
+                    "infos_label": "Info :", "docs_label": "Aanvullende documenten",
+                    "docs_helper": "Klik hier om de bestandsdocumenten te downloaden",
+                    "map_link_text": "Klik om te bekijken op Google Maps",
+                    "disclaimer": "*Deze informatie is benaderend en wordt ter informatie verstrekt. Aangezien deze elementen moeten worden bevestigd, gespecificeerd of gecorrigeerd, kan op basis van dit document geen beslissing worden genomen die de verantwoordelijkheid van Rodschinson Investment in gevaar brengt. Voor meer informatie kunt u contact opnemen met een van onze Investment Portfolio Managers van het kantoor in Brussel: Tel: +32 (0) 2 550 36 87, E-mail: assets.brussels@rodschinson.com. Rodschinson Investment - Bastion Tower - Place du Champ de Mars n\u00b05 - 1050 Brussel (BE)",
+                },
+            }.get(language, None) or {}
+            if not L:
+                L = {
+                    "tab_activa": "Asset", "tab_locatie": "Location", "tab_photos": "Photos",
+                    "tab_plans": "Plans", "tab_sales": "Sales conditions",
+                    "address_label": "Address:", "description_label": "Description:",
+                    "price_label": "Price:", "price_label_total": "Total price:",
+                    "infos_label": "Info:", "docs_label": "Additional documents",
+                    "docs_helper": "Click here to download the file documents",
+                    "map_link_text": "Click to view on Google Maps",
+                    "disclaimer": "",
+                }
+
             # Build teaser JSON
             teaser_data = {
                 "title": property_data.get("title", subject),
@@ -2330,9 +2375,20 @@ EXTRACTION RULES:
                 "price": property_data.get("price", ""),
                 "description": desc,
                 "address": merged_address,
-                "address_label": {"EN": "Address:", "FR": "Adresse :", "NL": "Adres:"}.get(language, "Address:"),
-                "description_label": {"EN": "Description:", "FR": "Description :", "NL": "Beschrijving:"}.get(language, "Description:"),
-                "price_label": {"EN": "Price:", "FR": "Prix :", "NL": "Prijs:"}.get(language, "Price:"),
+                "address_label": L["address_label"],
+                "description_label": L["description_label"],
+                "price_label": L["price_label"],
+                "price_label_total": L["price_label_total"],
+                "infos_label": L["infos_label"],
+                "docs_label": L["docs_label"],
+                "docs_helper": L["docs_helper"],
+                "map_link_text": L["map_link_text"],
+                "disclaimer": L["disclaimer"],
+                "tab_activa": L["tab_activa"],
+                "tab_locatie": L["tab_locatie"],
+                "tab_photos": L["tab_photos"],
+                "tab_plans": L["tab_plans"],
+                "tab_sales": L["tab_sales"],
                 "plans_label": {"EN": "Plans:", "FR": "Plans :", "NL": "Plannen:"}.get(language, "Plans:"),
                 "surfaces_label": {"EN": "SURFACE DETAILS", "FR": "D\u00c9TAIL DES SUPERFICIES", "NL": "OPPERVLAKTEDETAILS"}.get(language, "SURFACE DETAILS"),
                 "surface_col1": {"EN": "Floor", "FR": "\u00c9tage", "NL": "Verdieping"}.get(language, "Floor"),
@@ -2345,6 +2401,11 @@ EXTRACTION RULES:
                 "surfaces": merged_surfaces,
                 "photos": photo_paths,
                 "plans": plan_paths,
+                # Agent (responsible) from Odoo property record
+                "agent_name": (agent if isinstance(agent, str) and agent.strip() else "Adam Meri"),
+                "agent_role": {"EN": "Investment Portfolio Manager", "FR": "Investment Portfolio Manager", "NL": "Investment Portfolio Manager"}.get(language, "Investment Portfolio Manager"),
+                "agent_phone": "+32 2 550 36 87",
+                "agent_email": "assets.brussels@rodschinson.com",
             }
 
             _job_update(job, status="running", step="Rendering PDF", progress=50)

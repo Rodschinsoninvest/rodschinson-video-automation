@@ -329,8 +329,6 @@ window.loadLongTeaser = function(data, brandName){
         ${subtitle?`<div class="c-sub">${esc(subtitle)}</div>`:''}
       </div>
       <div class="logo-box">
-        <div class="rod-hotels">ROD <span>Hotels</span></div>
-        <div class="lbvr"></div>
         <div class="rod-inv">RODSCHINSON<small>INVESTMENT</small></div>
       </div>
       <div class="crosshair">+</div>
@@ -428,7 +426,7 @@ window.loadLongTeaser = function(data, brandName){
           <div class="s-name">${esc(agentName)}</div>
           <div class="s-role">${esc(agentRole)}</div>
           <div class="s-infos">
-            <div class="s-label">Infos :</div>
+            <div class="s-label">${esc(data.infos_label || 'Infos :')}</div>
             <a href="tel:${esc(agentPhone.replace(/\s+/g,''))}">${esc(agentPhone)}</a>
             <a href="mailto:${esc(agentEmail)}">${esc(agentEmail)}</a>
           </div>
