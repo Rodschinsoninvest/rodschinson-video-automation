@@ -1381,58 +1381,144 @@ Rules:
             slide_png_paths = [str(p) for p in slide_pngs]
 
         # ════════════════════════════════════════════════════════════════════════
-        # IMAGE POST  —  Copy → Render single image
+        # IMAGE POST  —  Claude generates full HTML, render to PNG
         # ════════════════════════════════════════════════════════════════════════
         elif content_type == "image_post":
-            if not script_path:
-                # Try full script generator; if it fails build a minimal inline script
-                await try_step(
-                    "Writing headline & copy", 20,
-                    [str(PYTHON), str(SCRIPTS / "generate_video_script.py"),
-                     "--brand", brand_arg, "--sujet", subject,
-                     "--format", "linkedin", "--duree", "1.0"],
-                )
-                files = sorted((OUTPUT / "scripts").glob("script_*.json"),
-                               key=lambda p: p.stat().st_mtime, reverse=True)
-                if files:
-                    script_path = files[0]
-                else:
-                    # Inline fallback: build minimal single-scene script from Claude
-                    _job_update(job, status="running", step="Writing copy", progress=20)
-                    await _save_job(job)
-                    api_key = os.getenv("ANTHROPIC_API_KEY", "")
-                    copy_prompt = f"""Write a branded image post for {brand_display}.
-Topic: {subject}
-Return ONLY a JSON object:
-{{"meta":{{"id":"post","brand":"{brand_display}","format":"linkedin","ratio":"{fmt}","largeur":1080,"hauteur":1080,"fps":1,"duree_totale_sec":1,"langue":"{language.lower()}"}},"scenes":[{{"id":1,"nom":"post","duree_sec":1,"type_visuel":"title_card","narration":"","visuel":{{"titre_principal":"<headline max 8 words>","sous_titre":"<subline max 12 words>","eyebrow":"{brand_display}"}}}}]}}"""
-                    async with httpx.AsyncClient(timeout=30) as _c:
-                        _r = await _c.post(
-                            "https://api.anthropic.com/v1/messages",
-                            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-                            json={"model": "claude-sonnet-4-6", "max_tokens": 600,
-                                  "messages": [{"role": "user", "content": copy_prompt}]},
-                        )
-                    raw = _r.json()["content"][0]["text"].strip()
-                    if raw.startswith("```"):
-                        raw = re.sub(r"^```[a-z]*\n?", "", raw)
-                        raw = re.sub(r"\n?```$", "", raw.strip())
-                    script_dir = OUTPUT / "scripts"
-                    script_dir.mkdir(parents=True, exist_ok=True)
-                    script_path = script_dir / f"script_{job_id[:8]}_custom.json"
-                    script_path.write_text(raw, encoding="utf-8")
-
-            _job_update(job, script_path=str(script_path))
+            _job_update(job, status="running", step="AI designing image post", progress=20)
             await _save_job(job)
 
-            node_cmd = ["node", str(PUPPET / "image_renderer.js"),
-                        "--script", str(script_path),
-                        "--template", template,
-                        "--format", fmt.replace(":", "x")]
-            await step("Rendering image", 80, node_cmd, cwd=PUPPET)
+            # Resolve format dimensions
+            fmt_norm = fmt.replace(":", "x")
+            fmt_dims = {
+                "1x1":  (1080, 1080),
+                "4x5":  (1080, 1350),
+                "9x16": (1080, 1920),
+                "16x9": (1920, 1080),
+            }
+            width, height = fmt_dims.get(fmt_norm, (1080, 1080))
+            ratio_label = {"1x1": "1:1 square", "4x5": "4:5 portrait", "9x16": "9:16 vertical", "16x9": "16:9 landscape"}.get(fmt_norm, "1:1 square")
 
-            img_files = sorted((OUTPUT / "images").glob("post_*.png"),
-                               key=lambda p: p.stat().st_mtime, reverse=True)
-            output_file = str(img_files[0]) if img_files else None
+            # Build brand context
+            api_key = os.getenv("ANTHROPIC_API_KEY", "")
+            lang_label = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(language, "English")
+
+            heading_font = brand_heading_font or "Inter"
+            body_font = brand_body_font or "Inter"
+
+            ai_image_prompt = f"""You are a senior brand designer creating a SINGLE polished social media image post.
+
+BRAND: {brand_display}
+BRAND CONTEXT: {brand_context or brand_display}
+BRAND COLORS:
+- Primary: {brand_primary} (use as background base or main fill)
+- Accent: {brand_accent} (use for highlights, CTAs, key numbers, divider lines)
+- Background: {brand_bg or brand_primary}
+TYPOGRAPHY:
+- Heading font: {heading_font}
+- Body font: {body_font}
+
+TOPIC: {subject}
+LANGUAGE: {lang_label}
+FORMAT: {ratio_label} — exactly {width}x{height} pixels
+
+YOUR TASK: Design a complete, self-contained HTML page that renders as a beautiful, scroll-stopping social media image. Use ONLY the brand colors above plus white/light grays for contrast. Include rich graphical elements — NOT just a colored background with one line of text.
+
+Required HTML structure:
+- DOCTYPE + html + head + body
+- <body> sized exactly {width}x{height}px (set width/height in CSS, overflow:hidden)
+- Embed Google Fonts via @import for {heading_font} and {body_font}
+- All graphics inline as SVG (no external images)
+
+Design principles for THIS post:
+1. Pick ONE strong concept and execute it fully — bold headline + supporting visual
+2. Use 2-4 visual layers: background pattern/gradient, decorative SVG elements (circles, lines, geometric shapes, icons, abstract data viz), main text block, accent details
+3. Real typography hierarchy: large headline (8-15% of height), supporting line, optional stat/number/CTA
+4. Negative space — let elements breathe
+5. The post must communicate the topic clearly even without context
+6. Optional content patterns to choose from based on topic:
+   - Big stat with context (e.g. "73%" with explanation)
+   - Quote with attribution and decorative quote marks
+   - 3-step framework with numbered circles/icons
+   - Comparison: before/after or option A/B
+   - Listicle: 3-5 bullets with icons
+   - Question-answer hook
+   - Process diagram with arrows/connectors
+   - Bold statement card with decorative corners
+7. Brand watermark/logo text in a subtle position (top-left or bottom)
+8. Use modern design trends: subtle gradients, soft shadows (rgba), rounded corners, geometric SVG patterns
+
+CRITICAL RULES:
+- Output ONLY raw HTML, no markdown fences, no explanation
+- Body must be exactly {width}x{height}px
+- Use ONLY {brand_primary} and {brand_accent} as colored elements (plus white/grays for text contrast)
+- All text must be in {lang_label}
+- Make it look like a $5000 designer agency post — premium, intentional, visually rich
+- Inline ALL CSS in <style>, no external dependencies except Google Fonts
+- Test mentally: every element should be visible and contribute to the message
+"""
+
+            resp = None
+            for _attempt in range(3):
+                try:
+                    async with _claude_semaphore:
+                        async with httpx.AsyncClient() as client:
+                            resp = await client.post(
+                                "https://api.anthropic.com/v1/messages",
+                                headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                                json={"model": "claude-sonnet-4-6", "max_tokens": 8000,
+                                      "messages": [{"role": "user", "content": ai_image_prompt}]},
+                                timeout=180,
+                            )
+                            if resp.status_code == 200:
+                                break
+                            if resp.status_code in (529, 503, 429):
+                                wait = 8 * (_attempt + 1)
+                                log.warning("[%s] AI image: API busy %d, retry in %ds", job_id[:8], resp.status_code, wait)
+                                await asyncio.sleep(wait)
+                                continue
+                            raise RuntimeError(f"Claude API error {resp.status_code}: {resp.text[:400]}")
+                except httpx.TimeoutException:
+                    if _attempt < 2:
+                        log.warning("[%s] AI image: timeout, retrying", job_id[:8])
+                        continue
+                    raise
+            if resp is None or resp.status_code != 200:
+                raise RuntimeError("AI image generation failed after 3 attempts")
+
+            html_raw = resp.json()["content"][0]["text"].strip()
+            # Strip markdown fences if present
+            if html_raw.startswith("```"):
+                html_raw = re.sub(r"^```[a-z]*\n?", "", html_raw)
+                html_raw = re.sub(r"\n?```\s*$", "", html_raw)
+                html_raw = html_raw.strip()
+
+            # Find the <html or <!DOCTYPE start
+            doc_start = max(html_raw.find("<!DOCTYPE"), html_raw.find("<html"))
+            if doc_start > 0:
+                html_raw = html_raw[doc_start:]
+
+            _job_update(job, status="running", step="Rendering image", progress=70)
+            await _save_job(job)
+
+            # Save HTML and render PNG
+            ai_dir = OUTPUT / "images"
+            ai_dir.mkdir(parents=True, exist_ok=True)
+            html_path = ai_dir / f"post_{job_id[:8]}.html"
+            html_path.write_text(html_raw, encoding="utf-8")
+            png_path = ai_dir / f"post_{job_id[:8]}.png"
+
+            render_cmd = [
+                "node", str(PUPPET / "ai_image_renderer.js"),
+                "--html", str(html_path),
+                "--output", str(png_path),
+                "--format", fmt_norm,
+            ]
+            code, out, err = await _run(render_cmd, cwd=PUPPET, timeout=60, job_id=job_id)
+            if code != 0:
+                raise RuntimeError(f"AI image render failed (exit {code})\n{err[-400:]}")
+
+            output_file = str(png_path)
+            script_path = html_path
 
         # ════════════════════════════════════════════════════════════════════════
         # TEXT ONLY  —  Outline → Write (inline Claude) → Polish
