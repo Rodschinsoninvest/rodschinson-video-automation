@@ -2094,72 +2094,120 @@ RULES:
                     except Exception as e:
                         log.warning("[%s] Could not process document %s: %s", job_id[:8], name if 'name' in dir() else 'unknown', e)
 
-            # Ask Claude to extract missing fields if we have document content
+            # Ask Claude to extract ALL relevant data from documents (not just missing fields).
+            # Claude decides what's relevant for a property teaser; user-provided values still win.
             extracted_fields: dict = {}
             if extracted_text_chunks:
-                # Build list of which fields are missing
-                missing = []
-                if not extra.get("address"): missing.append("address")
-                if not extra.get("surfaces"): missing.append("surfaces")
-                if not extra.get("payment_terms"): missing.append("payment_terms")
-                if not desc: missing.append("description")
+                _job_update(job, status="running", step="AI analyzing documents", progress=30)
+                await _save_job(job)
+                api_key = os.getenv("ANTHROPIC_API_KEY", "")
+                lang_label_for_extract = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(language, "English")
+                combined_text = "\n\n".join(extracted_text_chunks)[:80000]
+                combined_text = re.sub(r"\[IMAGE:[^\]]+\]data:[^\s]+", "[image content not shown]", combined_text)
 
-                if missing:
-                    _job_update(job, status="running", step="AI extracting missing fields", progress=30)
-                    await _save_job(job)
-                    api_key = os.getenv("ANTHROPIC_API_KEY", "")
-                    combined_text = "\n\n".join(extracted_text_chunks)[:40000]
-                    # Strip image markers (we only pass text for now)
-                    combined_text = re.sub(r"\[IMAGE:[^\]]+\]data:[^\s]+", "[image content not shown]", combined_text)
+                # Show user-provided values to Claude so it knows what NOT to override
+                user_provided = {
+                    "address": extra.get("address", "") or "(empty)",
+                    "surfaces": extra.get("surfaces") or "(empty)",
+                    "payment_terms": extra.get("payment_terms", "") or "(empty)",
+                    "current_description": desc or "(empty)",
+                }
 
-                    extract_prompt = f"""You are analyzing property documents to extract missing data for a real estate teaser.
+                extract_prompt = f"""You are a real estate analyst extracting data from property documents to enrich a property teaser.
 
-PROPERTY TITLE: {property_data.get("title", "")}
-REFERENCE: {property_data.get("reference", "")}
+PROPERTY CONTEXT (from CRM):
+- Title: {property_data.get("title", "")}
+- Reference: {property_data.get("reference", "")}
+- Asset Type: {property_data.get("asset_label", property_data.get("asset_type", ""))}
+- Asking Price: {property_data.get("price", "")}
+
+USER ALREADY PROVIDED:
+- Address: {user_provided["address"]}
+- Surfaces: {user_provided["surfaces"]}
+- Payment Terms: {user_provided["payment_terms"]}
+- Current Description: {user_provided["current_description"]}
 
 DOCUMENTS CONTENT:
 {combined_text}
 
-TASK: Extract ONLY the following missing fields from the documents. If a field cannot be determined from the documents, set it to null.
+TASK: Carefully analyze the documents and extract ALL relevant data that should appear on a professional property teaser. Decide what is RELEVANT (location, dimensions, financials, technical specs, certifications, conditions) versus IRRELEVANT (internal reference numbers, owner names, dates, page numbers, redundant info).
 
-Missing fields: {", ".join(missing)}
-
-Return JSON with this exact schema:
+Return JSON in {lang_label_for_extract}:
 {{
-  "address": "full street address, postal code, city (or null)",
-  "surfaces": [{{"floor": "floor name", "area": "X m\u00b2"}}, ...] or null,
-  "payment_terms": "payment conditions or terms (or null)",
-  "description": "property description in bullet-style (or null, only if current description is empty)"
+  "address": "full street address with postal code and city, or null if not in docs",
+  "surfaces": [
+    {{"floor": "floor name or area type", "area": "X m\u00b2"}},
+    ...
+  ],
+  "payment_terms": "payment conditions, financing options, or null",
+  "extra_bullets": [
+    "Additional fact 1 (e.g. 'Annual rental income: 116.580 EUR')",
+    "Additional fact 2 (e.g. 'Energy rating: PEB C/D')",
+    "Additional fact 3 (e.g. 'Rental yield: approx 7%')",
+    "..."
+  ]
 }}
 
-Rules:
-- Only extract info that is clearly stated in the documents
-- Keep values concise and factual
-- For surfaces: extract floor-by-floor area breakdown if present
+EXTRACTION RULES:
+- surfaces: include ALL surface/area mentions (habitable surface, total surface, land surface, per-floor breakdown, parking, basement, etc.)
+- extra_bullets: extract 4-12 facts that would interest an investor — financials (rental income, yield, NOI), technical (energy rating, year built, renovation status, compliance), composition (number of units, parking spaces), notable features. Use the source language naturally.
+- Each extra_bullet should be ONE concise fact (max 100 chars), formatted as a complete statement
+- DO NOT include facts that are already in the user's "Current Description" above — only NEW facts
+- DO NOT include reference numbers, owner names, internal IDs, dates of preparation
+- For surfaces with multiple values (e.g. "+/- 525 m\u00b2"), keep the original notation
+- All text in {lang_label_for_extract}
 - Return ONLY the raw JSON object, no markdown fences.
 """
-                    try:
-                        async with _claude_semaphore:
-                            async with httpx.AsyncClient() as client:
-                                resp = await client.post(
-                                    "https://api.anthropic.com/v1/messages",
-                                    headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-                                    json={"model": "claude-sonnet-4-6", "max_tokens": 2000,
-                                          "messages": [{"role": "user", "content": extract_prompt}]},
-                                    timeout=120,
-                                )
-                                if resp.status_code == 200:
-                                    extracted_fields = _parse_json(resp.json()["content"][0]["text"]) or {}
-                                    log.info("[%s] Extracted fields: %s", job_id[:8], list(extracted_fields.keys()))
-                    except Exception as e:
-                        log.warning("[%s] Field extraction failed: %s", job_id[:8], e)
+                try:
+                    async with _claude_semaphore:
+                        async with httpx.AsyncClient() as client:
+                            resp = await client.post(
+                                "https://api.anthropic.com/v1/messages",
+                                headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                                json={"model": "claude-sonnet-4-6", "max_tokens": 4000,
+                                      "messages": [{"role": "user", "content": extract_prompt}]},
+                                timeout=120,
+                            )
+                            if resp.status_code == 200:
+                                extracted_fields = _parse_json(resp.json()["content"][0]["text"]) or {}
+                                log.info("[%s] Extracted: addr=%s, surfaces=%d, bullets=%d",
+                                         job_id[:8],
+                                         bool(extracted_fields.get("address")),
+                                         len(extracted_fields.get("surfaces") or []),
+                                         len(extracted_fields.get("extra_bullets") or []))
+                except Exception as e:
+                    log.warning("[%s] Document extraction failed: %s", job_id[:8], e)
 
-            # Merge: user-provided fields win, extracted fields fill gaps
+            # ── Merge: user-provided wins, extracted fills gaps and enriches ──
             merged_address = extra.get("address") or (extracted_fields.get("address") or "")
-            merged_surfaces = extra.get("surfaces") or (extracted_fields.get("surfaces") or [])
             merged_payment = extra.get("payment_terms") or (extracted_fields.get("payment_terms") or "")
-            if not desc and extracted_fields.get("description"):
-                desc = extracted_fields["description"]
+
+            # Surfaces: prefer user-provided; otherwise use extracted
+            merged_surfaces = extra.get("surfaces") or (extracted_fields.get("surfaces") or [])
+
+            # Description: append extracted extra_bullets to existing description (deduplicated by text similarity)
+            extra_bullets = extracted_fields.get("extra_bullets") or []
+            if extra_bullets:
+                # Normalize existing bullets to compare
+                existing_normalized = set()
+                if desc:
+                    for line in re.split(r"\s*\u2022\s*|\n", desc):
+                        norm = re.sub(r"\W+", "", line.lower()).strip()
+                        if norm:
+                            existing_normalized.add(norm[:50])
+
+                new_bullets = []
+                for b in extra_bullets:
+                    if not b or not isinstance(b, str):
+                        continue
+                    norm = re.sub(r"\W+", "", b.lower()).strip()[:50]
+                    if norm and norm not in existing_normalized:
+                        new_bullets.append(b.strip())
+                        existing_normalized.add(norm)
+
+                if new_bullets:
+                    bullet_str = " \u2022 ".join(new_bullets)
+                    desc = (desc + " \u2022 " + bullet_str) if desc else ("\u2022 " + bullet_str)
 
             lang_label = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(language, "English")
 
