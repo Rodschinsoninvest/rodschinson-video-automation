@@ -429,6 +429,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
   const [surfaces, setSurfaces] = useState([])
   const [photos, setPhotos] = useState([])
   const [plans, setPlans] = useState([])
+  const [documents, setDocuments] = useState([])
 
   const bg = dark ? '#1a1a1a' : '#fff'
   const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
@@ -450,11 +451,21 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
     e.target.value = ''
   }
 
+  const handleDocFiles = (e) => {
+    const files = Array.from(e.target.files)
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = () => setDocuments(prev => [...prev, { name: file.name, type: file.type, data: reader.result }])
+      reader.readAsDataURL(file)
+    })
+    e.target.value = ''
+  }
+
   const removeFile = (setter, i) => setter(prev => prev.filter((_, idx) => idx !== i))
 
   const handleGenerate = async () => {
     setLoading(true)
-    await onGenerate({ prop, brand, language, photos, plans, fields: { address, paymentTerms, sharepointUrl, expertiseUrl, surfaces } })
+    await onGenerate({ prop, brand, language, photos, plans, documents, fields: { address, paymentTerms, sharepointUrl, expertiseUrl, surfaces } })
     setLoading(false)
     onClose()
   }
@@ -502,6 +513,29 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
             <label style={{ width: 64, height: 48, borderRadius: 4, border: `2px dashed ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: muted }}>
               +
               <input type="file" accept="image/*" multiple onChange={e => handleFiles(e, setPlans)} style={{ display: 'none' }} />
+            </label>
+          </div>
+        </div>
+
+        {/* Source documents upload (optional AI extraction) */}
+        <div style={{ marginBottom: 14, padding: 10, borderRadius: 6, border: `1px dashed ${border}`, background: 'rgba(0,182,255,0.03)' }}>
+          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>
+            Source Documents <span style={{ textTransform: 'none', color: '#00B6FF', fontWeight: 500 }}>(optional — AI will extract missing info)</span>
+          </div>
+          <div style={{ fontSize: 10, color: muted, marginBottom: 8, lineHeight: 1.5 }}>
+            Upload PDFs, Word docs, or images. AI will extract address, surfaces, and other details only for fields you leave empty.
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {documents.map((d, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 4, background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(8,49,111,0.04)', fontSize: 11, color: text, maxWidth: 220 }}>
+                <span style={{ fontSize: 14 }}>📄</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{d.name}</span>
+                <button onClick={() => removeFile(setDocuments, i)} style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: 14, cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
+              </div>
+            ))}
+            <label style={{ padding: '6px 12px', borderRadius: 4, border: `1px dashed ${border}`, cursor: 'pointer', fontSize: 11, color: '#00B6FF', fontWeight: 600 }}>
+              + Add document
+              <input type="file" accept=".pdf,.doc,.docx,.txt,image/*" multiple onChange={handleDocFiles} style={{ display: 'none' }} />
             </label>
           </div>
         </div>
@@ -851,7 +885,7 @@ export default function Properties() {
   }
 
   // Generate long teaser
-  const handleGenerateLongTeaser = async ({ prop, brand, language, photos, plans, fields }) => {
+  const handleGenerateLongTeaser = async ({ prop, brand, language, photos, plans, documents, fields }) => {
     try {
       const payload = {
         subject: prop.title || 'Property Long Teaser',
@@ -863,6 +897,7 @@ export default function Properties() {
         property_data: prop,
         photos,
         plans,
+        documents: documents || [],
         long_teaser_fields: {
           address: fields.address,
           payment_terms: fields.paymentTerms,

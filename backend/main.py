@@ -2036,6 +2036,118 @@ RULES:
                 else:
                     plan_paths.append(plan)
 
+            # Extract text from source documents (PDF, DOCX, images) and use Claude
+            # to fill in any missing fields the user didn't provide
+            documents = data.get("documents", [])
+            extracted_text_chunks = []
+            if documents:
+                _job_update(job, status="running", step=f"Extracting data from {len(documents)} document(s)", progress=20)
+                await _save_job(job)
+                import base64 as _b64
+                for i, doc in enumerate(documents):
+                    try:
+                        data_uri = doc.get("data", "") if isinstance(doc, dict) else doc
+                        name = doc.get("name", f"doc_{i}") if isinstance(doc, dict) else f"doc_{i}"
+                        if not data_uri.startswith("data:"):
+                            continue
+                        header, b64data = data_uri.split(",", 1)
+                        raw_bytes = _b64.b64decode(b64data)
+                        lname = name.lower()
+                        text = ""
+                        if lname.endswith(".pdf") or "pdf" in header:
+                            try:
+                                import pypdf, io as _io
+                                reader = pypdf.PdfReader(_io.BytesIO(raw_bytes))
+                                text = "\n".join((p.extract_text() or "") for p in reader.pages)
+                            except Exception as e:
+                                log.warning("[%s] PDF extract failed for %s: %s", job_id[:8], name, e)
+                        elif lname.endswith(".docx") or "wordprocessingml" in header:
+                            try:
+                                import docx as _docx, io as _io
+                                d = _docx.Document(_io.BytesIO(raw_bytes))
+                                text = "\n".join(p.text for p in d.paragraphs if p.text.strip())
+                            except Exception as e:
+                                log.warning("[%s] DOCX extract failed for %s: %s", job_id[:8], name, e)
+                        elif lname.endswith(".txt") or "text/plain" in header:
+                            try:
+                                text = raw_bytes.decode("utf-8", errors="ignore")
+                            except Exception:
+                                pass
+                        elif "image/" in header:
+                            # For images, we'll pass directly to Claude vision below
+                            text = f"[IMAGE:{name}]{data_uri}"
+                        if text:
+                            extracted_text_chunks.append(f"--- {name} ---\n{text[:8000]}")
+                    except Exception as e:
+                        log.warning("[%s] Could not process document %s: %s", job_id[:8], name if 'name' in dir() else 'unknown', e)
+
+            # Ask Claude to extract missing fields if we have document content
+            extracted_fields: dict = {}
+            if extracted_text_chunks:
+                # Build list of which fields are missing
+                missing = []
+                if not extra.get("address"): missing.append("address")
+                if not extra.get("surfaces"): missing.append("surfaces")
+                if not extra.get("payment_terms"): missing.append("payment_terms")
+                if not desc: missing.append("description")
+
+                if missing:
+                    _job_update(job, status="running", step="AI extracting missing fields", progress=30)
+                    await _save_job(job)
+                    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+                    combined_text = "\n\n".join(extracted_text_chunks)[:40000]
+                    # Strip image markers (we only pass text for now)
+                    combined_text = re.sub(r"\[IMAGE:[^\]]+\]data:[^\s]+", "[image content not shown]", combined_text)
+
+                    extract_prompt = f"""You are analyzing property documents to extract missing data for a real estate teaser.
+
+PROPERTY TITLE: {property_data.get("title", "")}
+REFERENCE: {property_data.get("reference", "")}
+
+DOCUMENTS CONTENT:
+{combined_text}
+
+TASK: Extract ONLY the following missing fields from the documents. If a field cannot be determined from the documents, set it to null.
+
+Missing fields: {", ".join(missing)}
+
+Return JSON with this exact schema:
+{{
+  "address": "full street address, postal code, city (or null)",
+  "surfaces": [{{"floor": "floor name", "area": "X m\u00b2"}}, ...] or null,
+  "payment_terms": "payment conditions or terms (or null)",
+  "description": "property description in bullet-style (or null, only if current description is empty)"
+}}
+
+Rules:
+- Only extract info that is clearly stated in the documents
+- Keep values concise and factual
+- For surfaces: extract floor-by-floor area breakdown if present
+- Return ONLY the raw JSON object, no markdown fences.
+"""
+                    try:
+                        async with _claude_semaphore:
+                            async with httpx.AsyncClient() as client:
+                                resp = await client.post(
+                                    "https://api.anthropic.com/v1/messages",
+                                    headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                                    json={"model": "claude-sonnet-4-6", "max_tokens": 2000,
+                                          "messages": [{"role": "user", "content": extract_prompt}]},
+                                    timeout=120,
+                                )
+                                if resp.status_code == 200:
+                                    extracted_fields = _parse_json(resp.json()["content"][0]["text"]) or {}
+                                    log.info("[%s] Extracted fields: %s", job_id[:8], list(extracted_fields.keys()))
+                    except Exception as e:
+                        log.warning("[%s] Field extraction failed: %s", job_id[:8], e)
+
+            # Merge: user-provided fields win, extracted fields fill gaps
+            merged_address = extra.get("address") or (extracted_fields.get("address") or "")
+            merged_surfaces = extra.get("surfaces") or (extracted_fields.get("surfaces") or [])
+            merged_payment = extra.get("payment_terms") or (extracted_fields.get("payment_terms") or "")
+            if not desc and extracted_fields.get("description"):
+                desc = extracted_fields["description"]
+
             lang_label = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(language, "English")
 
             # Build teaser JSON
@@ -2044,7 +2156,7 @@ RULES:
                 "reference": property_data.get("reference", ""),
                 "price": property_data.get("price", ""),
                 "description": desc,
-                "address": extra.get("address", ""),
+                "address": merged_address,
                 "address_label": {"EN": "Address:", "FR": "Adresse :", "NL": "Adres:"}.get(language, "Address:"),
                 "description_label": {"EN": "Description:", "FR": "Description :", "NL": "Beschrijving:"}.get(language, "Description:"),
                 "price_label": {"EN": "Price:", "FR": "Prix :", "NL": "Prijs:"}.get(language, "Price:"),
@@ -2052,12 +2164,12 @@ RULES:
                 "surfaces_label": {"EN": "SURFACE DETAILS", "FR": "D\u00c9TAIL DES SUPERFICIES", "NL": "OPPERVLAKTEDETAILS"}.get(language, "SURFACE DETAILS"),
                 "surface_col1": {"EN": "Floor", "FR": "\u00c9tage", "NL": "Verdieping"}.get(language, "Floor"),
                 "surface_col2": {"EN": "Area in m\u00b2", "FR": "Superficie en m\u00b2", "NL": "Oppervlakte in m\u00b2"}.get(language, "Area"),
-                "payment_terms": extra.get("payment_terms", ""),
+                "payment_terms": merged_payment,
                 "sharepoint_url": extra.get("sharepoint_url", ""),
                 "sharepoint_label": {"EN": "Access full dossier", "FR": "Acc\u00e9der au dossier complet", "NL": "Volledig dossier openen"}.get(language, "Access full dossier"),
                 "expertise_url": extra.get("expertise_url", ""),
                 "map_url": extra.get("map_url", ""),
-                "surfaces": extra.get("surfaces", []),
+                "surfaces": merged_surfaces,
                 "photos": photo_paths,
                 "plans": plan_paths,
             }
