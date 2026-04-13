@@ -75,15 +75,17 @@ async function renderSlide(browser, slideData, templatePath, outputPath, brand) 
     // ── Inject brand colours + identity before loadScene() ──────────────────
     await page.evaluate((b) => {
       const root = document.documentElement;
-      // Inject brand colours as CSS variables
-      // Primary = accent/highlight colour (NOT background)
-      // Background stays as template default unless brand has explicit bg
+      // Inject brand colours as CSS variables.
+      // Brand "primary" is the brand's main colour (often dark/navy used as base).
+      // Brand "accent" is the highlight/CTA colour (bright).
+      // Templates use --sky-blue / --gold / --accent for HIGHLIGHTS — map them to brand ACCENT
+      // (mapping to primary made highlights invisible against the dark base background).
       const pairs = [
         ['--brand-primary', b.primary], ['--brand-accent', b.accent],
         ['--brand-text',    b.text],
-        // Accent aliases — brand primary is the accent/highlight colour
-        ['--sky',           b.primary], ['--sky-blue',    b.primary],
-        ['--gold',          b.primary], ['--accent',      b.primary],
+        // Highlight/accent aliases — must use brand accent for visibility
+        ['--sky',           b.accent], ['--sky-blue',    b.accent],
+        ['--gold',          b.accent], ['--accent',      b.accent],
       ];
       // Only override background if brand has an explicit backgroundColor
       if (b.bg && b.bg !== b.primary) {
