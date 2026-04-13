@@ -2026,14 +2026,40 @@ RULES:
                     photo_paths.append(photo)
 
             for i, plan in enumerate(data.get("plans", [])):
-                if plan.startswith("data:"):
+                # Plan can be:
+                #  - a base64 data URI string (single image)
+                #  - a string URL/path
+                #  - a dict {type: "pdf", name: ..., data: data_uri} (multi-page PDF)
+                if isinstance(plan, dict) and plan.get("type") == "pdf":
+                    # Render each PDF page as a PNG plan
+                    import base64 as _b64
+                    pdf_data_uri = plan.get("data", "")
+                    if not pdf_data_uri.startswith("data:"):
+                        continue
+                    try:
+                        _, b64data = pdf_data_uri.split(",", 1)
+                        pdf_bytes = _b64.b64decode(b64data)
+                        import fitz  # PyMuPDF
+                        pdf_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                        for page_idx in range(len(pdf_doc)):
+                            page = pdf_doc[page_idx]
+                            # Render at 2x for crisp PDF -> 144 DPI
+                            pix = page.get_pixmap(matrix=fitz.Matrix(2.0, 2.0))
+                            fpath = upload_dir / f"plan_{i:02d}_p{page_idx:02d}.png"
+                            pix.save(str(fpath))
+                            plan_paths.append(f"file://{fpath}")
+                        pdf_doc.close()
+                        log.info("[%s] Extracted %d pages from PDF plan: %s", job_id[:8], len(pdf_doc), plan.get("name", ""))
+                    except Exception as e:
+                        log.warning("[%s] Failed to extract PDF plan pages: %s", job_id[:8], e)
+                elif isinstance(plan, str) and plan.startswith("data:"):
                     import base64 as _b64
                     header, b64data = plan.split(",", 1)
                     ext = "jpg" if "jpeg" in header or "jpg" in header else "png"
                     fpath = upload_dir / f"plan_{i:02d}.{ext}"
                     fpath.write_bytes(_b64.b64decode(b64data))
                     plan_paths.append(f"file://{fpath}")
-                else:
+                elif isinstance(plan, str):
                     plan_paths.append(plan)
 
             # Map image (single)

@@ -452,6 +452,20 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
     e.target.value = ''
   }
 
+  const handlePlanFiles = (e) => {
+    const files = Array.from(e.target.files)
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        // Tag PDFs with a marker so we render them differently in the UI
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+        setPlans(prev => [...prev, isPdf ? { type: 'pdf', name: file.name, data: reader.result } : reader.result])
+      }
+      reader.readAsDataURL(file)
+    })
+    e.target.value = ''
+  }
+
   const handleMapFile = (e) => {
     const file = e.target.files[0]
     if (!file) return
@@ -510,19 +524,31 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
           </div>
         </div>
 
-        {/* Plans upload */}
+        {/* Plans upload (images or PDF — PDF pages auto-extracted) */}
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Floor Plans</div>
+          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>
+            Floor Plans <span style={{ textTransform: 'none', color: '#00B6FF', fontWeight: 500 }}>(images or PDF — each page becomes a plan)</span>
+          </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
-            {plans.map((p, i) => (
-              <div key={i} style={{ position: 'relative', width: 64, height: 48, borderRadius: 4, overflow: 'hidden', border: `1px solid ${border}` }}>
-                <img src={p} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button onClick={() => removeFile(setPlans, i)} style={{ position: 'absolute', top: 1, right: 1, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 16, height: 16, fontSize: 10, cursor: 'pointer', lineHeight: '14px' }}>x</button>
-              </div>
-            ))}
+            {plans.map((p, i) => {
+              const isPdfPlan = typeof p === 'object' && p?.type === 'pdf'
+              return (
+                <div key={i} style={{ position: 'relative', width: isPdfPlan ? 110 : 64, height: 48, borderRadius: 4, overflow: 'hidden', border: `1px solid ${border}`, background: isPdfPlan ? 'rgba(220,38,38,0.08)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: isPdfPlan ? '0 8px' : 0 }}>
+                  {isPdfPlan ? (
+                    <>
+                      <span style={{ fontSize: 18 }}>📄</span>
+                      <span style={{ fontSize: 9, color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                    </>
+                  ) : (
+                    <img src={p} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  )}
+                  <button onClick={() => removeFile(setPlans, i)} style={{ position: 'absolute', top: 1, right: 1, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 16, height: 16, fontSize: 10, cursor: 'pointer', lineHeight: '14px' }}>x</button>
+                </div>
+              )
+            })}
             <label style={{ width: 64, height: 48, borderRadius: 4, border: `2px dashed ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: muted }}>
               +
-              <input type="file" accept="image/*" multiple onChange={e => handleFiles(e, setPlans)} style={{ display: 'none' }} />
+              <input type="file" accept="image/*,application/pdf" multiple onChange={handlePlanFiles} style={{ display: 'none' }} />
             </label>
           </div>
         </div>
