@@ -47,7 +47,7 @@ async function main() {
 
   try {
     const page = await browser.newPage();
-    await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
+    await page.setViewport({ width: 1123, height: 794, deviceScaleFactor: 2 });
     await page.goto(`file://${tmplPath}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
     await new Promise(r => setTimeout(r, 300));
     await page.evaluate(() => document.fonts.ready).catch(() => {});
@@ -68,11 +68,11 @@ async function main() {
     await new Promise(r => setTimeout(r, 500));
 
     const pdfPath = opts.outputPdf || opts.script.replace(/\.json$/, '.pdf');
-    await page.pdf({ path: pdfPath, format: 'A4', printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 } });
+    await page.pdf({ path: pdfPath, format: 'A4', landscape: true, printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 } });
     console.log(`[long-teaser] PDF -> ${pdfPath}`);
 
     const thumbPath = opts.outputThumb || opts.script.replace(/\.json$/, '_thumb.png');
-    await page.screenshot({ path: thumbPath, type: 'png', clip: { x: 0, y: 0, width: 794, height: 1123 } });
+    await page.screenshot({ path: thumbPath, type: 'png', clip: { x: 0, y: 0, width: 1123, height: 794 } });
     console.log(`[long-teaser] Thumb -> ${thumbPath}`);
 
     await page.close();
