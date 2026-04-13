@@ -429,6 +429,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
   const [surfaces, setSurfaces] = useState([])
   const [photos, setPhotos] = useState([])
   const [plans, setPlans] = useState([])
+  const [mapImage, setMapImage] = useState('')
   const [documents, setDocuments] = useState([])
 
   const bg = dark ? '#1a1a1a' : '#fff'
@@ -451,6 +452,15 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
     e.target.value = ''
   }
 
+  const handleMapFile = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setMapImage(reader.result)
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
   const handleDocFiles = (e) => {
     const files = Array.from(e.target.files)
     files.forEach(file => {
@@ -465,7 +475,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
 
   const handleGenerate = async () => {
     setLoading(true)
-    await onGenerate({ prop, brand, language, photos, plans, documents, fields: { address, paymentTerms, sharepointUrl, expertiseUrl, surfaces } })
+    await onGenerate({ prop, brand, language, photos, plans, mapImage, documents, fields: { address, paymentTerms, sharepointUrl, expertiseUrl, surfaces } })
     setLoading(false)
     onClose()
   }
@@ -540,10 +550,26 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
           </div>
         </div>
 
-        {/* Address */}
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>Full Address</div>
-          <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Street, Postal Code, City" style={inputStyle} />
+        {/* Address + Map */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 10, marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>Full Address</div>
+            <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Street, Postal Code, City" style={inputStyle} />
+          </div>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>Map Image</div>
+            {mapImage ? (
+              <div style={{ position: 'relative', width: '100%', height: 32, borderRadius: 4, overflow: 'hidden', border: `1px solid ${border}` }}>
+                <img src={mapImage} alt="map" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button onClick={() => setMapImage('')} style={{ position: 'absolute', top: 1, right: 1, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 16, height: 16, fontSize: 10, cursor: 'pointer', lineHeight: '14px' }}>x</button>
+              </div>
+            ) : (
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: 32, borderRadius: 4, border: `1px dashed ${border}`, cursor: 'pointer', fontSize: 11, color: muted }}>
+                + Upload map
+                <input type="file" accept="image/*" onChange={handleMapFile} style={{ display: 'none' }} />
+              </label>
+            )}
+          </div>
         </div>
 
         {/* Surface table */}
@@ -885,7 +911,7 @@ export default function Properties() {
   }
 
   // Generate long teaser
-  const handleGenerateLongTeaser = async ({ prop, brand, language, photos, plans, documents, fields }) => {
+  const handleGenerateLongTeaser = async ({ prop, brand, language, photos, plans, mapImage, documents, fields }) => {
     try {
       const payload = {
         subject: prop.title || 'Property Long Teaser',
@@ -897,6 +923,7 @@ export default function Properties() {
         property_data: prop,
         photos,
         plans,
+        map_image: mapImage || '',
         documents: documents || [],
         long_teaser_fields: {
           address: fields.address,

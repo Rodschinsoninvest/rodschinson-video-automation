@@ -2036,6 +2036,19 @@ RULES:
                 else:
                     plan_paths.append(plan)
 
+            # Map image (single)
+            map_image_path = ""
+            map_data = data.get("map_image", "")
+            if map_data and map_data.startswith("data:"):
+                import base64 as _b64
+                header, b64data = map_data.split(",", 1)
+                ext = "jpg" if "jpeg" in header or "jpg" in header else "png"
+                fpath = upload_dir / f"map.{ext}"
+                fpath.write_bytes(_b64.b64decode(b64data))
+                map_image_path = f"file://{fpath}"
+            elif map_data:
+                map_image_path = map_data
+
             # Extract text from source documents (PDF, DOCX, images) and use Claude
             # to fill in any missing fields the user didn't provide
             documents = data.get("documents", [])
@@ -2168,7 +2181,7 @@ Rules:
                 "sharepoint_url": extra.get("sharepoint_url", ""),
                 "sharepoint_label": {"EN": "Access full dossier", "FR": "Acc\u00e9der au dossier complet", "NL": "Volledig dossier openen"}.get(language, "Access full dossier"),
                 "expertise_url": extra.get("expertise_url", ""),
-                "map_url": extra.get("map_url", ""),
+                "map_url": map_image_path or extra.get("map_url", ""),
                 "surfaces": merged_surfaces,
                 "photos": photo_paths,
                 "plans": plan_paths,
@@ -2273,11 +2286,11 @@ async def generate(request: Request):
     _check_rate_limit(request.client.host if request.client else "unknown")
     # Parse multipart with raised limits (default 1MB per part is too small for base64 uploads)
     form = await request.form(max_files=100, max_fields=100, max_part_size=100 * 1024 * 1024)  # 100MB per part
-    payload_str = form.get("payload")
-    if not payload_str:
+    payload_raw = form.get("payload")
+    if not payload_raw or not isinstance(payload_raw, str):
         raise HTTPException(422, "Missing payload field")
     try:
-        data = json.loads(payload_str)
+        data = json.loads(payload_raw)
     except json.JSONDecodeError:
         raise HTTPException(422, "Invalid payload JSON")
     if not data.get("subject", "").strip():
@@ -2285,7 +2298,7 @@ async def generate(request: Request):
 
     logo = form.get("logo")
     logo_path: Path | None = None
-    if logo and hasattr(logo, "filename") and logo.filename:
+    if logo is not None and not isinstance(logo, str) and getattr(logo, "filename", None):
         logo_dest = OUTPUT / "images" / f"logo_{uuid.uuid4().hex[:8]}_{logo.filename}"
         logo_dest.parent.mkdir(parents=True, exist_ok=True)
         async with aiofiles.open(logo_dest, "wb") as f:
