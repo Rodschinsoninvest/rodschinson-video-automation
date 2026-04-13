@@ -2,335 +2,426 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=794, height=1123">
-<title>Property Long Teaser</title>
+<title>Long Teaser</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --navy: #08316F; --sky: #00B6FF; --gold: #C8A96E; --white: #FFFFFF;
-  --bg: #F5F2ED; --muted: rgba(8,49,111,0.5); --border: rgba(8,49,111,0.08);
-  --heading: 'Montserrat', sans-serif; --body: 'DM Sans', sans-serif;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#08316F;
+  --cyan:#00B6FF;
+  --grey-text:#6b7280;
+  --border:#e5e7eb;
 }
-html, body { width: 794px; overflow-x: hidden; background: var(--white); font-family: var(--body); color: var(--navy); -webkit-font-smoothing: antialiased; }
-.page { width: 794px; min-height: 1123px; position: relative; page-break-after: always; }
-.page:last-child { page-break-after: auto; }
+@page{ size:A4 landscape; margin:0; }
+html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montserrat',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 
-/* ── HEADER BAR (gradient navy → sky) ── */
-.header-bar {
-  background: linear-gradient(135deg, var(--navy) 0%, #0a4a9a 100%);
-  padding: 14px 28px; display: flex; align-items: center; gap: 18px;
+.page{
+  width:1123px;height:794px;position:relative;overflow:hidden;page-break-after:always;background:#fff;
 }
-.header-logo { flex-shrink: 0; }
-.header-logo-main { font-family: var(--heading); font-weight: 700; font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--white); line-height: 1; }
-.header-logo-line { width: 110px; height: 1.5px; background: var(--sky); margin: 4px 0; }
-.header-logo-sub { font-family: var(--heading); font-weight: 400; font-size: 7px; letter-spacing: 4.5px; text-transform: uppercase; color: var(--sky); }
-.header-divider { width: 1px; height: 36px; background: rgba(255,255,255,0.2); }
-.header-info { flex: 1; }
-.header-title { font-family: var(--heading); font-weight: 700; font-size: 12.5px; color: var(--white); line-height: 1.35; }
-.header-ref { font-family: var(--heading); font-weight: 500; font-size: 9px; color: var(--sky); letter-spacing: 1px; margin-top: 3px; }
+.page:last-child{page-break-after:auto}
 
-/* ── TOP PHOTO GALLERY (2 photos side-by-side) ── */
-.top-gallery {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 0; height: 240px; overflow: hidden; position: relative;
+/* ── HEADER (gradient bar) ── */
+.pg-header{
+  position:absolute;top:0;left:0;right:0;height:90px;
+  background:linear-gradient(90deg,#1FB6FF 0%,#0A66C2 45%,#08316F 100%);
+  display:flex;align-items:center;padding:0 0 0 48px;color:#fff;z-index:5;
 }
-.top-gallery img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.top-gallery.single { grid-template-columns: 1fr; }
-.top-gallery-empty {
-  background: linear-gradient(135deg, rgba(8,49,111,0.05) 0%, rgba(0,182,255,0.05) 100%);
-  display: flex; align-items: center; justify-content: center; color: var(--muted);
-  font-size: 12px; letter-spacing: 1px;
+.pg-header .logo{width:170px;display:flex;flex-direction:column;justify-content:center}
+.pg-header .logo .l1{font-family:'Montserrat';font-weight:400;font-size:18px;color:#fff;letter-spacing:0.32em;line-height:1}
+.pg-header .logo .l2{font-family:'Montserrat';font-weight:300;font-size:8px;color:#fff;letter-spacing:0.6em;margin-top:3px;line-height:1}
+.pg-header .sep{width:1px;height:60px;background:rgba(255,255,255,0.3);margin:0 28px}
+.pg-header .title-block{flex:1;min-width:0}
+.pg-header .title-block .ttl{font-family:'Montserrat';font-weight:700;font-size:14px;line-height:1.25;color:#fff;margin-bottom:4px}
+.pg-header .title-block .ref{font-family:'Montserrat';font-weight:500;font-size:12px;color:rgba(255,255,255,0.9);letter-spacing:0.02em}
+.pg-header .disc{
+  width:460px;padding:0 32px 0 24px;border-left:1px solid rgba(255,255,255,0.3);height:60px;
+  font-size:8px;line-height:1.35;color:rgba(255,255,255,0.85);display:flex;align-items:center;
 }
 
-/* Download button overlay */
-.download-btn {
-  position: absolute; right: 22px; bottom: 18px; z-index: 10;
-  display: inline-flex; align-items: center; gap: 10px;
-  background: var(--sky); color: var(--white); padding: 10px 16px; border-radius: 6px;
-  font-family: var(--heading); font-weight: 600; font-size: 11px; text-decoration: none;
-  box-shadow: 0 4px 14px rgba(0,182,255,0.4);
+/* ── NAV TABS ── */
+.pg-nav{
+  position:absolute;top:110px;left:48px;right:48px;height:40px;
+  display:flex;align-items:center;gap:14px;font-family:'Montserrat';font-size:16px;z-index:4;
 }
-.download-btn svg { width: 18px; height: 18px; fill: var(--white); }
-.download-btn-label { display: flex; flex-direction: column; line-height: 1.1; }
-.download-btn-label span:first-child { font-weight: 700; font-size: 12px; }
-.download-btn-label span:last-child { font-size: 8px; opacity: 0.85; letter-spacing: 1.5px; }
+.pg-nav .mark{width:54px;height:1px;background:var(--cyan);position:relative;margin-right:4px}
+.pg-nav .mark::before{
+  content:'';position:absolute;left:30px;top:-10px;width:20px;height:20px;border-radius:50%;
+  border:1.5px solid var(--cyan);
+}
+.pg-nav .mark::after{
+  content:'+';position:absolute;left:34.5px;top:-12px;font-size:18px;color:var(--cyan);line-height:1;font-weight:300;
+}
+.pg-nav .tab{color:#9aa3af;font-weight:500;letter-spacing:0.01em}
+.pg-nav .tab.active{color:var(--navy);font-weight:700}
+.pg-nav .div{color:#cbd5e1;font-weight:300}
 
-/* ── MAIN CONTENT ── */
-.content { padding: 22px 32px 16px; }
+/* ── BODY AREA ── */
+.pg-body{position:absolute;top:170px;left:48px;right:48px;bottom:40px}
 
-.prop-headline {
-  font-family: var(--heading); font-weight: 800; font-size: 22px; color: var(--navy);
-  line-height: 1.25; margin-bottom: 18px;
+/* ─────── PAGE 1 — COVER ─────── */
+.cover{position:relative;width:100%;height:100%}
+.cover .hero{position:absolute;inset:0;background-size:cover;background-position:center}
+.cover .panel{
+  position:absolute;top:0;right:0;width:46%;height:100%;background:#fff;
+  clip-path:polygon(12% 0,100% 0,100% 100%,0 100%);
 }
+.cover .ref-bar{
+  position:absolute;top:0;right:0;width:46%;height:145px;background:var(--navy);
+  clip-path:polygon(22% 0,100% 0,100% 100%,0 100%);
+  display:flex;align-items:center;justify-content:flex-end;padding:0 60px 0 0;
+}
+.cover .ref-bar .ref{color:#fff;font-family:'Montserrat';font-weight:800;font-size:28px;letter-spacing:0.02em}
+.cover .panel-inner{position:absolute;top:210px;right:60px;width:480px}
+.cover .c-loc{font-family:'Montserrat';font-weight:800;font-size:26px;color:var(--cyan);margin-bottom:22px}
+.cover .c-name{font-family:'Montserrat';font-weight:800;font-size:26px;color:var(--navy);text-transform:uppercase;line-height:1.2;margin-bottom:22px}
+.cover .c-sub{font-family:'Montserrat';font-weight:700;font-size:22px;color:var(--navy);line-height:1.3}
+.cover .logo-box{
+  position:absolute;right:60px;bottom:120px;width:480px;height:90px;
+  border:1px solid var(--border);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;gap:30px;background:#fff;
+}
+.cover .logo-box .lbvr{width:1px;height:48px;background:var(--border)}
+.cover .logo-box .rod-hotels{font-family:'Montserrat';font-weight:800;font-size:18px;color:var(--navy);letter-spacing:0.02em}
+.cover .logo-box .rod-hotels span{color:var(--cyan)}
+.cover .logo-box .rod-inv{font-family:'Montserrat';font-weight:400;font-size:14px;color:var(--navy);letter-spacing:0.28em;text-align:center;line-height:1.05}
+.cover .logo-box .rod-inv small{display:block;font-size:8px;letter-spacing:0.5em;font-weight:300;margin-top:2px}
+.cover .crosshair{
+  position:absolute;left:calc(54% - 18px);bottom:116px;width:36px;height:36px;border-radius:50%;
+  border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:22px;font-weight:300;line-height:1;background:#fff;z-index:3;
+}
+.cover .web{
+  position:absolute;right:48px;bottom:30px;color:#fff;font-family:'Montserrat';font-weight:500;font-size:14px;text-shadow:0 1px 4px rgba(0,0,0,0.4);
+}
+.cover .accent-line{position:absolute;left:54%;top:145px;bottom:0;width:2px;background:var(--cyan)}
 
-/* ── 2-COLUMN ADDRESS + MAP ── */
-.row-addr-map {
-  display: grid; grid-template-columns: 1fr 240px; gap: 22px; margin-bottom: 16px;
+/* ─────── PAGE 2 — DIVIDER ─────── */
+.divider{
+  width:100%;height:100%;
+  background:linear-gradient(90deg,#1FB6FF 0%,#0A66C2 50%,#08316F 100%);
+  display:flex;align-items:center;justify-content:center;
 }
-.addr-block { padding-top: 4px; }
-.section-label {
-  font-family: var(--heading); font-weight: 700; font-size: 11px;
-  color: var(--sky); letter-spacing: 0.5px; margin-bottom: 6px;
-}
-.addr-text {
-  font-family: var(--body); font-size: 11px; line-height: 1.5; color: var(--navy);
-}
-.map-frame {
-  width: 100%; height: 165px; border-radius: 6px; overflow: hidden;
-  border: 1px solid var(--border); background: rgba(8,49,111,0.03);
-  display: flex; align-items: center; justify-content: center;
-}
-.map-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.divider .wm{font-family:'Montserrat';font-weight:400;font-size:34px;color:#fff;letter-spacing:0.55em;text-align:center}
+.divider .wm small{display:block;font-size:14px;letter-spacing:0.8em;font-weight:300;margin-top:8px;opacity:0.95}
 
-/* ── DESCRIPTION ── */
-.desc-block { margin-bottom: 16px; }
-.desc-text {
-  font-family: var(--body); font-size: 10.5px; line-height: 1.55; color: var(--navy); margin-bottom: 8px;
+/* ─────── PAGE 3 — ACTIVA ─────── */
+.activa{display:flex;gap:0;height:100%;align-items:stretch}
+.activa .left{
+  width:54%;border:1px solid var(--border);border-radius:4px;padding:32px 32px 28px;background:#fff;
+  display:flex;flex-direction:column;z-index:2;
 }
-.desc-list { list-style: none; padding: 0; }
-.desc-list li {
-  font-family: var(--body); font-size: 10.5px; line-height: 1.5; color: var(--navy);
-  padding: 3px 0 3px 14px; position: relative;
-}
-.desc-list li::before { content: '\2022'; position: absolute; left: 0; color: var(--sky); font-weight: 700; }
-
-/* ── 2-COLUMN SURFACE TABLE + INTERIOR PHOTO ── */
-.row-surface-photo {
-  display: grid; grid-template-columns: 1fr 240px; gap: 22px; margin-bottom: 16px;
-}
-.surface-section { break-inside: avoid; }
-.surface-header {
-  font-family: var(--heading); font-weight: 700; font-size: 10px; letter-spacing: 2px;
-  text-transform: uppercase; color: var(--navy); padding: 8px 14px;
-  background: rgba(8,49,111,0.04); border-bottom: 2px solid var(--sky);
-}
-.surface-table { width: 100%; border-collapse: collapse; }
-.surface-table th {
-  font-family: var(--heading); font-weight: 600; font-size: 9px; text-align: left;
-  padding: 7px 14px; color: var(--muted); border-bottom: 1px solid var(--border);
-}
-.surface-table td {
-  font-family: var(--body); font-size: 10.5px; padding: 7px 14px;
-  border-bottom: 1px solid rgba(8,49,111,0.04); color: var(--navy);
-}
-.surface-table td:last-child { font-weight: 700; }
-
-.interior-photo {
-  width: 100%; height: 100%; min-height: 165px; border-radius: 6px; overflow: hidden;
-  border: 1px solid var(--border); background: rgba(8,49,111,0.03);
-}
-.interior-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-/* ── PLANS section ── */
-.plans-section { margin-bottom: 16px; }
-.plans-grid { display: flex; gap: 10px; flex-wrap: wrap; }
-.plans-grid img {
-  height: 170px; max-width: 240px; border-radius: 6px;
-  border: 1px solid var(--border); object-fit: contain; background: rgba(8,49,111,0.02);
+.activa .a-title{font-family:'Montserrat';font-weight:800;font-size:22px;color:var(--navy);line-height:1.25;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.activa .a-label{font-size:16px;color:var(--grey-text);margin-bottom:10px}
+.activa .a-val{font-size:16px;color:#111;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.activa .a-bullets{padding-left:18px;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.activa .a-bullets li{font-size:15px;color:#111;line-height:1.55;margin-bottom:6px}
+.activa .a-price{margin-top:auto;font-family:'Montserrat';font-weight:600;font-size:22px;color:var(--navy);display:flex;align-items:baseline;gap:14px}
+.activa .a-price .val{color:var(--cyan);font-weight:900;font-size:34px;letter-spacing:0.01em}
+.activa .right{
+  flex:1;margin-left:-40px;margin-top:40px;margin-bottom:40px;
+  background-size:cover;background-position:center;border-radius:4px;box-shadow:0 4px 18px rgba(0,0,0,0.08);
 }
 
-/* ── EXTRA PHOTOS section (anything beyond 2 exterior + 1 interior) ── */
-.extra-photos { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-.extra-photos img { flex: 1; min-width: 230px; height: 170px; object-fit: cover; border-radius: 6px; }
-
-/* ── SHAREPOINT LINK ── */
-.sharepoint-link {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-family: var(--heading); font-weight: 600; font-size: 10.5px;
-  color: var(--sky); text-decoration: none; padding: 8px 16px;
-  border: 1px solid rgba(0,182,255,0.25); border-radius: 6px;
-  background: rgba(0,182,255,0.04); margin-bottom: 14px;
+/* ─────── PAGE 4 — LOCATIE ─────── */
+.locatie{display:flex;gap:40px;height:100%;align-items:center;position:relative}
+.locatie .map{
+  width:56%;height:90%;background-size:cover;background-position:center;border-radius:6px;box-shadow:0 4px 18px rgba(0,0,0,0.1);
+}
+.locatie .info{flex:1;padding-right:20px}
+.locatie .info .l-title{font-family:'Montserrat';font-weight:800;font-size:22px;color:var(--navy);line-height:1.25;padding-bottom:22px;border-bottom:1px solid var(--border);margin-bottom:22px}
+.locatie .info .l-link{display:block;color:var(--cyan);font-family:'Montserrat';font-weight:700;font-size:20px;text-decoration:underline;margin-bottom:22px}
+.locatie .info .l-rule{height:1px;background:var(--border);margin-bottom:22px}
+.locatie .crosshair{
+  position:absolute;right:60px;top:40%;width:28px;height:28px;border-radius:50%;
+  border:1.5px solid var(--cyan);color:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:300;line-height:1;background:#fff;
 }
 
-/* ── PRICE ── */
-.price-section {
-  border-top: 2px solid var(--sky); padding-top: 12px; margin-top: 6px; margin-bottom: 12px;
-}
-.price-label { font-family: var(--heading); font-weight: 700; font-size: 11px; color: var(--sky); margin-bottom: 4px; }
-.price-row { display: flex; align-items: baseline; gap: 16px; }
-.price-value { font-family: var(--heading); font-weight: 900; font-size: 38px; color: var(--navy); letter-spacing: -0.5px; }
-.price-terms { font-family: var(--body); font-size: 10px; color: var(--muted); line-height: 1.45; max-width: 280px; }
+/* ─────── PHOTO PAGES ─────── */
+.photos-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%}
+.photos-2{display:grid;grid-template-columns:1fr 1fr;gap:24px;height:100%}
+.photo-tile{width:100%;height:100%;background-size:cover;background-position:center;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,0.08)}
 
-/* ── FOOTER ── */
-.footer-disclaimer {
-  background: rgba(8,49,111,0.03); padding: 11px 32px;
-  font-family: var(--body); font-size: 7px; line-height: 1.55; color: var(--muted);
+/* ─────── PLAN PAGES ─────── */
+.plan-wrap{display:flex;align-items:center;justify-content:center;height:100%}
+.plan-wrap img{max-width:80%;max-height:100%;object-fit:contain}
+
+/* ─────── VERKOOP (sales) ─────── */
+.sales{display:flex;gap:0;height:100%;border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.sales .s-left{width:44%;display:flex;flex-direction:column;background:#fff}
+.sales .s-left .s-name{font-family:'Montserrat';font-weight:800;font-size:28px;color:var(--navy);text-align:center;padding:36px 20px 28px;border-bottom:1px solid var(--border)}
+.sales .s-left .s-role{font-size:16px;color:#111;text-align:center;padding:26px 20px;border-bottom:1px solid var(--border)}
+.sales .s-left .s-infos{padding:22px 28px 26px;border-bottom:1px solid var(--border);flex:1}
+.sales .s-left .s-infos .s-label{color:var(--grey-text);font-size:15px;margin-bottom:14px}
+.sales .s-left .s-infos a{display:block;color:var(--cyan);font-weight:600;font-size:16px;text-decoration:underline;margin-bottom:10px;word-break:break-all}
+.sales .s-left .s-price{padding:28px 28px;display:flex;align-items:baseline;gap:12px;font-family:'Montserrat';font-weight:600;font-size:20px;color:var(--navy)}
+.sales .s-left .s-price .val{color:var(--cyan);font-weight:900;font-size:32px}
+.sales .s-right{flex:1;display:flex;flex-direction:column}
+.sales .s-right .s-photo{flex:1;background-size:cover;background-position:center;min-height:0}
+.sales .s-right .s-cta{padding:22px 24px 26px;text-align:center;border-top:1px solid var(--border);background:#fff}
+.sales .s-right .s-cta .s-cta-label{color:var(--grey-text);font-size:14px;margin-bottom:14px}
+.sales .s-right .s-cta a{
+  display:inline-block;background:var(--cyan);color:#fff;font-family:'Montserrat';font-weight:700;font-size:17px;
+  padding:14px 42px;border-radius:40px;text-decoration:underline;letter-spacing:0.01em;
 }
+
+/* ─────── BACK COVER ─────── */
+.back{position:relative;width:100%;height:100%;overflow:hidden}
+.back .bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(0.55)}
+.back .overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,49,111,0.35) 0%,rgba(8,49,111,0.75) 100%)}
+.back .wm{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:'Montserrat';font-weight:400;font-size:42px;color:#fff;letter-spacing:0.5em;text-align:center;
+}
+.back .wm small{display:block;font-size:15px;letter-spacing:0.8em;font-weight:300;margin-top:10px;opacity:0.95}
+.back .contact-row{
+  position:absolute;left:0;right:0;bottom:42px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-family:'Montserrat';font-weight:500;
+}
+.back .contact-row .it{padding:0 60px;text-align:center}
+.back .contact-row .bar{width:2px;height:20px;background:var(--cyan)}
 </style>
 </head>
 <body>
-
-<div id="pages-container"></div>
+<div id="doc"></div>
 
 <script>
-function esc(s) { if (!s) return ''; var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fileUrl(p){
+  if(!p) return '';
+  const s = String(p);
+  if(/^(https?:|data:|file:)/.test(s)) return s;
+  return 'file://' + s;
+}
 
-window.loadLongTeaser = function(data, brandName) {
-  var logoName = (brandName || 'RODSCHINSON').toUpperCase().replace(/\s*INVESTMENT\s*/i, '').trim() || 'RODSCHINSON';
-  var container = document.getElementById('pages-container');
-  container.innerHTML = '';
+window.loadLongTeaser = function(data, brandName){
+  data = data || {};
+  const T = {
+    activa:  data.tab_activa   || 'Activa',
+    loc:     data.tab_locatie  || 'Locatie',
+    photos:  data.tab_photos   || "Foto's",
+    plans:   data.tab_plans    || 'Plannen',
+    sales:   data.tab_sales    || 'Verkoopvoorwaarden',
+  };
 
-  var photos = data.photos || [];
-  var plans = data.plans || [];
-  // First 2 photos go to top gallery, photo[2] (if exists) goes next to surface table, rest go in extras
-  var topPhotos = photos.slice(0, 2);
-  var interiorPhoto = photos[2] || '';
-  var extraPhotos = photos.slice(3);
+  const title     = data.title || '';
+  const subtitle  = data.subtitle || '';
+  const ref       = data.reference || '';
+  const address   = data.address || '';
+  const price     = data.price || '';
+  const priceLbl  = data.price_label_total || 'Totale prijs:';
+  const addrLbl   = data.address_label || 'Adres:';
+  const descLbl   = data.description_label || 'Beschrijving :';
+  const mapLinkTxt= data.map_link_text || 'Cliquez pour visualiser sur Google Maps';
+  const mapsUrl   = data.google_maps_url || data.map_url || '#';
 
-  // Parse description into intro + bullets
-  var rawDesc = (data.description || '').trim();
-  var bullets = [];
-  var introText = '';
-  if (rawDesc.indexOf('\u2022') !== -1) {
-    var parts = rawDesc.split(/\s*\u2022\s*/);
-    parts.forEach(function(p, i) {
-      var trimmed = p.trim();
-      if (!trimmed) return;
-      if (i === 0 && !rawDesc.startsWith('\u2022')) introText = trimmed;
-      else bullets.push(trimmed);
-    });
-  } else {
-    introText = rawDesc;
+  const photos = (data.photos||[]).filter(Boolean);
+  const plans  = (data.plans||[]).filter(Boolean);
+  const maps   = (data.maps||[]).filter(Boolean);
+  const primaryMap = maps[0] || data.map_url || photos[0] || '';
+  const streetMap  = maps[1] || maps[0] || data.map_url || '';
+  const coverPhoto = data.cover_photo || photos[0] || primaryMap || '';
+  const backPhoto  = data.back_photo  || coverPhoto;
+  const salesPhoto = data.sales_photo || photos[photos.length-1] || coverPhoto;
+
+  let bullets = [];
+  if(Array.isArray(data.description_bullets)) bullets = data.description_bullets.filter(Boolean);
+  else if(data.description){
+    bullets = String(data.description).split(/\s*•\s*|\s*\u2022\s*|\n+/).map(s=>s.trim()).filter(Boolean);
   }
 
-  var html = '<div class="page">';
+  const agentName  = data.agent_name  || 'Adam Meri';
+  const agentRole  = data.agent_role  || 'Head of Accounts';
+  const agentPhone = data.agent_phone || '+32 2 550 36 87';
+  const agentEmail = data.agent_email || 'adam.meri@rodschinson.com';
+  const docsUrl    = data.sharepoint_url || data.expertise_url || '#';
+  const docsLabel  = data.docs_label   || 'Aanvullende documenten';
+  const docsHelper = data.docs_helper  || 'Klik hier om de bestandsdocumenten te downloaden';
 
-  // ── HEADER BAR ──
-  html += '<div class="header-bar">' +
-    '<div class="header-logo">' +
-      '<div class="header-logo-main">' + esc(logoName) + '</div>' +
-      '<div class="header-logo-line"></div>' +
-      '<div class="header-logo-sub">I N V E S T M E N T</div>' +
-    '</div>' +
-    '<div class="header-divider"></div>' +
-    '<div class="header-info">' +
-      '<div class="header-title">' + esc(data.title || '') + '</div>' +
-      '<div class="header-ref">' + esc(data.reference || '') + '</div>' +
-    '</div>' +
-  '</div>';
+  let loc = '', name = title;
+  const mm = title.match(/^(.*?):\s*(.+)$/);
+  if(mm){ loc = mm[1].trim(); name = mm[2].trim(); }
 
-  // ── TOP GALLERY (2 photos) + Download button overlay ──
-  var galleryClass = 'top-gallery' + (topPhotos.length === 1 ? ' single' : '');
-  html += '<div class="' + galleryClass + '">';
-  if (topPhotos.length === 0) {
-    html += '<div class="top-gallery-empty">No photos uploaded</div>';
-  } else {
-    topPhotos.forEach(function(src) {
-      html += '<img src="' + esc(src) + '" alt="" />';
-    });
-  }
-  if (data.expertise_url) {
-    html += '<a class="download-btn" href="' + esc(data.expertise_url) + '" target="_blank">' +
-      '<svg viewBox="0 0 24 24"><path d="M12 16l-5-5h3V4h4v7h3l-5 5zm-7 2h14v2H5v-2z"/></svg>' +
-      '<div class="download-btn-label"><span>T\u00e9l\u00e9charger</span><span>PDF</span></div>' +
-    '</a>';
-  }
-  html += '</div>';
+  const disclaimer = data.disclaimer || '*These informations are approximate and given for indicative purposes. As these elements must be confirmed, specified or corrected, no decision may be made on the basis of this document nor engage the responsibility of Rodschinson Investment. For more information, please contact one of our Investment Portfolio Managers at the Brussels office: Tel: +32 (0) 2 550 36 87, Email: assets.brussels@rodschinson.com. Rodschinson Investment - Bastion Tower - Place du Champ de Mars n°5 - 1050 Brussels (BE)';
 
-  // ── CONTENT AREA ──
-  html += '<div class="content">';
-
-  // Property headline
-  html += '<div class="prop-headline">' + esc(data.title || '') + '</div>';
-
-  // 2-column: Address (left) + Map (right)
-  html += '<div class="row-addr-map">';
-  html += '<div class="addr-block">' +
-    '<div class="section-label">' + esc(data.address_label || 'Adresse :') + '</div>' +
-    '<div class="addr-text">' + esc(data.address || '—') + '</div>' +
-  '</div>';
-  html += '<div class="map-frame">';
-  if (data.map_url) {
-    html += '<img src="' + esc(data.map_url) + '" alt="Map" />';
-  } else {
-    html += '<svg width="40" height="40" viewBox="0 0 40 40" fill="none">' +
-      '<circle cx="20" cy="20" r="12" stroke="#08316F" stroke-width="1" opacity="0.3"/>' +
-      '<line x1="20" y1="2" x2="20" y2="38" stroke="#08316F" stroke-width="0.6" opacity="0.3"/>' +
-      '<line x1="2" y1="20" x2="38" y2="20" stroke="#08316F" stroke-width="0.6" opacity="0.3"/>' +
-    '</svg>';
-  }
-  html += '</div></div>';
-
-  // Description (full width)
-  if (introText || bullets.length) {
-    html += '<div class="desc-block">';
-    html += '<div class="section-label">' + esc(data.description_label || 'Description :') + '</div>';
-    if (introText) html += '<div class="desc-text">' + esc(introText) + '</div>';
-    if (bullets.length) {
-      html += '<ul class="desc-list">';
-      bullets.forEach(function(b) { html += '<li>' + esc(b) + '</li>'; });
-      html += '</ul>';
-    }
-    html += '</div>';
+  function header(activeTab){
+    return `
+      <div class="pg-header">
+        <div class="logo">
+          <div class="l1">RODSCHINSON</div>
+          <div class="l2">INVESTMENT</div>
+        </div>
+        <div class="sep"></div>
+        <div class="title-block">
+          <div class="ttl">${esc(title)}</div>
+          <div class="ref">${esc(ref)}</div>
+        </div>
+        <div class="disc">${esc(disclaimer)}</div>
+      </div>
+      <div class="pg-nav">
+        <div class="mark"></div>
+        <span class="tab${activeTab==='a'?' active':''}">${esc(T.activa)}</span><span class="div">|</span>
+        <span class="tab${activeTab==='l'?' active':''}">${esc(T.loc)}</span><span class="div">|</span>
+        <span class="tab${activeTab==='p'?' active':''}">${esc(T.photos)}</span><span class="div">|</span>
+        <span class="tab${activeTab==='pl'?' active':''}">${esc(T.plans)}</span><span class="div">|</span>
+        <span class="tab${activeTab==='s'?' active':''}">${esc(T.sales)}</span>
+      </div>`;
   }
 
-  // 2-column: Surface table (left) + Interior photo (right)
-  if ((data.surfaces && data.surfaces.length) || interiorPhoto) {
-    html += '<div class="row-surface-photo">';
-    if (data.surfaces && data.surfaces.length) {
-      html += '<div class="surface-section">' +
-        '<div class="surface-header">' + esc(data.surfaces_label || 'D\u00c9TAIL DES SUPERFICIES') + '</div>' +
-        '<table class="surface-table"><thead><tr><th>' + esc(data.surface_col1 || '\u00c9tage') + '</th><th>' + esc(data.surface_col2 || 'Superficie en m\u00b2') + '</th></tr></thead><tbody>';
-      data.surfaces.forEach(function(s) {
-        html += '<tr><td>' + esc(s.floor || s.label || '') + '</td><td>' + esc(s.area || s.value || '') + '</td></tr>';
-      });
-      html += '</tbody></table></div>';
-    } else {
-      html += '<div></div>';
-    }
-    if (interiorPhoto) {
-      html += '<div class="interior-photo"><img src="' + esc(interiorPhoto) + '" alt="" /></div>';
-    } else {
-      html += '<div></div>';
-    }
-    html += '</div>';
+  const pages = [];
+
+  // COVER
+  pages.push(`
+    <div class="page">
+      <div class="cover">
+        <div class="hero" style="background-image:url('${esc(fileUrl(coverPhoto))}')"></div>
+        <div class="accent-line"></div>
+        <div class="panel"></div>
+        <div class="ref-bar"><div class="ref">${esc(ref)}</div></div>
+        <div class="panel-inner">
+          ${loc?`<div class="c-loc">${esc(loc)}</div>`:''}
+          <div class="c-name">${esc(name)}</div>
+          ${subtitle?`<div class="c-sub">${esc(subtitle)}</div>`:''}
+        </div>
+        <div class="logo-box">
+          <div class="rod-hotels">ROD <span>Hotels</span></div>
+          <div class="lbvr"></div>
+          <div class="rod-inv">RODSCHINSON<small>INVESTMENT</small></div>
+        </div>
+        <div class="crosshair">+</div>
+        <div class="web">www.rodschinson.com</div>
+      </div>
+    </div>`);
+
+  // DIVIDER
+  pages.push(`
+    <div class="page">
+      <div class="divider">
+        <div class="wm">RODSCHINSON<small>INVESTMENT</small></div>
+      </div>
+    </div>`);
+
+  // ACTIVA
+  pages.push(`
+    <div class="page">
+      ${header('a')}
+      <div class="pg-body">
+        <div class="activa">
+          <div class="left">
+            <div class="a-title">${esc(title)}</div>
+            <div class="a-label">${esc(addrLbl)}</div>
+            <div class="a-val">${esc(address)}</div>
+            <div class="a-label">${esc(descLbl)}</div>
+            <ul class="a-bullets">
+              ${bullets.map(b=>`<li>${esc(b)}</li>`).join('')}
+            </ul>
+            <div class="a-price"><span>${esc(priceLbl)}</span><span class="val">${esc(price)}</span></div>
+          </div>
+          <div class="right" style="background-image:url('${esc(fileUrl(primaryMap))}')"></div>
+        </div>
+      </div>
+    </div>`);
+
+  // LOCATIE
+  pages.push(`
+    <div class="page">
+      ${header('l')}
+      <div class="pg-body">
+        <div class="locatie">
+          <div class="map" style="background-image:url('${esc(fileUrl(streetMap))}')"></div>
+          <div class="info">
+            <div class="l-title">${esc(title)}</div>
+            <div class="l-rule"></div>
+            <a class="l-link" href="${esc(mapsUrl)}" target="_blank">${esc(mapLinkTxt)}</a>
+            <div class="l-rule"></div>
+          </div>
+          <div class="crosshair">!</div>
+        </div>
+      </div>
+    </div>`);
+
+  // PHOTOS: first page 3 if >=3, rest 2 per page
+  let i = 0;
+  if(photos.length >= 3){
+    const trio = photos.slice(0,3);
+    pages.push(`
+      <div class="page">
+        ${header('p')}
+        <div class="pg-body">
+          <div class="photos-3">
+            ${trio.map(p=>`<div class="photo-tile" style="background-image:url('${esc(fileUrl(p))}')"></div>`).join('')}
+          </div>
+        </div>
+      </div>`);
+    i = 3;
+  }
+  while(i < photos.length){
+    const pair = photos.slice(i, i+2);
+    pages.push(`
+      <div class="page">
+        ${header('p')}
+        <div class="pg-body">
+          <div class="photos-2">
+            ${pair.map(p=>`<div class="photo-tile" style="background-image:url('${esc(fileUrl(p))}')"></div>`).join('')}
+          </div>
+        </div>
+      </div>`);
+    i += 2;
   }
 
-  // Extra photos (beyond top 2 + interior)
-  if (extraPhotos.length) {
-    html += '<div class="extra-photos">';
-    extraPhotos.forEach(function(src) {
-      html += '<img src="' + esc(src) + '" alt="" />';
-    });
-    html += '</div>';
-  }
+  // PLANS — 1 per page
+  plans.forEach(pl=>{
+    pages.push(`
+      <div class="page">
+        ${header('pl')}
+        <div class="pg-body">
+          <div class="plan-wrap"><img src="${esc(fileUrl(pl))}" alt="plan"></div>
+        </div>
+      </div>`);
+  });
 
-  // Plans
-  if (plans.length) {
-    html += '<div class="plans-section">' +
-      '<div class="section-label">' + esc(data.plans_label || 'Plans :') + '</div>' +
-      '<div class="plans-grid">';
-    plans.forEach(function(src) { html += '<img src="' + esc(src) + '" alt="" />'; });
-    html += '</div></div>';
-  }
+  // SALES
+  pages.push(`
+    <div class="page">
+      ${header('s')}
+      <div class="pg-body">
+        <div class="sales">
+          <div class="s-left">
+            <div class="s-name">${esc(agentName)}</div>
+            <div class="s-role">${esc(agentRole)}</div>
+            <div class="s-infos">
+              <div class="s-label">Infos :</div>
+              <a href="tel:${esc(agentPhone.replace(/\s+/g,''))}">${esc(agentPhone)}</a>
+              <a href="mailto:${esc(agentEmail)}">${esc(agentEmail)}</a>
+            </div>
+            <div class="s-price"><span>${esc(priceLbl)}</span><span class="val">${esc(price)}</span></div>
+          </div>
+          <div class="s-right">
+            <div class="s-photo" style="background-image:url('${esc(fileUrl(salesPhoto))}')"></div>
+            <div class="s-cta">
+              <div class="s-cta-label">${esc(docsHelper)}</div>
+              <a href="${esc(docsUrl)}" target="_blank">${esc(docsLabel)}</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`);
 
-  // SharePoint link
-  if (data.sharepoint_url) {
-    html += '<a class="sharepoint-link" href="' + esc(data.sharepoint_url) + '" target="_blank">' +
-      '\ud83d\udcc1 ' + esc(data.sharepoint_label || 'Acc\u00e9der au dossier complet') +
-    '</a>';
-  }
+  // BACK COVER
+  pages.push(`
+    <div class="page">
+      <div class="back">
+        <div class="bg" style="background-image:url('${esc(fileUrl(backPhoto))}')"></div>
+        <div class="overlay"></div>
+        <div class="wm">RODSCHINSON<small>INVESTMENT</small></div>
+        <div class="contact-row">
+          <div class="it">${esc(agentPhone)}</div>
+          <div class="bar"></div>
+          <div class="it">assets@rodschinson.com</div>
+          <div class="bar"></div>
+          <div class="it">www.rodschinson.com</div>
+        </div>
+      </div>
+    </div>`);
 
-  // Price
-  if (data.price) {
-    html += '<div class="price-section">' +
-      '<div class="price-label">' + esc(data.price_label || 'Prix :') + '</div>' +
-      '<div class="price-row">' +
-        '<div class="price-value">' + esc(data.price) + '</div>' +
-        (data.payment_terms ? '<div class="price-terms">' + esc(data.payment_terms) + '</div>' : '') +
-      '</div>' +
-    '</div>';
-  }
-
-  html += '</div>'; // close .content
-
-  // Footer disclaimer
-  var disclaimer = data.disclaimer || 'Cette information est donn\u00e9e \u00e0 titre indicatif et moyen. Certains \u00e9l\u00e9ments peuvent n\u00e9cessiter confirmation, clarification ou correction. Aucune d\u00e9cision ne peut \u00eatre prise sur la base de ce document, et Rodschinson Investment d\u00e9cline toute responsabilit\u00e9 \u00e0 cet \u00e9gard. Pour plus d\'informations, vous pouvez contacter l\'un de nos Investment Portfolio Managers via notre bureau \u00e0 Bruxelles : T\u00e9l : +32 (0) 2 550 36 87. E-mail : assets.brussels@rodschinson.com. Rodschinson Investment. Bastion Tower - Place du Champ de Mars n\u00b0 5 - 1050 Bruxelles (Belgique)';
-  html += '<div class="footer-disclaimer">' + esc(disclaimer) + '</div>';
-
-  html += '</div>'; // close .page
-
-  container.innerHTML = html;
+  document.getElementById('doc').innerHTML = pages.join('');
   return true;
 };
 </script>
