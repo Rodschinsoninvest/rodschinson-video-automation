@@ -2470,27 +2470,38 @@ Return JSON in {lang_label_for_extract}:
 {{
   "address": "full street address with postal code and city, or null if not in docs",
   "surfaces": [
-    {{"floor": "floor name or area type", "area": "X m\u00b2"}},
-    ...
+    {{"floor": "floor name or area type", "area": "X m\u00b2"}}
   ],
   "payment_terms": "payment conditions, financing options, or null",
+  "rental_income": [
+    {{"label": "Unit A / Apartment 1 / Tenant name", "value": "\u20ac650 / month"}}
+  ],
+  "financial_summary": [
+    {{"label": "Annual rental income", "value": "\u20ac116,580"}},
+    {{"label": "Gross yield", "value": "~7%"}},
+    {{"label": "Annual property tax", "value": "\u20ac6,713"}}
+  ],
+  "technical_specs": [
+    {{"label": "Year built", "value": "1998"}},
+    {{"label": "Energy rating (PEB)", "value": "C / D"}},
+    {{"label": "Compliance", "value": "zoning, electricity, fire safety"}}
+  ],
   "extra_bullets": [
-    "Additional fact 1 (e.g. 'Annual rental income: 116.580 EUR')",
-    "Additional fact 2 (e.g. 'Energy rating: PEB C/D')",
-    "Additional fact 3 (e.g. 'Rental yield: approx 7%')",
-    "..."
+    "Short stand-alone fact that does not fit the structured groups above"
   ]
 }}
 
 EXTRACTION RULES:
-- surfaces: include ALL surface/area mentions (habitable surface, total surface, land surface, per-floor breakdown, parking, basement, etc.)
-- extra_bullets: extract 4-12 facts that would interest an investor — financials (rental income, yield, NOI), technical (energy rating, year built, renovation status, compliance), composition (number of units, parking spaces), notable features. Use the source language naturally.
-- Each extra_bullet should be ONE concise fact (max 100 chars), formatted as a complete statement
-- DO NOT include facts that are already in the user's "Current Description" above — only NEW facts
-- DO NOT include reference numbers, owner names, internal IDs, dates of preparation
-- For surfaces with multiple values (e.g. "+/- 525 m\u00b2"), keep the original notation
-- All text in {lang_label_for_extract}
-- Return ONLY the raw JSON object, no markdown fences.
+- surfaces: include ALL surface/area mentions (habitable surface, total surface, land surface, per-floor breakdown, parking, basement). Keep original notation.
+- rental_income: ONE row per unit/tenant with the monthly or annual rent. Leave empty if the asset is not income-producing or no rent data is present.
+- financial_summary: totals and ratios (annual income, yield, NOI, property tax, cadastral income). Currency symbols stay with the value.
+- technical_specs: building facts (year built, energy rating, compliance, construction type, utilities, number of units, parking).
+- extra_bullets: 0-5 misc facts that don't fit the structured groups above. Keep short.
+- DO NOT duplicate the same fact across groups.
+- DO NOT repeat anything already present in the user's "Current Description" above.
+- DO NOT include reference numbers, owner names, internal IDs, preparation dates.
+- All text in {lang_label_for_extract}.
+- Return ONLY the raw JSON object, no markdown fences. Omit a key entirely (or leave its array empty) if nothing relevant was found.
 """
                 try:
                     async with _claude_semaphore:
@@ -2519,29 +2530,23 @@ EXTRACTION RULES:
             # Surfaces: prefer user-provided; otherwise use extracted
             merged_surfaces = extra.get("surfaces") or (extracted_fields.get("surfaces") or [])
 
-            # Description: append extracted extra_bullets to existing description (deduplicated by text similarity)
-            extra_bullets = extracted_fields.get("extra_bullets") or []
-            if extra_bullets:
-                # Normalize existing bullets to compare
-                existing_normalized = set()
-                if desc:
-                    for line in re.split(r"\s*\u2022\s*|\n", desc):
-                        norm = re.sub(r"\W+", "", line.lower()).strip()
-                        if norm:
-                            existing_normalized.add(norm[:50])
-
-                new_bullets = []
-                for b in extra_bullets:
-                    if not b or not isinstance(b, str):
+            # Structured groups from document extraction — rendered as tables on a
+            # dedicated "Details" page in Activa, NOT merged into the description.
+            def _clean_rows(rows):
+                out = []
+                for r in rows or []:
+                    if not isinstance(r, dict):
                         continue
-                    norm = re.sub(r"\W+", "", b.lower()).strip()[:50]
-                    if norm and norm not in existing_normalized:
-                        new_bullets.append(b.strip())
-                        existing_normalized.add(norm)
-
-                if new_bullets:
-                    bullet_str = " \u2022 ".join(new_bullets)
-                    desc = (desc + " \u2022 " + bullet_str) if desc else ("\u2022 " + bullet_str)
+                    lab = str(r.get("label", "")).strip()
+                    val = str(r.get("value", "")).strip()
+                    if lab and val:
+                        out.append({"label": lab, "value": val})
+                return out
+            rental_income_rows    = _clean_rows(extracted_fields.get("rental_income"))
+            financial_summary_rows = _clean_rows(extracted_fields.get("financial_summary"))
+            technical_specs_rows   = _clean_rows(extracted_fields.get("technical_specs"))
+            extra_bullets = [b.strip() for b in (extracted_fields.get("extra_bullets") or [])
+                             if isinstance(b, str) and b.strip()][:5]
 
             lang_label = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(language, "English")
 
@@ -2622,6 +2627,16 @@ EXTRACTION RULES:
                 "expertise_url": extra.get("expertise_url", ""),
                 "map_url": map_image_path or extra.get("map_url", ""),
                 "surfaces": merged_surfaces,
+                # Structured extracted groups — rendered as tables on a "Details" page
+                "rental_income_rows":     rental_income_rows,
+                "financial_summary_rows": financial_summary_rows,
+                "technical_specs_rows":   technical_specs_rows,
+                "extra_bullets":          extra_bullets,
+                "details_labels": {
+                    "EN": {"details": "Asset details", "income": "Rental income",      "financials": "Financial summary", "specs": "Technical specs", "other": "Other"},
+                    "FR": {"details": "D\u00e9tails de l'actif", "income": "Revenus locatifs", "financials": "R\u00e9sum\u00e9 financier", "specs": "Sp\u00e9cifications techniques", "other": "Autres"},
+                    "NL": {"details": "Activadetails", "income": "Huurinkomsten",       "financials": "Financieel overzicht", "specs": "Technische specificaties", "other": "Overige"},
+                }.get(language, {"details": "Asset details", "income": "Rental income", "financials": "Financial summary", "specs": "Technical specs", "other": "Other"}),
                 "photos": photo_paths,
                 "plans": plan_paths,
                 # Agent (contact shown on the sales conditions page). User selection wins;

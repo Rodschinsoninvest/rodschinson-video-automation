@@ -118,6 +118,21 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
   position:relative;
 }
 
+/* ─────── DETAILS (asset data tables) ─────── */
+.details{height:100%;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.details .d-title{font-family:'Montserrat';font-weight:800;font-size:18px;color:var(--navy);line-height:1.25;padding-bottom:10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.details .d-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;flex:1;min-height:0}
+.details .d-card{border:1px solid var(--border);border-radius:4px;padding:14px 16px;background:#fff;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.details .d-card.wide{grid-column:1 / -1}
+.details .d-head{font-family:'Montserrat';font-weight:700;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:var(--cyan);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:10px;flex-shrink:0}
+.details table{width:100%;border-collapse:collapse;font-size:12px;color:#111;table-layout:fixed}
+.details td{padding:5px 0;border-bottom:1px dashed var(--border);vertical-align:top;word-wrap:break-word}
+.details td:first-child{color:var(--grey-text);width:55%;padding-right:10px;font-weight:500}
+.details td:last-child{text-align:right;font-weight:600}
+.details tr:last-child td{border-bottom:none}
+.details .d-bullets{margin:0;padding-left:16px}
+.details .d-bullets li{font-size:12px;color:#111;line-height:1.45;margin-bottom:4px}
+
 /* ─────── LOCATIE ─────── */
 .locatie{display:flex;gap:44px;height:100%;align-items:center;position:relative}
 .locatie .map{
@@ -345,6 +360,35 @@ window.loadLongTeaser = function(data, brandName){
         <div class="right" style="background-image:url('${esc(fileUrl(activaPhoto))}')"></div>
       </div>
     </div>`);
+
+  // DETAILS — rendered only when document extraction produced structured data
+  const income  = Array.isArray(data.rental_income_rows)     ? data.rental_income_rows     : [];
+  const fin     = Array.isArray(data.financial_summary_rows) ? data.financial_summary_rows : [];
+  const specs   = Array.isArray(data.technical_specs_rows)   ? data.technical_specs_rows   : [];
+  const extras  = Array.isArray(data.extra_bullets)          ? data.extra_bullets          : [];
+  const surfaceRows = Array.isArray(data.surfaces) ? data.surfaces : [];
+  const DL = data.details_labels || {details:'Asset details', income:'Rental income', financials:'Financial summary', specs:'Technical specs', other:'Other'};
+  const rowTbl = rows => `<table><tbody>${rows.map(r=>`<tr><td>${esc(r.label||'')}</td><td>${esc(r.value||'')}</td></tr>`).join('')}</tbody></table>`;
+  const hasDetails = income.length || fin.length || specs.length || extras.length || surfaceRows.length;
+  if (hasDetails){
+    const cards = [];
+    if (fin.length)    cards.push(`<div class="d-card"><div class="d-head">${esc(DL.financials)}</div>${rowTbl(fin)}</div>`);
+    if (specs.length)  cards.push(`<div class="d-card"><div class="d-head">${esc(DL.specs)}</div>${rowTbl(specs)}</div>`);
+    if (income.length) cards.push(`<div class="d-card${income.length>8?' wide':''}"><div class="d-head">${esc(DL.income)}</div>${rowTbl(income)}</div>`);
+    if (surfaceRows.length){
+      const srows = surfaceRows.map(s=>({label:String(s.floor||s.label||''), value:String(s.area||s.value||'')})).filter(r=>r.label||r.value);
+      if (srows.length) cards.push(`<div class="d-card"><div class="d-head">${esc(data.surfaces_label || 'Surfaces')}</div>${rowTbl(srows)}</div>`);
+    }
+    if (extras.length) cards.push(`<div class="d-card wide"><div class="d-head">${esc(DL.other)}</div><ul class="d-bullets">${extras.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>`);
+    pushPage(`
+      ${header('a')}
+      <div class="pg-body">
+        <div class="details">
+          <div class="d-title">${esc(title)} — ${esc(DL.details)}</div>
+          <div class="d-grid">${cards.join('')}</div>
+        </div>
+      </div>`);
+  }
 
   // LOCATIE
   sectionAnchor = A.loc;
