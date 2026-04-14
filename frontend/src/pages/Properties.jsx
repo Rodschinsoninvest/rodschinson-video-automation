@@ -418,6 +418,11 @@ function PortfolioModal({ properties, selectedIds, brands, onClose, onGenerate, 
 }
 
 // ── Long Teaser modal ────────────────────────────────────────────────────────
+const LONG_TEASER_AGENTS = [
+  { id: 'sandra',  name: 'Sandra Charan', email: 'sandra.charan@rodschinson.com', phone: '+32 480 205 004', role: 'Investment Portfolio Manager' },
+  { id: 'bea',     name: 'Bea Neetens',   email: 'bea.neetens@rodschinson.com',   phone: '+32 480 20 50 07', role: 'Investment Portfolio Manager' },
+]
+
 function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
   const [brand, setBrand] = useState(brands[0]?.id || 'rodschinson')
   const [language, setLanguage] = useState('FR')
@@ -431,6 +436,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
   const [plans, setPlans] = useState([])
   const [mapImage, setMapImage] = useState('')
   const [documents, setDocuments] = useState([])
+  const [agentId, setAgentId] = useState(LONG_TEASER_AGENTS[0].id)
 
   const bg = dark ? '#1a1a1a' : '#fff'
   const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
@@ -489,7 +495,8 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
 
   const handleGenerate = async () => {
     setLoading(true)
-    await onGenerate({ prop, brand, language, photos, plans, mapImage, documents, fields: { address, paymentTerms, sharepointUrl, expertiseUrl, surfaces } })
+    const agent = LONG_TEASER_AGENTS.find(a => a.id === agentId) || LONG_TEASER_AGENTS[0]
+    await onGenerate({ prop, brand, language, photos, plans, mapImage, documents, fields: { address, paymentTerms, sharepointUrl, expertiseUrl, surfaces, agent } })
     setLoading(false)
     onClose()
   }
@@ -632,7 +639,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
         </div>
 
         {/* Brand + Language */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
           <div>
             <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>Brand</div>
             <select value={brand} onChange={e => setBrand(e.target.value)} style={inputStyle}>{brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
@@ -641,6 +648,18 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
             <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>Language</div>
             <select value={language} onChange={e => setLanguage(e.target.value)} style={inputStyle}>{LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}</select>
           </div>
+        </div>
+
+        {/* Agent — shown on the sales conditions page */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>
+            Contact Agent <span style={{ textTransform: 'none', color: '#00B6FF', fontWeight: 500 }}>(appears on the sales conditions page)</span>
+          </div>
+          <select value={agentId} onChange={e => setAgentId(e.target.value)} style={inputStyle}>
+            {LONG_TEASER_AGENTS.map(a => (
+              <option key={a.id} value={a.id}>{a.name} — {a.email} — {a.phone}</option>
+            ))}
+          </select>
         </div>
 
         {/* Actions */}
@@ -957,6 +976,10 @@ export default function Properties() {
           sharepoint_url: fields.sharepointUrl,
           expertise_url: fields.expertiseUrl,
           surfaces: fields.surfaces,
+          agent_name: fields.agent?.name || '',
+          agent_email: fields.agent?.email || '',
+          agent_phone: fields.agent?.phone || '',
+          agent_role: fields.agent?.role || '',
         },
       }
       const fd = new FormData()

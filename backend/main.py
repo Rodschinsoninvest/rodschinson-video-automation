@@ -2092,12 +2092,52 @@ RULES:
             if isinstance(agent, list):
                 agent = next((a for a in agent if isinstance(a, str)), "")
 
+            # Translate title + description to target language if needed (Odoo content
+            # can be EN/FR/NL depending on the record). Claude returns text unchanged when
+            # it's already in the target language.
+            _title_src = property_data.get("title", subject) or ""
+            target_lang_name = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(language, "English")
+            if (_title_src or desc) and language in ("EN", "FR", "NL"):
+                _job_update(job, status="running", step=f"Translating content to {target_lang_name}", progress=15)
+                await _save_job(job)
+                try:
+                    tr_prompt = (
+                        f"Translate the following real-estate listing TITLE and DESCRIPTION into {target_lang_name}. "
+                        f"If a field is already in {target_lang_name}, return it verbatim. "
+                        f"Preserve reference codes (like #1X+6_DRDY_LUX), numbers, units (m\u00b2, \u20ac, %), "
+                        f"street names, city names, bullet separators (\u2022) and line breaks exactly. "
+                        f"Do NOT translate property reference codes or proper nouns (city/street/building names). "
+                        f"Return ONLY a compact JSON object, no prose, no code fences:\n"
+                        f'{{"title":"...","description":"..."}}\n\n'
+                        f"TITLE: {_title_src}\n\n"
+                        f"DESCRIPTION: {desc}"
+                    )
+                    tr_raw = await _claude_strategy(tr_prompt)
+                    tr_obj = _parse_json(tr_raw) if tr_raw else None
+                    if isinstance(tr_obj, dict):
+                        if tr_obj.get("title"):
+                            property_data["title"] = tr_obj["title"]
+                        if tr_obj.get("description"):
+                            desc = tr_obj["description"]
+                        log.info("[%s] Translated title/description to %s", job_id[:8], target_lang_name)
+                except Exception as e:
+                    log.warning("[%s] Translation to %s failed, using source content: %s", job_id[:8], target_lang_name, e)
+
             # Save uploaded photos and plans to disk, collect file:// paths
             upload_dir = TEASER_DIR / f"{job_id[:8]}_long_assets"
             upload_dir.mkdir(parents=True, exist_ok=True)
 
             photo_paths: list[str] = []
             plan_paths: list[str] = []
+
+            _raw_plans = data.get("plans", [])
+            _raw_docs  = data.get("documents", [])
+            log.info("[%s] Long teaser inputs: photos=%d, plans_raw=%d (types=%s), documents=%d",
+                     job_id[:8],
+                     len(data.get("photos", [])),
+                     len(_raw_plans),
+                     [type(p).__name__ + (':pdf' if isinstance(p, dict) and p.get('type')=='pdf' else '') for p in _raw_plans],
+                     len(_raw_docs))
 
             # Photos and plans are passed as base64 data URIs or file paths
             for i, photo in enumerate(data.get("photos", [])):
@@ -2147,6 +2187,39 @@ RULES:
                     plan_paths.append(f"file://{fpath}")
                 elif isinstance(plan, str):
                     plan_paths.append(plan)
+
+            # Fallback: if no plans uploaded, auto-extract from any document PDF whose
+            # filename hints at plans ("plan", "plans", "floor", "layout", "grundriss", "plattegrond")
+            if not plan_paths and _raw_docs:
+                import base64 as _b64
+                _plan_hint = re.compile(r"\b(plan|plans|floor|layout|grundriss|plattegrond|implantation)\b", re.I)
+                for i, doc in enumerate(_raw_docs):
+                    if not isinstance(doc, dict):
+                        continue
+                    name = doc.get("name", "")
+                    data_uri = doc.get("data", "")
+                    is_pdf = name.lower().endswith(".pdf") or "pdf" in data_uri[:64].lower()
+                    if not (is_pdf and _plan_hint.search(name)):
+                        continue
+                    if not data_uri.startswith("data:"):
+                        continue
+                    try:
+                        _, b64data = data_uri.split(",", 1)
+                        pdf_bytes = _b64.b64decode(b64data)
+                        import fitz
+                        pdf_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                        for page_idx in range(len(pdf_doc)):
+                            pg = pdf_doc[page_idx]
+                            pix = pg.get_pixmap(matrix=fitz.Matrix(2.0, 2.0))
+                            fpath = upload_dir / f"plan_from_doc_{i:02d}_p{page_idx:02d}.png"
+                            pix.save(str(fpath))
+                            plan_paths.append(f"file://{fpath}")
+                        pdf_doc.close()
+                        log.info("[%s] Auto-extracted %d plan pages from document '%s'", job_id[:8], len(pdf_doc), name)
+                    except Exception as e:
+                        log.warning("[%s] Failed to auto-extract plan pages from '%s': %s", job_id[:8], name, e)
+
+            log.info("[%s] Final plan_paths count: %d", job_id[:8], len(plan_paths))
 
             # Map image (single)
             map_image_path = ""
@@ -2402,11 +2475,12 @@ EXTRACTION RULES:
                 "surfaces": merged_surfaces,
                 "photos": photo_paths,
                 "plans": plan_paths,
-                # Agent (responsible) from Odoo property record
-                "agent_name": (agent if isinstance(agent, str) and agent.strip() else "Adam Meri"),
-                "agent_role": {"EN": "Investment Portfolio Manager", "FR": "Investment Portfolio Manager", "NL": "Investment Portfolio Manager"}.get(language, "Investment Portfolio Manager"),
-                "agent_phone": "+32 2 550 36 87",
-                "agent_email": "assets.brussels@rodschinson.com",
+                # Agent (contact shown on the sales conditions page). User selection wins;
+                # falls back to Odoo responsible, then default office contact.
+                "agent_name":  (extra.get("agent_name")  or (agent if isinstance(agent, str) and agent.strip() else "Adam Meri")),
+                "agent_role":  (extra.get("agent_role")  or "Investment Portfolio Manager"),
+                "agent_phone": (extra.get("agent_phone") or "+32 2 550 36 87"),
+                "agent_email": (extra.get("agent_email") or "assets.brussels@rodschinson.com"),
             }
 
             _job_update(job, status="running", step="Rendering PDF", progress=50)
