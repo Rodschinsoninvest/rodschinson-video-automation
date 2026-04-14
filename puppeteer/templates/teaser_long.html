@@ -225,9 +225,10 @@ window.loadLongTeaser = function(data, brandName){
   const photos = (data.photos||[]).filter(Boolean);
   const plans  = (data.plans||[]).filter(Boolean);
   const maps   = (data.maps||[]).filter(Boolean);
-  // Map fallbacks: explicit maps array wins, then single map_url, then first photo as last resort
-  const primaryMap = maps[0] || data.map_url || '';
-  const streetMap  = maps[1] || maps[0] || data.map_url || '';
+  // Map belongs ONLY on the Locatie page (never on the Activa page)
+  const streetMap  = maps[0] || data.map_url || '';
+  // Activa right panel shows a property PHOTO (exterior preferred), never a map
+  const activaPhoto = data.activa_photo || photos[0] || '';
   // Cover photo: prefer explicit cover_photo, then first photo (user uploads exterior first)
   const coverPhoto = data.cover_photo || photos[0] || '';
   // Sales photo: prefer explicit, then a different photo from cover, else first
@@ -341,7 +342,7 @@ window.loadLongTeaser = function(data, brandName){
           </ul>
           <div class="a-price"><span>${esc(priceLbl)}</span><span class="val">${esc(price)}</span></div>
         </div>
-        <div class="right" style="background-image:url('${esc(fileUrl(primaryMap))}')"></div>
+        <div class="right" style="background-image:url('${esc(fileUrl(activaPhoto))}')"></div>
       </div>
     </div>`);
 

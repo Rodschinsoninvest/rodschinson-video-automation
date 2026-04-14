@@ -2169,8 +2169,9 @@ RULES:
                         pdf_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
                         for page_idx in range(len(pdf_doc)):
                             page = pdf_doc[page_idx]
-                            # Render at 2x for crisp PDF -> 144 DPI
-                            pix = page.get_pixmap(matrix=fitz.Matrix(2.0, 2.0))
+                            # Render at 2x for crisp PDF -> 144 DPI. Flip 180° — scanned
+                            # plan PDFs consistently come in upside down.
+                            pix = page.get_pixmap(matrix=fitz.Matrix(2.0, 2.0).prerotate(180))
                             fpath = upload_dir / f"plan_{i:02d}_p{page_idx:02d}.png"
                             pix.save(str(fpath))
                             plan_paths.append(f"file://{fpath}")
@@ -2210,7 +2211,7 @@ RULES:
                         pdf_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
                         for page_idx in range(len(pdf_doc)):
                             pg = pdf_doc[page_idx]
-                            pix = pg.get_pixmap(matrix=fitz.Matrix(2.0, 2.0))
+                            pix = pg.get_pixmap(matrix=fitz.Matrix(2.0, 2.0).prerotate(180))
                             fpath = upload_dir / f"plan_from_doc_{i:02d}_p{page_idx:02d}.png"
                             pix.save(str(fpath))
                             plan_paths.append(f"file://{fpath}")
