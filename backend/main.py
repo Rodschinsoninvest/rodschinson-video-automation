@@ -293,7 +293,7 @@ VALID_SLOTS    = {"morning", "noon", "afternoon", "evening"}
 # ── Rate limiter for /api/generate ────────────────────────────────────────────
 # Sliding-window: max 10 jobs per IP per 60 seconds.
 _rate_window: dict[str, list[float]] = {}  # ip → list of epoch timestamps
-_RATE_LIMIT  = int(os.getenv("GENERATE_RATE_LIMIT", "10"))   # max jobs
+_RATE_LIMIT  = int(os.getenv("GENERATE_RATE_LIMIT", "120"))  # max jobs
 _RATE_WINDOW = int(os.getenv("GENERATE_RATE_WINDOW", "60"))  # seconds
 
 def _check_rate_limit(ip: str) -> None:
