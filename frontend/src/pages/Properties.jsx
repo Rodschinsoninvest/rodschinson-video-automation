@@ -438,6 +438,57 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
   const [documents, setDocuments] = useState([])
   const [agentId, setAgentId] = useState(LONG_TEASER_AGENTS[0].id)
 
+  // AI edit bar — free-text instruction that rewrites one or more form fields
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiBusy, setAiBusy] = useState(false)
+  const [aiFeedback, setAiFeedback] = useState(null) // { kind: 'ok'|'err', text }
+
+  const FIELD_SETTERS = {
+    address: setAddress,
+    paymentTerms: setPaymentTerms,
+    sharepointUrl: setSharepointUrl,
+    expertiseUrl: setExpertiseUrl,
+    surfaces: setSurfaces,
+  }
+
+  const handleAiEdit = async () => {
+    const instruction = aiPrompt.trim()
+    if (!instruction || aiBusy) return
+    setAiBusy(true)
+    setAiFeedback(null)
+    try {
+      const res = await apiFetch('/api/long-teaser/ai-edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: instruction,
+          fields: { address, paymentTerms, sharepointUrl, expertiseUrl, surfaces },
+          context: { property_title: prop?.title || '', asset_type: prop?.asset_type || '', language },
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || `AI edit failed (${res.status})`)
+      }
+      const { fields: updated = {}, summary = '' } = await res.json()
+      const changedKeys = Object.keys(updated)
+      changedKeys.forEach(k => {
+        const setter = FIELD_SETTERS[k]
+        if (setter) setter(updated[k])
+      })
+      if (changedKeys.length === 0) {
+        setAiFeedback({ kind: 'err', text: summary || 'No changes applied — try rephrasing.' })
+      } else {
+        setAiFeedback({ kind: 'ok', text: `${summary} (updated: ${changedKeys.join(', ')})` })
+        setAiPrompt('')
+      }
+    } catch (e) {
+      setAiFeedback({ kind: 'err', text: e.message })
+    } finally {
+      setAiBusy(false)
+    }
+  }
+
   const bg = dark ? '#1a1a1a' : '#fff'
   const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
   const text = dark ? '#fff' : '#0D1F3C'
@@ -506,12 +557,55 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
       <div style={{ background: bg, borderRadius: 16, padding: 24, maxWidth: 640, width: '92%', border: `1px solid ${border}`, maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
           <span style={{ fontSize: 24 }}>{ASSET_ICONS[prop.asset_type] || '🏢'}</span>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: text }}>{prop.title}</div>
             <div style={{ fontSize: 11, color: '#08316F', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Long Teaser — Detailed PDF</div>
           </div>
+        </div>
+
+        {/* AI edit bar — ask Claude to change any field by describing it */}
+        <div style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 8, border: `1px solid ${dark ? 'rgba(0,182,255,0.35)' : 'rgba(8,49,111,0.25)'}`, background: dark ? 'rgba(0,182,255,0.08)' : 'rgba(8,49,111,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#08316F', marginBottom: 6 }}>
+            <span style={{ fontSize: 12 }}>✨</span> Ask AI to change a field
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input
+              value={aiPrompt}
+              onChange={e => setAiPrompt(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAiEdit() } }}
+              placeholder='e.g. "set address to Rue Belliard 33, 1040 Etterbeek" or "add ground floor 220 m²"'
+              disabled={aiBusy}
+              style={{ ...inputStyle, flex: 1 }}
+            />
+            <button
+              onClick={handleAiEdit}
+              disabled={aiBusy || !aiPrompt.trim()}
+              style={{ padding: '0 14px', borderRadius: 6, border: 'none', cursor: aiBusy || !aiPrompt.trim() ? 'not-allowed' : 'pointer', background: aiBusy || !aiPrompt.trim() ? 'rgba(8,49,111,0.3)' : 'linear-gradient(135deg,#08316F,#0a4a9a)', color: '#fff', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}
+            >
+              {aiBusy ? 'Thinking…' : 'Apply'}
+            </button>
+          </div>
+          {aiFeedback && (
+            <div style={{ marginTop: 6, fontSize: 11, lineHeight: 1.5, color: aiFeedback.kind === 'ok' ? '#0a8f4a' : '#c0392b' }}>
+              {aiFeedback.text}
+            </div>
+          )}
+        </div>
+
+        {/* How-to instructions */}
+        <div style={{ marginBottom: 16, padding: '11px 13px', borderRadius: 8, border: `1px solid ${border}`, background: dark ? 'rgba(0,182,255,0.06)' : 'rgba(8,49,111,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#08316F', marginBottom: 6 }}>
+            <span style={{ fontSize: 12 }}>ℹ️</span> How to add photos &amp; request changes
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 16, fontSize: 11, lineHeight: 1.55, color: text }}>
+            <li><b>Building photo (cover &amp; gallery):</b> add it under <i>Photos</i> below — the first photo becomes the cover &amp; gallery lead.</li>
+            <li><b>Aerial / cadastral view:</b> upload it under <i>Map Image</i> — it appears on the dedicated “Vue aérienne” page with the property boundary caption.</li>
+            <li><b>Floor plans:</b> drop images or a multi-page PDF in <i>Floor Plans</i>; each page becomes a plan slide.</li>
+            <li><b>Source docs (PDF / Word):</b> drop dossiers under <i>Source Documents</i>; the AI extracts price, yield, surfaces, leases, etc. into empty fields.</li>
+            <li><b>Apply changes later:</b> reopen this form, edit / re-upload, then regenerate — fields you leave empty fall back to AI extraction.</li>
+          </ul>
         </div>
 
         {/* Photos upload */}

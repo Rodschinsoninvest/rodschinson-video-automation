@@ -15,6 +15,7 @@ import Settings    from './pages/Settings'
 import Login       from './pages/Login'
 import Strategy    from './pages/Strategy'
 import Properties  from './pages/Properties'
+import TeaserEditor from './pages/TeaserEditor'
 
 function PrivateRoute({ children }) {
   const { isAuth, checking } = useAuth()
@@ -66,6 +67,7 @@ export default function App() {
                     <Route path="brands"      element={<Brands />} />
                     <Route path="templates"   element={<Templates />} />
                     <Route path="settings"    element={<Settings />} />
+                    <Route path="teaser-editor/:jobId" element={<TeaserEditor />} />
                   </Route>
                 </Routes>
               </BrowserRouter>

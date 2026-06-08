@@ -885,9 +885,11 @@ function ABTestPanel({ item, onClose }) {
 // ─── Modal actions ────────────────────────────────────────────────────────────
 
 function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose }) {
+  const navigate = useNavigate()
   const currentIdx = STATUS_FLOW.indexOf(item.status)
   const nextStatus = STATUS_FLOW[currentIdx + 1]
   const prevStatus = STATUS_FLOW[currentIdx - 1]
+  const isLongTeaser = item.content_type === 'property_long_teaser'
   const [showSchedule,  setShowSchedule]  = useState(false)
   const [showPublish,   setShowPublish]   = useState(false)
   const [showRepurpose, setShowRepurpose] = useState(false)
@@ -949,6 +951,9 @@ function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose })
         <span style={{ color: 'var(--cs-text-muted)', fontSize: 12 }}>{fmtDate(item.created_at)}</span>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={onRegenerate} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 12 }}>↻ Regenerate</button>
+          {isLongTeaser && (
+            <button onClick={() => { onClose(); navigate(`/teaser-editor/${item.job_id}`) }} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(200,169,110,0.4)', background: 'rgba(200,169,110,0.08)', color: '#C8A96E', fontSize: 12, fontWeight: 700 }}>✎ Edit teaser</button>
+          )}
           <button onClick={() => setShowRepurpose(true)} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(0,182,255,0.3)', background: 'rgba(0,182,255,0.06)', color: '#00B6FF', fontSize: 12, fontWeight: 600 }}>♻ Repurpose</button>
           {item.output_file && (
             <button onClick={() => window.open(`/api/download/${item.job_id}`, '_blank')} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.06)', color: '#16a34a', fontSize: 12, fontWeight: 600 }}>⬇ Download</button>

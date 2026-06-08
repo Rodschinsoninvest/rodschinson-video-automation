@@ -30,13 +30,15 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
   background:linear-gradient(90deg,#1FB6FF 0%,#0A66C2 45%,#08316F 100%);
   display:flex;align-items:center;padding:0 0 0 48px;color:#fff;z-index:5;
 }
-.pg-header .logo{width:170px}
-.pg-header .logo .l1{font-family:'Montserrat';font-weight:400;font-size:18px;color:#fff;letter-spacing:0.32em;line-height:1}
-.pg-header .logo .l2{font-family:'Montserrat';font-weight:300;font-size:8px;color:#fff;letter-spacing:0.6em;margin-top:3px;line-height:1}
-.pg-header .sep{width:1px;height:60px;background:rgba(255,255,255,0.3);margin:0 28px}
-.pg-header .title-block{flex:1;min-width:0;padding-right:20px}
-.pg-header .title-block .ttl{font-family:'Montserrat';font-weight:700;font-size:13px;line-height:1.3;color:#fff;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.pg-header .title-block .ref{font-family:'Montserrat';font-weight:500;font-size:12px;color:rgba(255,255,255,0.9);letter-spacing:0.02em}
+.pg-header .logo{flex-shrink:0;min-width:210px;padding-right:16px}
+.pg-header .logo .l1{font-family:'Montserrat';font-weight:400;font-size:18px;color:#fff;letter-spacing:0.32em;line-height:1;white-space:nowrap}
+.pg-header .logo .l2{font-family:'Montserrat';font-weight:300;font-size:8px;color:#fff;letter-spacing:0.6em;margin-top:3px;line-height:1;white-space:nowrap}
+.pg-header .sep{width:1px;height:60px;background:rgba(255,255,255,0.3);margin:0 30px;flex-shrink:0}
+.pg-header .title-block{flex:1;min-width:0;padding-right:20px;display:flex;flex-direction:column;justify-content:center}
+.pg-header .title-block .sec{font-family:'Montserrat';font-weight:700;font-size:15px;line-height:1.2;color:#fff;margin-bottom:5px;letter-spacing:0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pg-header .title-block .meta{font-family:'Montserrat';font-weight:500;font-size:10.5px;color:rgba(255,255,255,0.78);letter-spacing:0.04em;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.pg-header .title-block .meta .dot{width:3px;height:3px;border-radius:50%;background:rgba(200,233,255,0.55)}
+.pg-header .title-block .meta .ref{color:rgba(255,255,255,0.88);letter-spacing:0.06em}
 .pg-header .disc{
   width:460px;padding:0 32px 0 24px;border-left:1px solid rgba(255,255,255,0.3);height:60px;
   font-size:8px;line-height:1.35;color:rgba(255,255,255,0.88);display:flex;align-items:center;overflow:hidden;
@@ -114,24 +116,118 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 .activa .a-price .val{color:var(--cyan);font-weight:900;font-size:28px;letter-spacing:0.01em}
 .activa .right{
   flex:1;margin-left:-30px;margin-top:20px;margin-bottom:20px;
-  background:#eef2f6 center/cover no-repeat;border-radius:4px;box-shadow:0 4px 18px rgba(0,0,0,0.08);
-  position:relative;
+  background:#eef2f6;border-radius:4px;box-shadow:0 4px 18px rgba(0,0,0,0.08);
+  position:relative;overflow:hidden;
+}
+.activa .right img.a-photo{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center;
 }
 
 /* ─────── DETAILS (asset data tables) ─────── */
 .details{height:100%;display:flex;flex-direction:column;gap:14px;overflow:hidden}
-.details .d-title{font-family:'Montserrat';font-weight:800;font-size:18px;color:var(--navy);line-height:1.25;padding-bottom:10px;border-bottom:1px solid var(--border);flex-shrink:0}
-.details .d-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;flex:1;min-height:0}
-.details .d-card{border:1px solid var(--border);border-radius:4px;padding:14px 16px;background:#fff;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.details .d-title{font-family:'Montserrat';font-weight:800;font-size:16px;color:var(--navy);line-height:1.25;padding-bottom:9px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:baseline;justify-content:space-between;gap:12px;letter-spacing:0.01em}
+.details .d-title .d-suffix{font-family:'Montserrat';font-weight:500;font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--grey-text)}
+
+/* KPI strip — headline numbers above the tables on the first details page */
+.details .kpi-strip{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px;flex-shrink:0}
+.details .kpi-cell{
+  padding:12px 14px;border-radius:5px;background:#f6f8fb;border:1px solid var(--border);
+  border-left:3px solid var(--cyan);display:flex;flex-direction:column;justify-content:center;min-height:78px;
+}
+.details .kpi-cell .kpi-label{font-family:'Montserrat';font-weight:500;font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--grey-text);margin-bottom:4px}
+.details .kpi-cell .kpi-value{font-family:'Montserrat';font-weight:800;font-size:20px;color:var(--navy);line-height:1.05;letter-spacing:-0.01em}
+.details .kpi-cell .kpi-sub  {font-size:9.5px;color:var(--grey-text);line-height:1.3;margin-top:4px;font-weight:400}
+
+.details .d-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;flex:1;min-height:0}
+.details .d-grid.one{grid-template-columns:1fr}
+.details .d-card{
+  border:1px solid var(--border);border-radius:5px;padding:13px 16px 12px;background:#fff;
+  display:flex;flex-direction:column;min-height:0;overflow:hidden;
+  box-shadow:0 1px 2px rgba(15,30,60,0.03);
+}
 .details .d-card.wide{grid-column:1 / -1}
-.details .d-head{font-family:'Montserrat';font-weight:700;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:var(--cyan);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:10px;flex-shrink:0}
-.details table{width:100%;border-collapse:collapse;font-size:12px;color:#111;table-layout:fixed}
-.details td{padding:5px 0;border-bottom:1px dashed var(--border);vertical-align:top;word-wrap:break-word}
-.details td:first-child{color:var(--grey-text);width:55%;padding-right:10px;font-weight:500}
-.details td:last-child{text-align:right;font-weight:600}
+.details .d-head{
+  font-family:'Montserrat';font-weight:700;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--navy);padding-bottom:8px;margin-bottom:9px;flex-shrink:0;
+  display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  position:relative;
+}
+.details .d-head::after{
+  content:'';position:absolute;left:0;bottom:0;width:32px;height:2px;background:var(--cyan);
+}
+.details .d-head .d-head-tag{font-family:'DM Sans';font-weight:500;font-size:9.5px;letter-spacing:0.06em;text-transform:none;color:var(--grey-text)}
+.details table{width:100%;border-collapse:collapse;font-size:11.5px;color:#111;table-layout:fixed}
+.details td{padding:5px 0;border-bottom:1px solid #f1f3f6;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere;line-height:1.35}
+.details td:first-child{color:var(--grey-text);width:60%;padding-right:10px;font-weight:500}
+.details td:last-child{text-align:right;font-weight:700;color:var(--navy)}
 .details tr:last-child td{border-bottom:none}
-.details .d-bullets{margin:0;padding-left:16px}
-.details .d-bullets li{font-size:12px;color:#111;line-height:1.45;margin-bottom:4px}
+.details .d-bullets{margin:0;padding-left:14px;columns:2;column-gap:22px}
+.details .d-bullets li{font-size:11.5px;color:#111;line-height:1.45;margin-bottom:4px;break-inside:avoid}
+.details .d-card.narrow .d-bullets{columns:1}
+
+/* Consolidated unit-level table — per-row: Unit / Surface / step rents */
+.details .u-card{padding:11px 14px 12px}
+.details .u-summary{
+  display:flex;flex-wrap:wrap;gap:0 22px;padding:4px 0 7px;margin-bottom:6px;
+  border-bottom:1px solid var(--border);
+}
+.details .u-summary .u-sum-item{display:flex;flex-direction:column;gap:1px}
+.details .u-summary .u-sum-k{font-size:8.5px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--grey-text)}
+.details .u-summary .u-sum-v{font-family:'Montserrat';font-weight:700;font-size:12.5px;color:var(--navy)}
+.details .u-table{width:100%;border-collapse:collapse;font-size:10px;color:#111;table-layout:fixed}
+.details .u-table thead th{
+  font-family:'Montserrat';font-weight:700;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--grey-text);padding:5px 5px 5px 0;border-bottom:1.5px solid var(--navy);
+  text-align:right;vertical-align:bottom;line-height:1.15;
+}
+.details .u-table thead th.l{text-align:left}
+.details .u-table thead th .sub{display:block;font-size:7.5px;font-weight:500;letter-spacing:0.06em;color:#9aa3af;margin-top:1px}
+.details .u-table tbody tr{break-inside:avoid}
+.details .u-table tbody tr:nth-child(odd){background:#fafbfc}
+.details .u-table tbody td{padding:3.5px 5px 3.5px 0;border-bottom:1px solid #eef1f5;vertical-align:top;line-height:1.22;word-wrap:break-word;overflow-wrap:anywhere}
+.details .u-table tbody td.l{text-align:left;font-weight:600;color:#111;font-size:10.5px}
+.details .u-table tbody td.l .u-sub{display:block;font-size:8.5px;color:var(--grey-text);font-weight:400;margin-top:0;letter-spacing:0.01em;line-height:1.25}
+.details .u-table tbody td.r{text-align:right;font-weight:600;color:var(--navy);font-size:10.5px}
+.details .u-table tbody td.r.area{color:#111;font-weight:500}
+.details .u-table tbody tr:last-child td{border-bottom:none}
+
+/* ─────── AERIAL VIEW ─────── */
+.aerial{position:relative;width:100%;height:100%;display:flex;gap:24px;align-items:stretch}
+.aerial .a-frame{flex:1;position:relative;border-radius:6px;overflow:hidden;background:#101820;box-shadow:0 4px 18px rgba(0,0,0,0.12)}
+.aerial .a-img{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:100%;height:100%;object-fit:cover;object-position:center;
+  image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;
+}
+.aerial .a-overlay{position:absolute;inset:0;pointer-events:none}
+.aerial .a-boundary{
+  position:absolute;left:18%;right:18%;top:24%;bottom:24%;
+  border:2px dashed var(--cyan);border-radius:6px;
+  box-shadow:0 0 0 9999px rgba(8,31,68,0.18);
+}
+.aerial .a-pin{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:18px;height:18px;border-radius:50%;background:var(--cyan);
+  border:3px solid #fff;box-shadow:0 0 0 6px rgba(0,182,255,0.22);
+}
+.aerial .a-caption{
+  position:absolute;left:18px;bottom:18px;padding:8px 14px;border-radius:24px;
+  background:rgba(8,31,68,0.85);color:#fff;font-family:'Montserrat';font-weight:600;
+  font-size:11px;letter-spacing:0.16em;text-transform:uppercase;
+}
+.aerial .a-side{
+  width:280px;display:flex;flex-direction:column;gap:14px;padding:8px 0;
+}
+.aerial .a-side .a-eyebrow{font-family:'Montserrat';font-weight:700;font-size:10px;letter-spacing:0.32em;color:var(--cyan);text-transform:uppercase}
+.aerial .a-side .a-title{font-family:'Montserrat';font-weight:800;font-size:22px;color:var(--navy);line-height:1.2}
+.aerial .a-side .a-rule{width:36px;height:2px;background:var(--cyan)}
+.aerial .a-side .a-row{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-top:1px solid var(--border)}
+.aerial .a-side .a-row .k{font-size:10px;color:var(--grey-text);letter-spacing:0.12em;text-transform:uppercase;font-weight:600}
+.aerial .a-side .a-row .v{font-size:14px;color:#111;font-weight:600}
+.aerial .a-side .a-legend{margin-top:auto;font-size:10.5px;color:var(--grey-text);line-height:1.45;display:flex;align-items:flex-start;gap:8px}
+.aerial .a-side .a-legend::before{content:'';width:14px;height:14px;border:1.5px dashed var(--cyan);border-radius:3px;flex-shrink:0;margin-top:1px}
 
 /* ─────── LOCATIE ─────── */
 .locatie{display:flex;gap:44px;height:100%;align-items:center;position:relative}
@@ -150,6 +246,8 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 /* ─────── PHOTOS ─────── */
 .photos-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%;max-height:584px}
 .photos-2{display:grid;grid-template-columns:1fr 1fr;gap:24px;height:100%;max-height:584px}
+.photos-4{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:16px;height:100%;max-height:584px}
+.photos-6{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:14px;height:100%;max-height:584px}
 .photo-tile{width:100%;height:100%;background:#f3f4f6 center/cover no-repeat;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,0.08);overflow:hidden}
 
 /* ─────── PLANS ─────── */
@@ -178,7 +276,8 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 .sales .s-left .s-price{padding:20px 24px;display:flex;align-items:baseline;gap:10px;font-family:'Montserrat';font-weight:600;font-size:18px;color:var(--navy);flex-shrink:0}
 .sales .s-left .s-price .val{color:var(--cyan);font-weight:900;font-size:26px}
 .sales .s-right{flex:1;display:flex;flex-direction:column;min-height:0}
-.sales .s-right .s-photo{flex:1;background:#eef2f6 center/cover no-repeat;min-height:0}
+.sales .s-right .s-photo{flex:1;background:#eef2f6;min-height:0;position:relative;overflow:hidden}
+.sales .s-right .s-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}
 .sales .s-right .s-cta{padding:16px 20px 18px;text-align:center;border-top:1px solid var(--border);background:#fff;flex-shrink:0}
 .sales .s-right .s-cta .s-cta-label{color:var(--grey-text);font-size:12px;margin-bottom:10px}
 .sales .s-right .s-cta a{
@@ -283,14 +382,51 @@ window.loadLongTeaser = function(data, brandName){
   const disclaimer = data.disclaimer || '*These informations are approximate and given for indicative purposes. As these elements must be confirmed, specified or corrected, no decision may be made on the basis of this document nor engage the responsibility of Rodschinson Investment. For more information, please contact one of our Investment Portfolio Managers at the Brussels office: Tel: +32 (0) 2 550 36 87, Email: assets.brussels@rodschinson.com. Rodschinson Investment - Bastion Tower - Place du Champ de Mars n°5 - 1050 Brussels (BE)';
 
   // Anchors for clickable nav
-  const A = { activa:'sec-activa', loc:'sec-loc', photos:'sec-photos', plans:'sec-plans', sales:'sec-sales' };
+  const A = { activa:'sec-activa', details:'sec-details', loc:'sec-loc', aerial:'sec-aerial', photos:'sec-photos', plans:'sec-plans', sales:'sec-sales' };
 
-  function header(activeTab){
+  // Aerial view — derived from explicit aerial_view, else fallback to the satellite map.
+  const aerialImg = data.aerial_view || maps[0] || data.map_url || '';
+
+  // Visible tabs — drop any section that has no content so the nav only
+  // advertises pages that actually exist in this teaser.
+  const navTabs = [
+    { key:'a',  label:T.activa, show:true },
+    { key:'l',  label:T.loc,    show:true },
+    { key:'ae', label:(data.tab_aerial || (data.section_labels && data.section_labels.aerial) || 'Vue aérienne'), show: !!aerialImg },
+    { key:'p',  label:T.photos, show:photos.length > 0 },
+    { key:'pl', label:T.plans,  show:plans.length  > 0 },
+    { key:'s',  label:T.sales,  show:true },
+  ].filter(t => t.show);
+
+  // Per-section header copy — short, contextual, no more title repetition.
+  const SL = Object.assign({
+    activa:   'Présentation de l’actif',
+    details:  'Détails financiers & techniques',
+    locatie:  'Localisation',
+    aerial:   'Vue aérienne',
+    photos:   'Reportage photo',
+    plans:    'Plans',
+    sales:    'Conditions de vente',
+  }, data.section_labels || {});
+
+  // Short location label (text before the first colon in title) — used in the
+  // header meta line so the asset is still identifiable without repeating the
+  // full title on every page.
+  const shortLoc = (loc || (title.split(/[\:–—]/)[0] || '').trim()).slice(0, 50);
+
+  function header(activeTab, sectionLabel){
     const tab = (key, label) => {
       const active = activeTab === key;
-      const href = key==='a'?A.activa : key==='l'?A.loc : key==='p'?A.photos : key==='pl'?A.plans : A.sales;
+      const href = key==='a'?A.activa : key==='l'?A.loc : key==='ae'?A.aerial : key==='p'?A.photos : key==='pl'?A.plans : A.sales;
       return `<a href="#${href}"><span class="tab${active?' active':''}">${esc(label)}</span></a>`;
     };
+    const navInner = navTabs
+      .map((t,i)=> (i>0 ? '<span class="div">|</span>' : '') + tab(t.key, t.label))
+      .join('');
+    const metaBits = [];
+    if (shortLoc) metaBits.push(`<span>${esc(shortLoc)}</span>`);
+    if (ref)      metaBits.push(`<span class="ref">${esc(ref)}</span>`);
+    const meta = metaBits.join('<span class="dot"></span>');
     return `
       <div class="pg-header">
         <div class="logo">
@@ -299,24 +435,23 @@ window.loadLongTeaser = function(data, brandName){
         </div>
         <div class="sep"></div>
         <div class="title-block">
-          <div class="ttl">${esc(title)}</div>
-          <div class="ref">${esc(ref)}</div>
+          <div class="sec">${esc(sectionLabel || '')}</div>
+          <div class="meta">${meta}</div>
         </div>
         <div class="disc">${esc(disclaimer)}</div>
       </div>
       <div class="pg-nav">
         <div class="mark"></div>
-        ${tab('a',T.activa)}<span class="div">|</span>
-        ${tab('l',T.loc)}<span class="div">|</span>
-        ${tab('p',T.photos)}<span class="div">|</span>
-        ${tab('pl',T.plans)}<span class="div">|</span>
-        ${tab('s',T.sales)}
+        ${navInner}
       </div>`;
   }
 
   const pages = [];
   let sectionAnchor = ''; // injected into next pushed page as id="..."
+  let currentSection = 'cover'; // updated whenever a new section starts; gates section_visibility
+  const SECTION_VIS = (data.section_visibility && typeof data.section_visibility === 'object') ? data.section_visibility : {};
   const pushPage = (inner, extraClass) => {
+    if (SECTION_VIS[currentSection] === false) { sectionAnchor = ''; return; }
     const id = sectionAnchor ? ` id="${sectionAnchor}"` : '';
     sectionAnchor = '';
     pages.push(`<div class="page${extraClass?' '+extraClass:''}"${id}>${inner}</div>`);
@@ -331,20 +466,18 @@ window.loadLongTeaser = function(data, brandName){
         <div class="wm-line"></div>
         <div class="wm-sub">INVESTMENT</div>
       </div>
-      <div class="badge">${esc((data.cover_badge || 'Property Teaser')).toUpperCase()}</div>
+      ${data.cover_badge === '' ? '' : `<div class="badge">${esc((data.cover_badge || 'Property Teaser')).toUpperCase()}</div>`}
       ${loc?`<div class="c-loc">${esc(loc)}</div>`:''}
       <div class="c-title">${esc(name || title)}</div>
       ${price?`<div class="price-box"><div class="price-label">${esc(priceLbl)}</div><div class="price-val">${esc(price)}</div></div>`:''}
       <div class="footer">rodschinson.com  |  +32 2 550 36 87  |  assets@rodschinson.com</div>
     </div>`);
 
-  // DIVIDER
-  pushPage(`<div class="divider"><div class="wm">RODSCHINSON<small>INVESTMENT</small></div></div>`);
-
   // ACTIVA
+  currentSection = 'activa';
   sectionAnchor = A.activa;
   pushPage(`
-    ${header('a')}
+    ${header('a', SL.activa)}
     <div class="pg-body">
       <div class="activa">
         <div class="left">
@@ -357,48 +490,327 @@ window.loadLongTeaser = function(data, brandName){
           </ul>
           <div class="a-price"><span>${esc(priceLbl)}</span><span class="val">${esc(price)}</span></div>
         </div>
-        <div class="right" style="background-image:url('${esc(fileUrl(activaPhoto))}')"></div>
+        <div class="right">${activaPhoto?`<img class="a-photo" src="${esc(fileUrl(activaPhoto))}" alt="">`:''}</div>
       </div>
     </div>`);
 
-  // DETAILS — rendered only when document extraction produced structured data
-  const income  = Array.isArray(data.rental_income_rows)     ? data.rental_income_rows     : [];
-  const fin     = Array.isArray(data.financial_summary_rows) ? data.financial_summary_rows : [];
-  const specs   = Array.isArray(data.technical_specs_rows)   ? data.technical_specs_rows   : [];
-  const extras  = Array.isArray(data.extra_bullets)          ? data.extra_bullets          : [];
-  const surfaceRows = Array.isArray(data.surfaces) ? data.surfaces : [];
-  const DL = data.details_labels || {details:'Asset details', income:'Rental income', financials:'Financial summary', specs:'Technical specs', other:'Other'};
-  const rowTbl = rows => `<table><tbody>${rows.map(r=>`<tr><td>${esc(r.label||'')}</td><td>${esc(r.value||'')}</td></tr>`).join('')}</tbody></table>`;
-  const hasDetails = income.length || fin.length || specs.length || extras.length || surfaceRows.length;
-  if (hasDetails){
-    const cards = [];
-    if (fin.length)    cards.push(`<div class="d-card"><div class="d-head">${esc(DL.financials)}</div>${rowTbl(fin)}</div>`);
-    if (specs.length)  cards.push(`<div class="d-card"><div class="d-head">${esc(DL.specs)}</div>${rowTbl(specs)}</div>`);
-    if (income.length) cards.push(`<div class="d-card${income.length>8?' wide':''}"><div class="d-head">${esc(DL.income)}</div>${rowTbl(income)}</div>`);
-    if (surfaceRows.length){
-      const srows = surfaceRows.map(s=>({label:String(s.floor||s.label||''), value:String(s.area||s.value||'')})).filter(r=>r.label||r.value);
-      if (srows.length) cards.push(`<div class="d-card"><div class="d-head">${esc(data.surfaces_label || 'Surfaces')}</div>${rowTbl(srows)}</div>`);
+  // DETAILS — rendered only when document extraction produced structured data.
+  // Pagination: each table category is split into chunks that fit on a landscape A4
+  // body (≈ 528px usable). A page holds either 1 wide card (≤ FULL_ROWS rows)
+  // or 2 half-width cards (each ≤ HALF_ROWS rows). Long categories flow across
+  // pages with a "(part N/M)" tag; pages after the first carry "(continued)".
+  const income    = Array.isArray(data.rental_income_rows)     ? data.rental_income_rows     : [];
+  const fin       = Array.isArray(data.financial_summary_rows) ? data.financial_summary_rows : [];
+  const specs     = Array.isArray(data.technical_specs_rows)   ? data.technical_specs_rows   : [];
+  const leases    = Array.isArray(data.lease_terms_rows)       ? data.lease_terms_rows       : [];
+  const valuation = Array.isArray(data.valuation_rows)         ? data.valuation_rows         : [];
+  const amenities = Array.isArray(data.amenities_bullets)      ? data.amenities_bullets      : [];
+  const extras    = Array.isArray(data.extra_bullets)          ? data.extra_bullets          : [];
+  const surfaceRowsRaw = Array.isArray(data.surfaces) ? data.surfaces : [];
+  const surfaceRows = surfaceRowsRaw
+    .map(s=>({label:String(s.floor||s.label||''), value:String(s.area||s.value||'')}))
+    .filter(r=>r.label||r.value);
+  const DL = data.details_labels || {details:'Asset details', income:'Rental income', financials:'Financial summary', specs:'Technical specs', leases:'Lease terms', valuation:'Valuation breakdown', amenities:'Features & amenities', surfaces:'Surface details', other:'Other', continued:'(continued)'};
+  const contLabel = (DL.continued || data.details_continued || '(continued)');
+
+  const rowTbl   = rows => `<table><tbody>${rows.map(r=>`<tr><td>${esc(r.label||'')}</td><td>${esc(r.value||'')}</td></tr>`).join('')}</tbody></table>`;
+  const bulletList = items => `<ul class="d-bullets">${items.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`;
+  const chunk = (arr, n) => { const o=[]; for (let i=0;i<arr.length;i+=n) o.push(arr.slice(i,i+n)); return o; };
+
+  // Per-page capacities, tuned for 528px usable body after title row.
+  const HALF_ROWS = 14;   // rows per card when 2 cards share a page
+  const FULL_ROWS = 22;   // rows per card when it spans the whole page width
+  const HALF_BULL = 18;   // bullet items in a 2-column half card
+  const FULL_BULL = 26;   // bullet items in a full-width 2-col card
+
+  // Build "pieces" — each piece is a single card that fits on one column.
+  // weight = rows it occupies; wide = true → forces the piece to be full-width.
+  const pieces = [];
+  function pushTableCategory(head, rows){
+    if (!rows.length) return;
+    if (rows.length <= HALF_ROWS){
+      pieces.push({head, kind:'table', rows, weight: rows.length+1, wide:false});
+      return;
     }
-    if (extras.length) cards.push(`<div class="d-card wide"><div class="d-head">${esc(DL.other)}</div><ul class="d-bullets">${extras.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>`);
-    pushPage(`
-      ${header('a')}
-      <div class="pg-body">
-        <div class="details">
-          <div class="d-title">${esc(title)} — ${esc(DL.details)}</div>
-          <div class="d-grid">${cards.join('')}</div>
-        </div>
-      </div>`);
+    const chunks = chunk(rows, FULL_ROWS);
+    chunks.forEach((c, i)=>{
+      const tag = chunks.length>1 ? `${i+1}/${chunks.length}` : '';
+      pieces.push({head, kind:'table', rows:c, weight: c.length+1, wide:true, tag});
+    });
+  }
+  function pushBulletCategory(head, items){
+    if (!items.length) return;
+    if (items.length <= HALF_BULL){
+      pieces.push({head, kind:'bullets', rows:items, weight: Math.ceil(items.length/2)+1, wide:false});
+      return;
+    }
+    const chunks = chunk(items, FULL_BULL);
+    chunks.forEach((c, i)=>{
+      const tag = chunks.length>1 ? `${i+1}/${chunks.length}` : '';
+      pieces.push({head, kind:'bullets', rows:c, weight: Math.ceil(c.length/2)+1, wide:true, tag});
+    });
   }
 
+  pushTableCategory(DL.financials, fin);
+  pushTableCategory(DL.valuation, valuation);
+  pushTableCategory(DL.specs, specs);
+
+  // ─── Consolidate Rental income + Surfaces into a single per-unit table ───
+  // The AI extractor produces income labels shaped like
+  //   "Unité 1 – Rez / sous-sol (bureau, 94 m²) — mois 1–12"
+  // and surface rows like
+  //   { floor:"Unité 1 – Rez-de-chaussée / sous-sol", area:"94 m²" }
+  // We pivot: one row per unit × N step columns (mois 1-12, 13-36, 37+ …),
+  // with surface joined in, so the reader sees rent + size for each unit in
+  // one premium table instead of two scattered ones.
+  function unitKey(s){
+    return String(s||'')
+      .replace(/\(.*?\)/g, '')           // strip parens content
+      .split(/\s+[—–]\s+/)[0]            // drop period part
+      .replace(/[\s,]+$/, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9àâçéèêëîïôûùüÿñæœ\d]+/g, ' ')
+      .trim();
+  }
+  function shortUnitName(s){
+    // Trim trailing period if it slipped through, and collapse spaces
+    return String(s||'').replace(/\s+[—–]\s+(mois|month|après|after).*$/i,'').trim();
+  }
+  function buildUnitTable(){
+    if (!income.length) return null;
+    const map = new Map();           // unitKey → { unit, sub, surface, steps:{period:rent}, order }
+    const periods = [];              // ordered list of step labels
+    let parsed = 0, order = 0;
+
+    // Period keywords that mark the start of a step/phase fragment.
+    const periodKw = /^(mois|months?|après|after|année|year|jaar|na|phase|step|period)\b/i;
+    for (const row of income){
+      const label = String(row.label||'').trim();
+      const value = String(row.value||'').trim();
+      if (!label || !value) continue;
+      // Split on the LAST ` — ` (em-dash with spaces). Labels frequently
+      // contain an en-dash inside the unit name itself ("Unité 1 – Rez …"),
+      // so a generic dash regex would split too early. Em-dash is the period
+      // boundary; en-dash with a period keyword is a fallback.
+      let sepIdx = label.lastIndexOf(' — ');
+      let sepLen = 3;
+      if (sepIdx === -1){
+        const m2 = label.match(/\s+[–-]\s+((?:mois|months?|après|after|année|year|jaar|na|phase|step|period)\b.+)$/i);
+        if (m2){ sepIdx = m2.index; sepLen = m2[0].length - m2[1].length; }
+      }
+      if (sepIdx === -1) continue;
+      const unitRaw = label.slice(0, sepIdx).trim();
+      const period  = label.slice(sepIdx + sepLen).trim();
+      const hasStep = periodKw.test(period);
+      // We still register units whose tail isn't a rent step (e.g. "travaux
+      // en cours") so they appear in the table with "—" rents — otherwise
+      // "Unité 10" would silently disappear.
+
+      // Pull surface from "(... 94 m² ...)" if present
+      let surface = '';
+      let unitName = unitRaw;
+      const sm = unitRaw.match(/\(([^)]*?\d[\d.,]*\s*m²[^)]*)\)/i);
+      if (sm){ surface = sm[1].trim(); unitName = unitRaw.replace(sm[0],'').replace(/[,\s]+$/,'').trim(); }
+      // Also remove any leading descriptor wrapped in parens that's not a surface
+      unitName = unitName.replace(/\s+\(\s*\)/,'').trim();
+
+      // Split the unit name into a primary chip + a sublabel
+      // e.g. "Unité 2a – Rez C-01" → primary "Unité 2a", sub "Rez C-01"
+      let primary = unitName, sub = '';
+      const dash = unitName.match(/^(.+?)\s+[–-]\s+(.+)$/);
+      if (dash){ primary = dash[1].trim(); sub = dash[2].trim(); }
+
+      const k = unitKey(unitName);
+      if (!map.has(k)){
+        map.set(k, { unit: primary, sub, surface, steps: {}, note: '', order: order++ });
+      } else {
+        const u = map.get(k);
+        if (!u.surface && surface) u.surface = surface;
+        if (!u.sub     && sub)     u.sub = sub;
+      }
+      if (hasStep){
+        map.get(k).steps[period] = value;
+        if (!periods.includes(period)) periods.push(period);
+        parsed++;
+      } else {
+        // Stash the descriptive tail (e.g. "travaux en cours") so we can show
+        // it as a spanned cell in place of step rents for this unit.
+        const u = map.get(k);
+        u.note = u.note ? u.note : (period + (value ? ` — ${value}` : ''));
+      }
+    }
+
+    // Reject the consolidation if the pattern didn't match enough rows
+    // or if we ended up with a near-degenerate shape — fall back to plain.
+    if (map.size < 2) return null;
+    if (parsed < income.length * 0.7) return null;
+    if (periods.length < 1 || periods.length > 6) return null;
+
+    // Pull per-unit surfaces from the surfaces array when the income label
+    // didn't include them, and split out the global summary rows.
+    const summary = [];
+    for (const r of surfaceRows){
+      const lbl = String(r.label||'').trim();
+      const val = String(r.value||'').trim();
+      if (!lbl) continue;
+      // "Surface totale", "Surface habitable totale", etc → summary.
+      // NOTE: trailing (\s|\d|$) instead of \b because JS \b doesn't treat
+      // accented letters like é as word chars without the /u flag, so a plain
+      // \b after "Unité" never matches and every per-unit row would leak
+      // into the summary block.
+      if (!/^\s*(unit[eé]|studio|appart|apt|lot)(\s|\d|$)/i.test(lbl)){
+        summary.push({ label: lbl, value: val });
+        continue;
+      }
+      const k = unitKey(lbl);
+      if (map.has(k) && !map.get(k).surface) map.get(k).surface = val;
+    }
+
+    const units = Array.from(map.values()).sort((a,b)=>a.order-b.order);
+    return { units, periods, summary };
+  }
+
+  function unitTableHtml(t, headLabel){
+    const cols = ['Unité', 'Surface', ...t.periods];
+    const colWidth = `${(100 - 28 - 14) / Math.max(t.periods.length,1)}%`;
+    // Pretty up the step headers (mois 1–12 → "Mois 1–12")
+    const prettyPeriod = p => p.replace(/^mois\b/i,'Mois').replace(/^après mois\b/i,'Après mois').replace(/^month\b/i,'Month').replace(/^after month\b/i,'After month').trim();
+    const head = `
+      <thead><tr>
+        <th class="l" style="width:28%">${esc(headLabel || 'Unité')}</th>
+        <th style="width:14%">${esc('Surface')}<span class="sub">m²</span></th>
+        ${t.periods.map(p=>`<th style="width:${colWidth}">${esc(prettyPeriod(p))}<span class="sub">€ / mois</span></th>`).join('')}
+      </tr></thead>`;
+    const body = `
+      <tbody>${t.units.map(u=>{
+        const hasAnyStep = t.periods.some(p => u.steps[p]);
+        const rentCells = (hasAnyStep || !u.note)
+          ? t.periods.map(p=>`<td class="r">${esc(u.steps[p] || '—')}</td>`).join('')
+          : `<td class="r u-note" colspan="${t.periods.length}" style="font-weight:500;color:var(--grey-text);font-style:italic">${esc(u.note)}</td>`;
+        return `
+        <tr>
+          <td class="l">${esc(u.unit)}${u.sub?`<span class="u-sub">${esc(u.sub)}</span>`:''}</td>
+          <td class="r area">${esc(u.surface || '—')}</td>
+          ${rentCells}
+        </tr>`;
+      }).join('')}
+      </tbody>`;
+    const summaryHtml = t.summary && t.summary.length ? `
+      <div class="u-summary">${t.summary.map(s=>`
+        <div class="u-sum-item">
+          <div class="u-sum-k">${esc(s.label)}</div>
+          <div class="u-sum-v">${esc(s.value)}</div>
+        </div>`).join('')}
+      </div>` : '';
+    return summaryHtml + `<table class="u-table">${head}${body}</table>`;
+  }
+
+  const unitTable = buildUnitTable();
+  if (unitTable){
+    // Combined head label, e.g. "Revenus locatifs & superficies par unité"
+    const combinedHead =
+      (data.unit_table_label) ||
+      ((DL.income && DL.surfaces) ? `${DL.income} · ${DL.surfaces}` :
+       (DL.income || 'Rental income & surfaces'));
+    // Wide piece; split into chunks of ROWS_PER_PAGE if the unit list is huge.
+    const ROWS_PER_PAGE = 16;
+    if (unitTable.units.length <= ROWS_PER_PAGE){
+      pieces.push({
+        head: combinedHead, kind:'unit-table', payload: unitTable,
+        weight: unitTable.units.length + 2, wide:true
+      });
+    } else {
+      const cs = chunk(unitTable.units, ROWS_PER_PAGE);
+      cs.forEach((slice, i) => {
+        pieces.push({
+          head: combinedHead, kind:'unit-table',
+          payload: { units: slice, periods: unitTable.periods, summary: i === 0 ? unitTable.summary : [] },
+          weight: slice.length + 2, wide:true,
+          tag: cs.length>1 ? `${i+1}/${cs.length}` : ''
+        });
+      });
+    }
+  } else {
+    // Fallback to the legacy split tables when the unit pattern didn't match.
+    pushTableCategory(data.surfaces_label || DL.surfaces || 'Surfaces', surfaceRows);
+    pushTableCategory(DL.income, income);
+  }
+  pushTableCategory(DL.leases, leases);
+  pushBulletCategory(DL.amenities, amenities);
+  pushBulletCategory(DL.other, extras);
+
+  // Pack pieces into pages: 1 wide piece OR 2 half pieces per page.
+  const detailPages = [];
+  let bucket = [];
+  function flushBucket(){
+    if (bucket.length){ detailPages.push(bucket); bucket = []; }
+  }
+  for (const p of pieces){
+    if (p.wide){
+      flushBucket();
+      detailPages.push([p]);
+      continue;
+    }
+    if (bucket.length >= 2){ flushBucket(); }
+    bucket.push(p);
+  }
+  flushBucket();
+
+  function cardHtml(p){
+    const cls = ['d-card'];
+    if (p.wide) cls.push('wide');
+    if (p.kind === 'bullets' && !p.wide) cls.push('narrow');
+    if (p.kind === 'unit-table') cls.push('u-card');
+    const tag = p.tag ? `<span class="d-head-tag">${esc(p.tag)}</span>` : '';
+    let body;
+    if (p.kind === 'table')           body = rowTbl(p.rows);
+    else if (p.kind === 'bullets')    body = bulletList(p.rows);
+    else if (p.kind === 'unit-table') body = unitTableHtml(p.payload, '');
+    else                              body = '';
+    return `<div class="${cls.join(' ')}"><div class="d-head"><span>${esc(p.head)}</span>${tag}</div>${body}</div>`;
+  }
+
+  // Optional KPI strip — shown ONCE on the first details page.
+  // Pulls from data.key_metrics (list of {label, value, sub}) when provided.
+  const keyMetrics = Array.isArray(data.key_metrics) ? data.key_metrics.slice(0,5) : [];
+  const kpiStripHtml = keyMetrics.length ? `
+    <div class="kpi-strip">
+      ${keyMetrics.map(k=>`
+        <div class="kpi-cell">
+          <div class="kpi-label">${esc(k.label||'')}</div>
+          <div class="kpi-value">${esc(k.value||'')}</div>
+          ${k.sub ? `<div class="kpi-sub">${esc(k.sub)}</div>` : ''}
+        </div>`).join('')}
+    </div>` : '';
+
+  detailPages.forEach((pageCards, idx)=>{
+    currentSection = 'details';
+    if (idx === 0) sectionAnchor = A.details;
+    const wide = pageCards.length === 1 && pageCards[0].wide;
+    const gridCls = wide ? 'd-grid one' : 'd-grid';
+    const suffix = idx === 0 ? '' : `<span class="d-suffix">${esc(contLabel)}</span>`;
+    const kpi = idx === 0 ? kpiStripHtml : '';
+    pushPage(`
+      ${header('a', SL.details)}
+      <div class="pg-body">
+        <div class="details">
+          <div class="d-title"><span>${esc(DL.details)}</span>${suffix}</div>
+          ${kpi}
+          <div class="${gridCls}">${pageCards.map(cardHtml).join('')}</div>
+        </div>
+      </div>`);
+  });
+
   // LOCATIE
+  currentSection = 'localisation';
   sectionAnchor = A.loc;
   pushPage(`
-    ${header('l')}
+    ${header('l', SL.locatie)}
     <div class="pg-body">
       <div class="locatie">
         <div class="map" style="background-image:url('${esc(fileUrl(streetMap))}')"></div>
         <div class="info">
-          <div class="l-title">${esc(title)}</div>
+          <div class="l-title">${esc(shortLoc || name || title)}</div>
           <div class="l-rule"></div>
           <a class="l-link" href="${esc(mapsUrl)}" target="_blank">${esc(mapLinkTxt)}</a>
           <div class="l-rule"></div>
@@ -407,41 +819,83 @@ window.loadLongTeaser = function(data, brandName){
       </div>
     </div>`);
 
-  // PHOTOS — first page 3 tiles if >=3, rest 2 per page
+  // AERIAL VIEW — dedicated page with boundary outline + caption.
+  if (aerialImg){
+    currentSection = 'aerial';
+    sectionAnchor = A.aerial;
+    const boundaryCaption = data.boundary_caption ||
+      ({EN:'Indicative property boundary', FR:'Limite indicative de la propriété', NL:'Indicatieve perceelsgrens'}[data.language] || 'Limite indicative de la propriété');
+    const aerialLabel = SL.aerial || (data.tab_aerial || 'Vue aérienne');
+    pushPage(`
+      ${header('ae', aerialLabel)}
+      <div class="pg-body">
+        <div class="aerial">
+          <div class="a-frame">
+            <img class="a-img" src="${esc(fileUrl(aerialImg))}" alt="aerial">
+            <div class="a-overlay">
+              <div class="a-boundary"></div>
+              <div class="a-pin"></div>
+            </div>
+            <div class="a-caption">${esc(boundaryCaption)}</div>
+          </div>
+          <div class="a-side">
+            <div class="a-eyebrow">${esc(aerialLabel)}</div>
+            <div class="a-title">${esc(shortLoc || name || title)}</div>
+            <div class="a-rule"></div>
+            ${address ? `<div class="a-row"><div class="k">${esc(addrLbl)}</div><div class="v">${esc(address)}</div></div>` : ''}
+            ${ref     ? `<div class="a-row"><div class="k">Référence</div><div class="v">${esc(ref)}</div></div>` : ''}
+            ${price   ? `<div class="a-row"><div class="k">${esc(priceLbl)}</div><div class="v">${esc(price)}</div></div>` : ''}
+            <div class="a-legend">${esc(boundaryCaption)}</div>
+          </div>
+        </div>
+      </div>`);
+  }
+
+  // PHOTOS — pack densely: first page hero-3 trio if >=3, then 6 tiles (3x2)
+  // per page, with a tail-page fallback to 4 (2x2) / 3 / 2 if fewer remain so
+  // we never publish a half-empty gallery page.
   if(photos.length){
+    currentSection = 'gallery';
     sectionAnchor = A.photos;
     let i = 0;
-    if(photos.length >= 3){
-      const trio = photos.slice(0,3);
+    function pushGalleryPage(slice, gridClass){
       pushPage(`
-        ${header('p')}
+        ${header('p', SL.photos)}
         <div class="pg-body">
-          <div class="photos-3">
-            ${trio.map(p=>`<div class="photo-tile" style="background-image:url('${esc(fileUrl(p))}')"></div>`).join('')}
+          <div class="${gridClass}">
+            ${slice.map(p=>`<div class="photo-tile" style="background-image:url('${esc(fileUrl(p))}')"></div>`).join('')}
           </div>
         </div>`);
+    }
+    if(photos.length >= 3){
+      pushGalleryPage(photos.slice(0,3), 'photos-3');
       i = 3;
     }
     while(i < photos.length){
-      const pair = photos.slice(i, i+2);
-      if(!sectionAnchor && i===0) sectionAnchor = A.photos;
-      pushPage(`
-        ${header('p')}
-        <div class="pg-body">
-          <div class="photos-2">
-            ${pair.map(p=>`<div class="photo-tile" style="background-image:url('${esc(fileUrl(p))}')"></div>`).join('')}
-          </div>
-        </div>`);
-      i += 2;
+      const remaining = photos.length - i;
+      let take, cls;
+      // Prefer 4-tile (2x2) pages — larger, more premium presentation than
+      // 6-tile pages. Only step up to 6 when we'd otherwise leave a sparse
+      // trailing pair. Drop to 3/2 only at the very end.
+      if(remaining >= 8){ take = 4; cls = 'photos-4'; }
+      else if(remaining === 7){ take = 4; cls = 'photos-4'; }       // 4 + 3
+      else if(remaining === 6){ take = 6; cls = 'photos-6'; }       // 1 page of 6
+      else if(remaining === 5){ take = 5; cls = 'photos-6'; }       // 1 page of 5 (3+2)
+      else if(remaining === 4){ take = 4; cls = 'photos-4'; }
+      else if(remaining === 3){ take = 3; cls = 'photos-3'; }
+      else { take = remaining; cls = 'photos-2'; }
+      pushGalleryPage(photos.slice(i, i + take), cls);
+      i += take;
     }
   }
 
   // PLANS — 1 per page, auto-rotate portrait images
   if(plans.length){
+    currentSection = 'plans';
     sectionAnchor = A.plans;
     plans.forEach(pl=>{
       pushPage(`
-        ${header('pl')}
+        ${header('pl', SL.plans)}
         <div class="pg-body">
           <div class="plan-wrap"><img class="plan-img" src="${esc(fileUrl(pl))}" alt="plan"></div>
         </div>`);
@@ -449,9 +903,10 @@ window.loadLongTeaser = function(data, brandName){
   }
 
   // SALES
+  currentSection = 'sales';
   sectionAnchor = A.sales;
   pushPage(`
-    ${header('s')}
+    ${header('s', SL.sales)}
     <div class="pg-body">
       <div class="sales">
         <div class="s-left">
@@ -465,27 +920,12 @@ window.loadLongTeaser = function(data, brandName){
           <div class="s-price"><span>${esc(priceLbl)}</span><span class="val">${esc(price)}</span></div>
         </div>
         <div class="s-right">
-          <div class="s-photo" style="background-image:url('${esc(fileUrl(salesPhoto))}')"></div>
+          <div class="s-photo">${salesPhoto?`<img src="${esc(fileUrl(salesPhoto))}" alt="">`:''}</div>
           <div class="s-cta">
             <div class="s-cta-label">${esc(docsHelper)}</div>
             <a href="${esc(docsUrl)}" target="_blank">${esc(docsLabel)}</a>
           </div>
         </div>
-      </div>
-    </div>`);
-
-  // BACK COVER
-  pushPage(`
-    <div class="back">
-      ${backPhoto?`<div class="bg" style="background-image:url('${esc(fileUrl(backPhoto))}')"></div>`:''}
-      <div class="overlay"></div>
-      <div class="wm">RODSCHINSON<small>INVESTMENT</small></div>
-      <div class="contact-row">
-        <div class="it">${esc(agentPhone)}</div>
-        <div class="bar"></div>
-        <div class="it">assets@rodschinson.com</div>
-        <div class="bar"></div>
-        <div class="it">www.rodschinson.com</div>
       </div>
     </div>`);
 

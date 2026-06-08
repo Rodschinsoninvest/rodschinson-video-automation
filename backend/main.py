@@ -2424,7 +2424,9 @@ RULES:
                             # For images, we'll pass directly to Claude vision below
                             text = f"[IMAGE:{name}]{data_uri}"
                         if text:
-                            extracted_text_chunks.append(f"--- {name} ---\n{text[:8000]}")
+                            # Per-document cap: 40k chars keeps each long PDF largely intact
+                            # while preventing one rogue doc from drowning the others.
+                            extracted_text_chunks.append(f"--- {name} ---\n{text[:40000]}")
                     except Exception as e:
                         log.warning("[%s] Could not process document %s: %s", job_id[:8], name if 'name' in dir() else 'unknown', e)
 
@@ -2436,7 +2438,9 @@ RULES:
                 await _save_job(job)
                 api_key = os.getenv("ANTHROPIC_API_KEY", "")
                 lang_label_for_extract = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(language, "English")
-                combined_text = "\n\n".join(extracted_text_chunks)[:80000]
+                # Total cap: 180k chars (~45k tokens) — leaves headroom inside the
+                # 200k-context model so all docs can be read together, not summarised.
+                combined_text = "\n\n".join(extracted_text_chunks)[:180000]
                 combined_text = re.sub(r"\[IMAGE:[^\]]+\]data:[^\s]+", "[image content not shown]", combined_text)
 
                 # Show user-provided values to Claude so it knows what NOT to override
@@ -2486,17 +2490,32 @@ Return JSON in {lang_label_for_extract}:
     {{"label": "Energy rating (PEB)", "value": "C / D"}},
     {{"label": "Compliance", "value": "zoning, electricity, fire safety"}}
   ],
+  "lease_terms": [
+    {{"label": "Unit / Tenant", "value": "9-year firm lease, ends 2031, indexed annually"}}
+  ],
+  "valuation": [
+    {{"label": "Asset valuation", "value": "\u20ac4,300,000"}},
+    {{"label": "Net equity price (shares)", "value": "\u20ac1,950,000"}},
+    {{"label": "Debt to assume", "value": "\u20ac1,950,000"}}
+  ],
+  "amenities": [
+    "Short feature/amenity description"
+  ],
   "extra_bullets": [
     "Short stand-alone fact that does not fit the structured groups above"
   ]
 }}
 
 EXTRACTION RULES:
-- surfaces: include ALL surface/area mentions (habitable surface, total surface, land surface, per-floor breakdown, parking, basement). Keep original notation.
-- rental_income: ONE row per unit/tenant with the monthly or annual rent. Leave empty if the asset is not income-producing or no rent data is present.
-- financial_summary: totals and ratios (annual income, yield, NOI, property tax, cadastral income). Currency symbols stay with the value.
+- BE EXHAUSTIVE: extract every relevant figure / fact in the documents. We have multi-page room to display many tables; do not pre-trim.
+- surfaces: include ALL surface/area mentions (habitable surface, total surface, land surface, per-floor breakdown, parking, basement, garden). Keep original notation.
+- rental_income: ONE row per unit/tenant with the monthly or annual rent. If a unit has step rents (mois 1-12, mois 13-36, etc.), output ONE row per step. Leave empty if the asset is not income-producing.
+- financial_summary: totals and ratios (annual/monthly income, gross yield, leveraged yield, NOI, property tax, cadastral income, charges). Currency symbols stay with the value.
 - technical_specs: building facts (year built, energy rating, compliance, construction type, utilities, number of units, parking).
-- extra_bullets: 0-5 misc facts that don't fit the structured groups above. Keep short.
+- lease_terms: ONE row per unit/tenant with lease duration, end date, indexation, break options, renewal terms. Leave empty if no lease data.
+- valuation: price stack \u2014 asset valuation, net equity price, debt assumed, share-deal vs asset-deal split, transaction fees. Leave empty if no breakdown given.
+- amenities: bullet list of property features (parquet, mouldings, garden, terrace, lift, AC, fireplaces, etc.). Short phrases.
+- extra_bullets: 0-8 misc facts that don't fit any structured group. Keep short.
 - DO NOT duplicate the same fact across groups.
 - DO NOT repeat anything already present in the user's "Current Description" above.
 - DO NOT include reference numbers, owner names, internal IDs, preparation dates.
@@ -2509,9 +2528,12 @@ EXTRACTION RULES:
                             resp = await client.post(
                                 "https://api.anthropic.com/v1/messages",
                                 headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-                                json={"model": "claude-sonnet-4-6", "max_tokens": 4000,
+                                # 12k output tokens — large enough to emit dense tables
+                                # (per-unit rents, per-floor surfaces, full lease schedule)
+                                # without truncating the JSON mid-array.
+                                json={"model": "claude-sonnet-4-6", "max_tokens": 12000,
                                       "messages": [{"role": "user", "content": extract_prompt}]},
-                                timeout=120,
+                                timeout=180,
                             )
                             if resp.status_code == 200:
                                 extracted_fields = _parse_json(resp.json()["content"][0]["text"]) or {}
@@ -2545,8 +2567,15 @@ EXTRACTION RULES:
             rental_income_rows    = _clean_rows(extracted_fields.get("rental_income"))
             financial_summary_rows = _clean_rows(extracted_fields.get("financial_summary"))
             technical_specs_rows   = _clean_rows(extracted_fields.get("technical_specs"))
+            lease_terms_rows       = _clean_rows(extracted_fields.get("lease_terms"))
+            valuation_rows         = _clean_rows(extracted_fields.get("valuation"))
+            # No row caps — the teaser template now paginates Details across
+            # multiple pages, so extracted lists overflow gracefully instead of
+            # being silently truncated to fit a single page.
+            amenities_bullets = [b.strip() for b in (extracted_fields.get("amenities") or [])
+                                 if isinstance(b, str) and b.strip()]
             extra_bullets = [b.strip() for b in (extracted_fields.get("extra_bullets") or [])
-                             if isinstance(b, str) and b.strip()][:5]
+                             if isinstance(b, str) and b.strip()]
 
             lang_label = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(language, "English")
 
@@ -2631,12 +2660,15 @@ EXTRACTION RULES:
                 "rental_income_rows":     rental_income_rows,
                 "financial_summary_rows": financial_summary_rows,
                 "technical_specs_rows":   technical_specs_rows,
+                "lease_terms_rows":       lease_terms_rows,
+                "valuation_rows":         valuation_rows,
+                "amenities_bullets":      amenities_bullets,
                 "extra_bullets":          extra_bullets,
                 "details_labels": {
-                    "EN": {"details": "Asset details", "income": "Rental income",      "financials": "Financial summary", "specs": "Technical specs", "other": "Other"},
-                    "FR": {"details": "D\u00e9tails de l'actif", "income": "Revenus locatifs", "financials": "R\u00e9sum\u00e9 financier", "specs": "Sp\u00e9cifications techniques", "other": "Autres"},
-                    "NL": {"details": "Activadetails", "income": "Huurinkomsten",       "financials": "Financieel overzicht", "specs": "Technische specificaties", "other": "Overige"},
-                }.get(language, {"details": "Asset details", "income": "Rental income", "financials": "Financial summary", "specs": "Technical specs", "other": "Other"}),
+                    "EN": {"details": "Asset details", "income": "Rental income", "financials": "Financial summary", "specs": "Technical specs", "leases": "Lease terms", "valuation": "Valuation breakdown", "amenities": "Features & amenities", "surfaces": "Surface details", "other": "Other", "continued": "(continued)"},
+                    "FR": {"details": "D\u00e9tails de l'actif", "income": "Revenus locatifs", "financials": "R\u00e9sum\u00e9 financier", "specs": "Sp\u00e9cifications techniques", "leases": "Conditions de bail", "valuation": "Structure du prix", "amenities": "Caract\u00e9ristiques", "surfaces": "D\u00e9tail des superficies", "other": "Autres", "continued": "(suite)"},
+                    "NL": {"details": "Activadetails", "income": "Huurinkomsten", "financials": "Financieel overzicht", "specs": "Technische specificaties", "leases": "Huurvoorwaarden", "valuation": "Prijsopbouw", "amenities": "Kenmerken", "surfaces": "Oppervlaktedetails", "other": "Overige", "continued": "(vervolg)"},
+                }.get(language, {"details": "Asset details", "income": "Rental income", "financials": "Financial summary", "specs": "Technical specs", "leases": "Lease terms", "valuation": "Valuation breakdown", "amenities": "Features & amenities", "surfaces": "Surface details", "other": "Other", "continued": "(continued)"}),
                 "photos": photo_paths,
                 "plans": plan_paths,
                 # Agent (contact shown on the sales conditions page). User selection wins;
@@ -2744,8 +2776,14 @@ def health():
 @app.post("/api/generate", status_code=202)
 async def generate(request: Request):
     _check_rate_limit(request.client.host if request.client else "unknown")
-    # Parse multipart with raised limits (default 1MB per part is too small for base64 uploads)
-    form = await request.form(max_files=100, max_fields=100, max_part_size=100 * 1024 * 1024)  # 100MB per part
+    # Parse multipart with raised limits. The `payload` field is a single JSON
+    # part that contains base64-encoded photos/plans/documents for the long
+    # teaser, so the per-part cap must accommodate the worst real-world case.
+    try:
+        form = await request.form(max_files=200, max_fields=200, max_part_size=500 * 1024 * 1024)
+    except Exception as e:
+        log.warning("[/api/generate] multipart parse failed: %s", e)
+        raise HTTPException(413, f"Upload too large or malformed: {type(e).__name__}")
     payload_raw = form.get("payload")
     if not payload_raw or not isinstance(payload_raw, str):
         raise HTTPException(422, "Missing payload field")
@@ -2755,6 +2793,12 @@ async def generate(request: Request):
         raise HTTPException(422, "Invalid payload JSON")
     if not data.get("subject", "").strip():
         raise HTTPException(422, "subject is required")
+    log.info("[/api/generate] type=%s template=%s photos=%d plans=%d docs=%d payload_bytes=%d",
+             data.get("contentType"), data.get("template"),
+             len(data.get("photos", []) or []),
+             len(data.get("plans", []) or []),
+             len(data.get("documents", []) or []),
+             len(payload_raw))
 
     logo = form.get("logo")
     logo_path: Path | None = None
@@ -2766,9 +2810,15 @@ async def generate(request: Request):
         logo_path = logo_dest
 
     job_id = str(uuid.uuid4())
+    # Status-only job record. The full `data` payload (which can be 100+ MB of
+    # base64 uploads for long teasers) is passed directly to the pipeline task,
+    # never persisted — otherwise every /api/jobs poll re-reads that blob and
+    # the frontend never sees the "done" transition.
     job = {
         "job_id": job_id, "status": "pending", "step": "Queued", "progress": 0,
-        "brief": data, "output_file": None, "detail": None,
+        "content_type": data.get("contentType"),
+        "subject": (data.get("subject") or "")[:120],
+        "output_file": None, "detail": None,
         "created_at": _now(), "updated_at": _now(),
     }
     _jobs[job_id] = job
@@ -3162,6 +3212,14 @@ async def generate_variations(body: dict):
 
 # ── Job status ─────────────────────────────────────────────────────────────────
 
+_STATUS_FIELDS = ("job_id", "status", "step", "progress", "content_type",
+                  "subject", "output_file", "detail", "created_at", "updated_at",
+                  "thumbnail")
+
+def _slim_job(job: dict) -> dict:
+    """Strip heavy/legacy fields (e.g. base64 `brief`) before returning to clients."""
+    return {k: job.get(k) for k in _STATUS_FIELDS if k in job}
+
 @app.get("/api/jobs/{job_id}")
 async def get_job(job_id: str):
     path = JOBS_DIR / f"{job_id}.json"
@@ -3172,12 +3230,12 @@ async def get_job(job_id: str):
             async with aiofiles.open(path) as f:
                 job = json.loads(await f.read())
             _jobs[job_id] = job  # keep in-memory cache in sync
-            return job
+            return _slim_job(job)
         except Exception as e:
             log.warning("Could not read job file %s: %s", job_id[:8], e)
     # Fall back to in-memory dict (job not yet persisted — still in-flight)
     if job_id in _jobs:
-        return _jobs[job_id]
+        return _slim_job(_jobs[job_id])
     raise HTTPException(404, "Job not found")
 
 
@@ -6584,3 +6642,359 @@ async def get_property(odoo_id: int):
 async def list_asset_types():
     """Return the asset type → template mapping."""
     return ASSET_TYPE_MAP
+
+
+# ── Long Teaser — AI field editor ──────────────────────────────────────────────
+
+class LongTeaserAIEditRequest(BaseModel):
+    prompt: str
+    fields: dict
+    context: dict | None = None
+
+
+@app.post("/api/long-teaser/ai-edit")
+async def long_teaser_ai_edit(body: LongTeaserAIEditRequest, request: Request):
+    """Apply a free-text change request to one or more Long Teaser form fields.
+    Returns the updated fields plus a short summary of what changed."""
+    await _get_request_user(request)
+    _check_rate_limit(request.client.host if request.client else "unknown")
+
+    user_prompt = (body.prompt or "").strip()
+    if not user_prompt:
+        raise HTTPException(422, "prompt is required")
+
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(503, "ANTHROPIC_API_KEY not set in .env")
+
+    allowed_keys = ["address", "paymentTerms", "sharepointUrl", "expertiseUrl", "surfaces"]
+    current = {k: body.fields.get(k, "" if k != "surfaces" else []) for k in allowed_keys}
+    ctx = body.context or {}
+
+    system = (
+        "You edit a Long Teaser property form for Rodschinson Investment. "
+        "You receive the current field values as JSON and a free-text instruction from the user. "
+        "Return ONLY a JSON object with two keys: `fields` (an object containing ONLY the fields you changed, "
+        "using the SAME keys as the input) and `summary` (a one-sentence note in the user's language).\n"
+        "Rules:\n"
+        "- Touch only the fields the user asked about. Do not invent new fields.\n"
+        "- NEVER fabricate URLs. Only modify sharepointUrl/expertiseUrl if the user explicitly provides a new URL in the prompt.\n"
+        "- `surfaces` is an array of objects with shape {floor: string, area: string}. Keep that exact shape.\n"
+        "- Preserve existing values for any field you are not changing (omit them from the output).\n"
+        "- If the instruction is unclear, return an empty `fields` object and explain in `summary`.\n"
+        "- Output strictly valid JSON. No markdown, no commentary."
+    )
+
+    user_msg = json.dumps({
+        "instruction": user_prompt,
+        "context": {
+            "property_title": ctx.get("property_title", ""),
+            "asset_type": ctx.get("asset_type", ""),
+            "language": ctx.get("language", ""),
+        },
+        "current_fields": current,
+        "allowed_keys": allowed_keys,
+    }, ensure_ascii=False)
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        res = await client.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+            json={
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1200,
+                "system": system,
+                "messages": [{"role": "user", "content": user_msg}],
+            },
+        )
+    if res.status_code != 200:
+        raise HTTPException(500, f"Claude API error {res.status_code}: {res.text[:200]}")
+
+    raw = res.json()["content"][0]["text"].strip()
+    try:
+        parsed = _parse_json(raw)
+    except (json.JSONDecodeError, ValueError) as e:
+        raise HTTPException(500, f"Claude returned invalid JSON: {e}")
+
+    out_fields_raw = parsed.get("fields") or {}
+    summary = (parsed.get("summary") or "").strip()
+
+    # Filter + sanitize: only keep allowed keys, only keep changed values.
+    out_fields: dict = {}
+    for k, v in out_fields_raw.items():
+        if k not in allowed_keys:
+            continue
+        if k == "surfaces":
+            if not isinstance(v, list):
+                continue
+            cleaned = []
+            for row in v:
+                if isinstance(row, dict):
+                    cleaned.append({
+                        "floor": str(row.get("floor", "")),
+                        "area":  str(row.get("area", "")),
+                    })
+            if cleaned != current["surfaces"]:
+                out_fields[k] = cleaned
+        else:
+            if isinstance(v, str) and v != current[k]:
+                # Guard URLs: never write a URL the user didn't put in their prompt.
+                if k in ("sharepointUrl", "expertiseUrl"):
+                    if v.strip() and v.strip() not in user_prompt:
+                        continue
+                out_fields[k] = v
+
+    return {"fields": out_fields, "summary": summary or "No changes applied."}
+
+
+# ── Long Teaser — JSON editor + asset management ──────────────────────────────
+
+def _teaser_short_id(raw: str) -> str:
+    """Library entries use full UUIDs but on-disk files use the first 8 hex chars.
+    Accept either, return the short id, refuse anything else so we never resolve
+    a path outside TEASER_DIR."""
+    s = (raw or "").strip().lower()
+    if not s or not all(c in "0123456789abcdef-" for c in s):
+        raise HTTPException(422, "Invalid job id")
+    short = s.replace("-", "")[:8]
+    if len(short) != 8:
+        raise HTTPException(422, "Invalid job id")
+    return short
+
+
+def _teaser_paths(job_id: str) -> dict:
+    sid = _teaser_short_id(job_id)
+    return {
+        "short_id":   sid,
+        "json":       TEASER_DIR / f"{sid}_long_teaser.json",
+        "pdf":        TEASER_DIR / f"{sid}_long_teaser.pdf",
+        "pptx":       TEASER_DIR / f"{sid}_long_teaser_editable.pptx",
+        "thumb":      TEASER_DIR / f"{sid}_long_teaser_thumb.png",
+        "assets_dir": TEASER_DIR / f"{sid}_long_assets",
+    }
+
+
+def _to_file_url(p: Path) -> str:
+    return f"file://{p}"
+
+
+@app.get("/api/long-teaser/{job_id}")
+async def long_teaser_get(job_id: str, request: Request):
+    """Return the saved teaser JSON plus the list of available asset files."""
+    await _get_request_user(request)
+    paths = _teaser_paths(job_id)
+    if not paths["json"].exists():
+        raise HTTPException(404, "Teaser JSON not found")
+    async with aiofiles.open(paths["json"], "r") as f:
+        raw = await f.read()
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise HTTPException(500, f"Corrupt teaser JSON: {e}")
+
+    assets: list[dict] = []
+    adir = paths["assets_dir"]
+    if adir.exists():
+        for f in sorted(adir.iterdir()):
+            if f.is_file():
+                try:
+                    size = f.stat().st_size
+                except OSError:
+                    size = 0
+                assets.append({
+                    "name":  f.name,
+                    "size":  size,
+                    "url":   _to_file_url(f),
+                })
+
+    # Look up library entry so the editor can show brand / language without re-asking.
+    lib = await _library_load()
+    entry = next((e for e in lib if str(e.get("job_id", "")).lower().replace("-", "")[:8] == paths["short_id"]), None)
+
+    return {
+        "short_id":   paths["short_id"],
+        "data":       data,
+        "assets":     assets,
+        "library":    entry or None,
+        "has_pdf":    paths["pdf"].exists(),
+        "has_pptx":   paths["pptx"].exists(),
+    }
+
+
+class LongTeaserPutRequest(BaseModel):
+    data: dict
+
+
+@app.put("/api/long-teaser/{job_id}")
+async def long_teaser_put(job_id: str, body: LongTeaserPutRequest, request: Request):
+    """Overwrite the saved teaser JSON. Does NOT re-render — call /regenerate for that."""
+    await _get_request_user(request)
+    paths = _teaser_paths(job_id)
+    if not paths["json"].exists():
+        raise HTTPException(404, "Teaser JSON not found")
+    if not isinstance(body.data, dict):
+        raise HTTPException(422, "data must be an object")
+    async with aiofiles.open(paths["json"], "w") as f:
+        await f.write(json.dumps(body.data, indent=2, ensure_ascii=False))
+    return {"ok": True, "short_id": paths["short_id"]}
+
+
+@app.post("/api/long-teaser/{job_id}/regenerate", status_code=202)
+async def long_teaser_regenerate(job_id: str, request: Request, body: dict | None = Body(default=None)):
+    """Re-run the Puppeteer renderer (and optionally the PPTX builder) against the
+    currently-saved JSON. Returns a tracking job_id the frontend can poll."""
+    await _get_request_user(request)
+    _check_rate_limit(request.client.host if request.client else "unknown")
+    paths = _teaser_paths(job_id)
+    if not paths["json"].exists():
+        raise HTTPException(404, "Teaser JSON not found")
+
+    body = body or {}
+    regen_pptx = bool(body.get("regenerate_pptx", False))
+
+    # Look up brand so the renderer applies the right palette.
+    lib = await _library_load()
+    entry = next((e for e in lib if str(e.get("job_id", "")).lower().replace("-", "")[:8] == paths["short_id"]), None)
+    brand_arg = (entry or {}).get("brand") or "rodschinson"
+
+    new_job_id = str(uuid.uuid4())
+    job = {
+        "job_id":       new_job_id,
+        "status":       "running",
+        "step":         "Re-rendering PDF",
+        "progress":     20,
+        "content_type": "property_long_teaser_rerender",
+        "subject":      (entry or {}).get("title", "Long Teaser re-render")[:120],
+        "output_file":  None,
+        "detail":       None,
+        "created_at":   _now(),
+        "updated_at":   _now(),
+    }
+    _jobs[new_job_id] = job
+    await _save_job(job)
+
+    async def _render_task():
+        try:
+            render_cmd = [
+                "node", str(PUPPET / "long_teaser_renderer.js"),
+                "--script", str(paths["json"]),
+                "--output-pdf", str(paths["pdf"]),
+                "--output-thumb", str(paths["thumb"]),
+            ]
+            brand_data = await _brand_lookup(brand_arg)
+            if brand_data:
+                render_cmd += [
+                    "--brand-name", brand_data.get("name", "Rodschinson"),
+                    "--brand-primary", brand_data.get("primaryColor", "#08316F"),
+                    "--brand-accent", brand_data.get("accentColor", "#C8A96E"),
+                ]
+            code, _out, err = await _run(render_cmd, cwd=PUPPET, timeout=120, job_id=new_job_id)
+            if code != 0:
+                raise RuntimeError(f"Renderer exit {code}: {err[-500:]}")
+
+            if regen_pptx:
+                _job_update(job, step="Rebuilding PPTX", progress=70)
+                await _save_job(job)
+                pptx_cmd = [
+                    str(ROOT.parent / "rodschinson-venv311" / "bin" / "python"),
+                    str(ROOT / "scripts" / "build_long_teaser_pptx.py"),
+                    "--json", str(paths["json"]),
+                    "--output", str(paths["pptx"]),
+                ]
+                # Fallback: if the venv path doesn't exist, use system python3.
+                if not Path(pptx_cmd[0]).exists():
+                    pptx_cmd[0] = "python3"
+                code2, _o2, err2 = await _run(pptx_cmd, cwd=ROOT, timeout=120, job_id=new_job_id)
+                if code2 != 0:
+                    log.warning("[%s] PPTX rebuild failed (exit %s): %s", new_job_id[:8], code2, err2[-300:])
+
+            _job_update(job, status="done", step="Complete", progress=100, output_file=str(paths["pdf"]))
+            await _save_job(job)
+
+            # Bump the library entry's updated_at + thumbnail so the Library card refreshes.
+            entries = await _library_load()
+            for e in entries:
+                if str(e.get("job_id", "")).lower().replace("-", "")[:8] == paths["short_id"]:
+                    e["updated_at"]  = _now()
+                    e["output_file"] = str(paths["pdf"])
+                    if paths["thumb"].exists():
+                        e["thumbnail"] = str(paths["thumb"])
+                    break
+            await _library_save(entries)
+        except Exception as e:
+            log.error("[%s] Re-render failed: %s", new_job_id[:8], e)
+            _job_update(job, status="error", step="Failed", detail=str(e))
+            await _save_job(job)
+        finally:
+            _job_tasks.pop(new_job_id, None)
+
+    task = asyncio.create_task(_render_task())
+    _job_tasks[new_job_id] = task
+    return {"job_id": new_job_id, "status": "running"}
+
+
+@app.post("/api/long-teaser/{job_id}/assets", status_code=201)
+async def long_teaser_upload_asset(job_id: str, request: Request, file: UploadFile = File(...)):
+    """Upload a new image to the teaser's asset directory. Returns the file:// URL."""
+    await _get_request_user(request)
+    paths = _teaser_paths(job_id)
+    paths["assets_dir"].mkdir(parents=True, exist_ok=True)
+
+    # Sanitize filename — keep only the basename + restrict to a safe charset.
+    raw_name = Path(file.filename or "upload.bin").name
+    safe = re.sub(r"[^A-Za-z0-9._-]+", "_", raw_name)
+    if not safe or safe in (".", ".."):
+        safe = f"upload_{uuid.uuid4().hex[:8]}.bin"
+    dest = paths["assets_dir"] / safe
+    # Avoid clobbering — append a short suffix if it already exists.
+    if dest.exists():
+        stem, suffix = dest.stem, dest.suffix
+        dest = paths["assets_dir"] / f"{stem}_{uuid.uuid4().hex[:6]}{suffix}"
+
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(422, "Empty upload")
+    async with aiofiles.open(dest, "wb") as f:
+        await f.write(contents)
+    return {"name": dest.name, "url": _to_file_url(dest), "size": len(contents)}
+
+
+@app.delete("/api/long-teaser/{job_id}/assets/{filename}", status_code=204)
+async def long_teaser_delete_asset(job_id: str, filename: str, request: Request):
+    await _get_request_user(request)
+    paths = _teaser_paths(job_id)
+    safe = Path(filename).name
+    if safe in ("", ".", ".."):
+        raise HTTPException(422, "Invalid filename")
+    target = paths["assets_dir"] / safe
+    # Re-resolve to guard against symlink/traversal tricks — must stay inside assets_dir.
+    try:
+        target_resolved = target.resolve(strict=True)
+        adir_resolved   = paths["assets_dir"].resolve(strict=True)
+    except FileNotFoundError:
+        raise HTTPException(404, "Asset not found")
+    if adir_resolved not in target_resolved.parents:
+        raise HTTPException(403, "Path traversal blocked")
+    target_resolved.unlink()
+    return None
+
+
+@app.get("/api/long-teaser/{job_id}/asset-blob/{filename}")
+async def long_teaser_asset_blob(job_id: str, filename: str, request: Request):
+    """Stream an asset file back to the frontend so the editor can preview it
+    without relying on local file:// URLs (which the browser blocks)."""
+    from fastapi.responses import FileResponse
+    await _get_request_user(request)
+    paths = _teaser_paths(job_id)
+    safe = Path(filename).name
+    if safe in ("", ".", ".."):
+        raise HTTPException(422, "Invalid filename")
+    target = paths["assets_dir"] / safe
+    try:
+        target_resolved = target.resolve(strict=True)
+        adir_resolved   = paths["assets_dir"].resolve(strict=True)
+    except FileNotFoundError:
+        raise HTTPException(404, "Asset not found")
+    if adir_resolved not in target_resolved.parents:
+        raise HTTPException(403, "Path traversal blocked")
+    return FileResponse(str(target_resolved))
