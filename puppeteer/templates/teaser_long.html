@@ -58,19 +58,25 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
   content:'+';position:absolute;left:34px;top:-12px;font-size:17px;color:var(--cyan);line-height:1;font-weight:300;z-index:1;
 }
 .pg-nav a{text-decoration:none;color:inherit}
-.pg-nav .tab{color:#9aa3af;font-weight:500;letter-spacing:0.01em}
-.pg-nav .tab.active{color:var(--navy);font-weight:700}
+.pg-nav .tab{color:#9aa3af;font-weight:500;letter-spacing:0;white-space:nowrap}
+.pg-nav .tab.active{color:var(--navy);font-weight:700;letter-spacing:-0.01em}
+.loc-over .lo-tile span.map-cta{pointer-events:none}
 .pg-nav .div{color:#cbd5e1;font-weight:300}
 
 /* ── BODY AREA (hard-clamped) ── */
 .pg-body{position:absolute;top:170px;left:48px;right:48px;height:584px;overflow:hidden}
 
-/* ─────── COVER (gradient, no photo) ─────── */
+/* ─────── COVER (navy gradient, optional hero photo) ─────── */
 .cover{
   position:relative;width:100%;height:100%;color:#fff;
   background:linear-gradient(160deg,#061d42 0%,#08316F 40%,#0a4a8a 100%);
   display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;text-align:center;
 }
+/* chosen cover photo sits behind, under a strong navy wash so text stays legible */
+.cover .cover-bg{position:absolute;inset:0;background:#08316F;z-index:0;overflow:hidden}
+.cover .cover-bg::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(160deg,rgba(6,29,66,0.88) 0%,rgba(8,49,111,0.82) 45%,rgba(10,74,138,0.76) 100%)}
+.cover > *:not(.cover-bg){position:relative;z-index:1}
 .cover .ref-tag{position:absolute;top:50px;right:60px;font-family:'Montserrat';font-weight:600;font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:rgba(255,255,255,0.35)}
 .cover .wordmark{margin-bottom:40px}
 .cover .wordmark .wm-main{font-family:'Montserrat';font-weight:700;font-size:30px;letter-spacing:0.5em;color:#fff;line-height:1}
@@ -107,11 +113,12 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 .activa .a-title{font-family:'Montserrat';font-weight:800;font-size:18px;color:var(--navy);line-height:1.25;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-shrink:0}
 .activa .a-label{font-size:13px;color:var(--grey-text);margin-bottom:6px;flex-shrink:0}
 .activa .a-val{font-size:14px;color:#111;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-shrink:0}
-.activa .a-bullets{padding-left:18px;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:14px;overflow:hidden;flex:1;min-height:0}
-.activa .a-bullets li{font-size:12.5px;color:#111;line-height:1.45;margin-bottom:4px;break-inside:avoid}
+/* No list markers anywhere — bullet glyphs flatten onto the background when the
+   PDF is imported into Canva, so lists render as clean, editable text lines. */
+.activa .a-bullets{list-style:none;padding-left:0;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:14px;overflow:hidden;flex:1;min-height:0}
+.activa .a-bullets li{font-size:12.5px;color:#111;line-height:1.45;margin-bottom:6px;break-inside:avoid}
 .activa .a-bullets.cols-2{column-count:2;column-gap:24px;padding-left:0;list-style:none}
-.activa .a-bullets.cols-2 li{padding-left:14px;position:relative;font-size:11.5px;line-height:1.4}
-.activa .a-bullets.cols-2 li::before{content:'•';position:absolute;left:2px;color:#111}
+.activa .a-bullets.cols-2 li{padding-left:0;font-size:11.5px;line-height:1.4}
 .activa .a-price{flex-shrink:0;font-family:'Montserrat';font-weight:600;font-size:18px;color:var(--navy);display:flex;align-items:baseline;gap:12px;padding-top:4px}
 .activa .a-price .val{color:var(--cyan);font-weight:900;font-size:28px;letter-spacing:0.01em}
 .activa .right{
@@ -141,6 +148,12 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 
 .details .d-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;flex:1;min-height:0}
 .details .d-grid.one{grid-template-columns:1fr}
+/* Content-sized card deck — cards take their natural height and are distributed
+   top-to-bottom so a page is never clipped nor stranded half-empty in the middle. */
+.details .d-deck{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;justify-content:space-between}
+.details .d-deck.few{justify-content:flex-start}
+.details .d-pair{display:flex;gap:20px;align-items:stretch;min-height:0}
+.details .d-pair > .d-card{flex:1;min-width:0}
 .details .d-card{
   border:1px solid var(--border);border-radius:5px;padding:13px 16px 12px;background:#fff;
   display:flex;flex-direction:column;min-height:0;overflow:hidden;
@@ -162,8 +175,8 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 .details td:first-child{color:var(--grey-text);width:60%;padding-right:10px;font-weight:500}
 .details td:last-child{text-align:right;font-weight:700;color:var(--navy)}
 .details tr:last-child td{border-bottom:none}
-.details .d-bullets{margin:0;padding-left:14px;columns:2;column-gap:22px}
-.details .d-bullets li{font-size:11.5px;color:#111;line-height:1.45;margin-bottom:4px;break-inside:avoid}
+.details .d-bullets{list-style:none;margin:0;padding-left:0;columns:2;column-gap:22px}
+.details .d-bullets li{font-size:11.5px;color:#111;line-height:1.45;margin-bottom:6px;break-inside:avoid}
 .details .d-card.narrow .d-bullets{columns:1}
 
 /* Consolidated unit-level table — per-row: Unit / Surface / step rents */
@@ -202,15 +215,25 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
   image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;
 }
 .aerial .a-overlay{position:absolute;inset:0;pointer-events:none}
+/* SVG polygon — the actual (editable) red property outline. Points are in a
+   0..100 viewBox so they're resolution-independent and stored compactly. */
+.aerial .a-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.aerial .a-svg .a-poly{
+  fill:rgba(226,35,26,0.12);
+  stroke:#E2231A;stroke-width:2.4;stroke-linejoin:round;
+  vector-effect:non-scaling-stroke;
+}
+.aerial .a-svg .a-poly.dashed{stroke-dasharray:7 5}
+/* Fallback rectangle outline (used when no polygon points are supplied) */
 .aerial .a-boundary{
   position:absolute;left:18%;right:18%;top:24%;bottom:24%;
-  border:2px dashed var(--cyan);border-radius:6px;
+  border:2.4px dashed #E2231A;border-radius:4px;
   box-shadow:0 0 0 9999px rgba(8,31,68,0.18);
 }
 .aerial .a-pin{
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:18px;height:18px;border-radius:50%;background:var(--cyan);
-  border:3px solid #fff;box-shadow:0 0 0 6px rgba(0,182,255,0.22);
+  width:16px;height:16px;border-radius:50%;background:#E2231A;
+  border:3px solid #fff;box-shadow:0 0 0 6px rgba(226,35,26,0.22);
 }
 .aerial .a-caption{
   position:absolute;left:18px;bottom:18px;padding:8px 14px;border-radius:24px;
@@ -226,13 +249,99 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 .aerial .a-side .a-row{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-top:1px solid var(--border)}
 .aerial .a-side .a-row .k{font-size:10px;color:var(--grey-text);letter-spacing:0.12em;text-transform:uppercase;font-weight:600}
 .aerial .a-side .a-row .v{font-size:14px;color:#111;font-weight:600}
+.aerial .a-side .a-maplink{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;
+  font-family:'Montserrat';font-weight:700;font-size:12px;color:#fff;background:var(--cyan);
+  padding:9px 14px;border-radius:6px;text-decoration:none;line-height:1.2;letter-spacing:0.01em}
+.aerial .a-side .a-maplink::before{content:'📍'}
+/* full-image clickable overlay → the whole aerial opens Google Maps */
+.aerial .a-frame-link{position:absolute;inset:0;z-index:5;display:block}
+.aerial .a-frame .map-cta,.loc-over .lo-tile .map-cta{position:absolute;right:10px;top:10px;z-index:6;
+  font-family:'Montserrat';font-weight:700;font-size:10px;color:#fff;background:rgba(8,31,68,0.86);
+  padding:6px 10px;border-radius:5px;letter-spacing:0.03em;display:inline-flex;align-items:center;gap:5px;text-decoration:none}
+.aerial .a-frame .map-cta::before,.loc-over .lo-tile .map-cta::before{content:'📍'}
 .aerial .a-side .a-legend{margin-top:auto;font-size:10.5px;color:var(--grey-text);line-height:1.45;display:flex;align-items:flex-start;gap:8px}
-.aerial .a-side .a-legend::before{content:'';width:14px;height:14px;border:1.5px dashed var(--cyan);border-radius:3px;flex-shrink:0;margin-top:1px}
+.aerial .a-side .a-legend::before{content:'';width:14px;height:14px;border:1.5px dashed #E2231A;border-radius:3px;flex-shrink:0;margin-top:1px}
+
+/* ─────── PER-BUILDING SECTION DIVIDER ─────── */
+.asset-divider{
+  width:100%;height:100%;position:relative;overflow:hidden;
+  background:linear-gradient(160deg,#061d42 0%,#08316F 45%,#0a4a8a 100%);
+  display:flex;flex-direction:column;justify-content:center;padding:0 70px;color:#fff;
+}
+.asset-divider .ad-index{font-family:'Montserrat';font-weight:800;font-size:90px;line-height:0.9;color:rgba(0,182,255,0.25);letter-spacing:-0.02em}
+.asset-divider .ad-eyebrow{font-family:'Montserrat';font-weight:700;font-size:12px;letter-spacing:0.3em;text-transform:uppercase;color:var(--cyan);margin:18px 0 10px}
+.asset-divider .ad-title{font-family:'Montserrat';font-weight:800;font-size:34px;line-height:1.18;max-width:760px}
+.asset-divider .ad-addr{font-size:15px;color:rgba(255,255,255,0.78);margin-top:14px;max-width:620px}
+.asset-divider .ad-chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.asset-divider .ad-chip{border:1px solid rgba(0,182,255,0.35);background:rgba(0,182,255,0.08);border-radius:6px;padding:10px 16px}
+.asset-divider .ad-chip .k{font-size:9px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--cyan)}
+.asset-divider .ad-chip .v{font-family:'Montserrat';font-weight:800;font-size:18px;color:#fff;margin-top:3px}
+
+/* ─────── PORTFOLIO OVERVIEW (multi-building summary on Activa) ─────── */
+.pf{height:100%;display:flex;flex-direction:column;gap:14px}
+.pf .pf-head{font-family:'Montserrat';font-weight:800;font-size:18px;color:var(--navy);line-height:1.25;padding-bottom:10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.pf .pf-sub{font-size:12.5px;color:var(--grey-text);margin-top:-6px;flex-shrink:0}
+.pf .pf-list{display:flex;flex-direction:column;gap:9px;flex:1;min-height:0}
+.pf .pf-item{
+  display:grid;grid-template-columns:30px 1fr 130px 120px;align-items:center;gap:14px;
+  border:1px solid var(--border);border-left:3px solid var(--cyan);border-radius:6px;
+  padding:11px 16px;background:#fff;box-shadow:0 1px 2px rgba(15,30,60,0.03);
+}
+.pf .pf-item .n{font-family:'Montserrat';font-weight:800;font-size:20px;color:var(--cyan);text-align:center}
+.pf .pf-item .nm{min-width:0}
+.pf .pf-item .nm .t{font-family:'Montserrat';font-weight:700;font-size:13.5px;color:var(--navy);line-height:1.25}
+.pf .pf-item .nm .s{font-size:10.5px;color:var(--grey-text);margin-top:2px;line-height:1.3}
+.pf .pf-item .kv{display:flex;flex-direction:column;gap:1px}
+.pf .pf-item .kv .k{font-size:8.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--grey-text)}
+.pf .pf-item .kv .v{font-family:'Montserrat';font-weight:700;font-size:14px;color:var(--navy)}
+/* "Over de vennootschap" facts panel — fills the band between the building list
+   and the totals with real company identity/key figures (no dead white space). */
+.pf .pf-facts{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;
+  border:1px solid var(--border);border-radius:6px;background:#f6f8fb;padding:14px 18px;}
+.pf .pf-facts .pf-facts-head{font-family:'Montserrat';font-weight:700;font-size:10px;letter-spacing:0.22em;
+  text-transform:uppercase;color:var(--navy);margin-bottom:12px;position:relative;padding-bottom:7px}
+.pf .pf-facts .pf-facts-head::after{content:'';position:absolute;left:0;bottom:0;width:30px;height:2px;background:var(--cyan)}
+.pf .pf-facts .pf-facts-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 28px}
+.pf .pf-facts .ff{display:flex;flex-direction:column;gap:2px}
+.pf .pf-facts .ff .k{font-size:8.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--grey-text)}
+.pf .pf-facts .ff .v{font-family:'Montserrat';font-weight:700;font-size:13px;color:var(--navy);line-height:1.2}
+.pf .pf-totals{
+  display:flex;align-items:center;justify-content:flex-end;gap:32px;flex-shrink:0;
+  border-top:2px solid var(--navy);padding-top:11px;
+}
+.pf .pf-totals .tt{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.pf .pf-totals .tt .k{font-size:8.5px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--grey-text)}
+.pf .pf-totals .tt .v{font-family:'Montserrat';font-weight:800;font-size:20px;color:var(--navy)}
+.pf .pf-totals .tt .v.cyan{color:var(--cyan)}
+
+/* ─────── LOCATION OVERVIEW (cadastral grid + maps) ─────── */
+.loc-over{height:100%;display:flex;gap:24px}
+.loc-over .lo-grid{flex:1;display:grid;gap:14px;min-width:0}
+.loc-over .lo-grid.g1{grid-template-columns:1fr}
+.loc-over .lo-grid.g2{grid-template-columns:1fr 1fr}
+.loc-over .lo-grid.g4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.loc-over .lo-tile{position:relative;background:#eef2f6;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,0.08);overflow:hidden}
+.loc-over .lo-tile .cap{position:absolute;left:0;right:0;bottom:0;padding:6px 10px;background:linear-gradient(180deg,transparent,rgba(8,31,68,0.82));color:#fff;font-family:'Montserrat';font-weight:600;font-size:10px;letter-spacing:0.06em}
+.loc-over .lo-side{width:270px;display:flex;flex-direction:column;gap:14px;padding:6px 0}
+.loc-over .lo-side .lo-eyebrow{font-family:'Montserrat';font-weight:700;font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--cyan)}
+.loc-over .lo-side .lo-title{font-family:'Montserrat';font-weight:800;font-size:20px;color:var(--navy);line-height:1.25}
+.loc-over .lo-side .lo-rule{width:36px;height:2px;background:var(--cyan)}
+.loc-over .lo-side .lo-addr{font-size:13px;color:#111;line-height:1.45}
+.loc-over .lo-side .lo-link{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;
+  font-family:'Montserrat';font-weight:700;font-size:13px;color:#fff;background:var(--cyan);
+  padding:11px 16px;border-radius:6px;text-decoration:none;line-height:1.2;letter-spacing:0.01em}
+.loc-over .lo-side .lo-link::before{content:'📍'}
+.loc-over .lo-tile a.lo-tile-link{position:absolute;inset:0;z-index:5;display:block}
+.loc-over .lo-side .lo-legend{margin-top:auto;font-size:10.5px;color:var(--grey-text);line-height:1.45;display:flex;align-items:flex-start;gap:8px}
+.loc-over .lo-side .lo-legend::before{content:'';width:14px;height:14px;border:1.5px dashed #E2231A;border-radius:3px;flex-shrink:0;margin-top:1px}
+
+/* small building eyebrow on Activa pages in portfolio mode */
+.activa .a-asset-eyebrow{font-family:'Montserrat';font-weight:700;font-size:9.5px;letter-spacing:0.28em;text-transform:uppercase;color:var(--cyan);margin-bottom:6px}
 
 /* ─────── LOCATIE ─────── */
 .locatie{display:flex;gap:44px;height:100%;align-items:center;position:relative}
 .locatie .map{
-  width:56%;height:95%;background:#eef2f6 center/cover no-repeat;border-radius:6px;box-shadow:0 4px 18px rgba(0,0,0,0.1);
+  position:relative;width:56%;height:95%;background:#eef2f6;border-radius:6px;box-shadow:0 4px 18px rgba(0,0,0,0.1);overflow:hidden;
 }
 .locatie .info{flex:1;padding-right:20px;max-width:400px}
 .locatie .info .l-title{font-family:'Montserrat';font-weight:800;font-size:20px;color:var(--navy);line-height:1.3;padding-bottom:18px;border-bottom:1px solid var(--border);margin-bottom:20px}
@@ -244,11 +353,23 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 }
 
 /* ─────── PHOTOS ─────── */
+.photos-1{display:grid;grid-template-columns:1fr;gap:0;height:100%;max-height:584px}
 .photos-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;height:100%;max-height:584px}
 .photos-2{display:grid;grid-template-columns:1fr 1fr;gap:24px;height:100%;max-height:584px}
 .photos-4{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:16px;height:100%;max-height:584px}
 .photos-6{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:14px;height:100%;max-height:584px}
-.photo-tile{width:100%;height:100%;background:#f3f4f6 center/cover no-repeat;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,0.08);overflow:hidden}
+/* Real <img> fill (NOT a CSS background) so images stay as separate, movable
+   objects when the PDF is opened as an editable file in Canva. */
+.fill-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;border:0}
+.photo-tile{position:relative;width:100%;height:100%;background:#f3f4f6;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,0.08);overflow:hidden}
+.photo-tile .photo-cat{position:absolute;left:9px;bottom:9px;font-family:'Montserrat';font-weight:700;font-size:9px;
+  letter-spacing:0.1em;text-transform:uppercase;color:#fff;background:rgba(8,31,68,0.82);padding:4px 9px;border-radius:4px}
+/* labelled gallery section (e.g. EXTERIEUR / INTERIEUR) — heading + grid fill */
+.gal-col{height:100%;display:flex;flex-direction:column;gap:14px}
+.gal-col .gal-head{flex-shrink:0;font-family:'Montserrat';font-weight:800;font-size:15px;color:var(--navy);
+  letter-spacing:0.03em;padding-bottom:9px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:10px}
+.gal-col .gal-head .tag{font-weight:500;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--grey-text)}
+.gal-col [class^="photos-"]{flex:1;min-height:0;max-height:none;height:auto}
 
 /* ─────── PLANS ─────── */
 .plan-wrap{position:relative;width:100%;height:100%;background:#fff;overflow:hidden}
@@ -314,6 +435,21 @@ function fileUrl(p){
   return s;
 }
 function normalize(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,''); }
+// Build a real Google Maps URL from an address (so the Locatie link opens the
+// map, not the local map image). Returns '' when there's nothing to search.
+function mapsUrlFor(addr){
+  const a = String(addr||'').trim();
+  if(!a) return '';
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a);
+}
+// Render the red property outline as an SVG polygon when points are supplied,
+// else a dashed red fallback rectangle. `points` is an array of [x,y] in 0..100.
+function boundarySvg(points, dashed){
+  if(!Array.isArray(points) || points.length < 3) return '<div class="a-boundary"></div>';
+  const pts = points.map(p=>`${Number(p[0]).toFixed(2)},${Number(p[1]).toFixed(2)}`).join(' ');
+  return `<svg class="a-svg" viewBox="0 0 100 100" preserveAspectRatio="none">`
+       + `<polygon class="a-poly${dashed?' dashed':''}" points="${esc(pts)}"></polygon></svg>`;
+}
 
 window.loadLongTeaser = function(data, brandName){
   data = data || {};
@@ -325,6 +461,19 @@ window.loadLongTeaser = function(data, brandName){
     sales:   data.tab_sales    || 'Verkoopvoorwaarden',
   };
 
+  // Language-aware UI defaults so a Flemish/English teaser never falls back to
+  // French copy. Per-job overrides (section_labels / details_labels) still win.
+  const LANG = String(data.language || 'FR').toUpperCase();
+  const I18N = {
+    FR:{aerial:'Vue aérienne',activa:"Présentation de l’actif",details:'Détails financiers & techniques',locatie:'Localisation',photos:'Reportage photo',plans:'Plans',sales:'Conditions de vente',asset:'Actif',maplink:'Cliquez pour visualiser sur Google Maps',
+        dl:{details:'Détails de l’actif',financials:'Synthèse financière',valuation:'Valorisation',specs:'Spécifications techniques',income:'Revenus locatifs',leases:'Conditions de bail',amenities:'Caractéristiques',surfaces:'Surfaces',other:'Autres',continued:'(suite)'}},
+    NL:{aerial:'Luchtbeeld & perceel',activa:'Voorstelling van het pand',details:'Financiële & technische details',locatie:'Ligging',photos:'Fotoreportage',plans:'Plannen',sales:'Verkoopvoorwaarden',asset:'Pand',maplink:'Klik om te bekijken op Google Maps',
+        dl:{details:'Activadetails',financials:'Financieel overzicht',valuation:'Prijsopbouw',specs:'Technische specificaties',income:'Huurinkomsten',leases:'Huurvoorwaarden',amenities:'Kenmerken',surfaces:'Oppervlaktedetails',other:'Overige',continued:'(vervolg)'}},
+    EN:{aerial:'Aerial view',activa:'Asset presentation',details:'Financial & technical details',locatie:'Location',photos:'Photo report',plans:'Plans',sales:'Sales conditions',asset:'Asset',maplink:'Click to view on Google Maps',
+        dl:{details:'Asset details',financials:'Financial summary',valuation:'Valuation breakdown',specs:'Technical specs',income:'Rental income',leases:'Lease terms',amenities:'Features & amenities',surfaces:'Surface details',other:'Other',continued:'(continued)'}},
+  };
+  const L = I18N[LANG] || I18N.FR;
+
   const title     = data.title || '';
   const subtitle  = data.subtitle || '';
   const ref       = data.reference || '';
@@ -333,8 +482,11 @@ window.loadLongTeaser = function(data, brandName){
   const priceLbl  = data.price_label_total || 'Totale prijs:';
   const addrLbl   = data.address_label || 'Adres:';
   const descLbl   = data.description_label || 'Beschrijving :';
-  const mapLinkTxt= data.map_link_text || 'Cliquez pour visualiser sur Google Maps';
-  const mapsUrl   = data.google_maps_url || data.map_url || '#';
+  const mapLinkTxt= data.map_link_text || L.maplink;
+  // Prefer an explicit maps URL, else a real Google-Maps search built from the
+  // address. The local map IMAGE (data.map_url) is only a last resort so the
+  // link never silently opens a picture instead of the map.
+  const mapsUrl   = data.google_maps_url || mapsUrlFor(data.address || '') || data.map_url || '#';
 
   const photos = (data.photos||[]).filter(Boolean);
   const plans  = (data.plans||[]).filter(Boolean);
@@ -392,7 +544,7 @@ window.loadLongTeaser = function(data, brandName){
   const navTabs = [
     { key:'a',  label:T.activa, show:true },
     { key:'l',  label:T.loc,    show:true },
-    { key:'ae', label:(data.tab_aerial || (data.section_labels && data.section_labels.aerial) || 'Vue aérienne'), show: !!aerialImg },
+    { key:'ae', label:(data.tab_aerial || (data.section_labels && data.section_labels.aerial) || L.aerial), show: !!aerialImg },
     { key:'p',  label:T.photos, show:photos.length > 0 },
     { key:'pl', label:T.plans,  show:plans.length  > 0 },
     { key:'s',  label:T.sales,  show:true },
@@ -400,13 +552,13 @@ window.loadLongTeaser = function(data, brandName){
 
   // Per-section header copy — short, contextual, no more title repetition.
   const SL = Object.assign({
-    activa:   'Présentation de l’actif',
-    details:  'Détails financiers & techniques',
-    locatie:  'Localisation',
-    aerial:   'Vue aérienne',
-    photos:   'Reportage photo',
-    plans:    'Plans',
-    sales:    'Conditions de vente',
+    activa:   L.activa,
+    details:  L.details,
+    locatie:  L.locatie,
+    aerial:   L.aerial,
+    photos:   L.photos,
+    plans:    L.plans,
+    sales:    L.sales,
   }, data.section_labels || {});
 
   // Short location label (text before the first colon in title) — used in the
@@ -457,9 +609,396 @@ window.loadLongTeaser = function(data, brandName){
     pages.push(`<div class="page${extraClass?' '+extraClass:''}"${id}>${inner}</div>`);
   };
 
+  // ══════════════════════════════════════════════════════════════════════
+  // PORTFOLIO MODE — when data.assets[] is present the teaser is a multi-
+  // building dossier. We render a shared cover + portfolio overview + company
+  // financials + a location overview (cadastral plans live HERE, with the map),
+  // then one organised block PER building (intro → presentation → details →
+  // photos → aerial with red outline), then a shared sales page. Single-asset
+  // teasers skip all of this and fall through to the legacy flow below.
+  // ══════════════════════════════════════════════════════════════════════
+  const assets = Array.isArray(data.assets) ? data.assets.filter(a => a && typeof a === 'object') : [];
+  if (assets.length){
+    const DL = Object.assign({}, L.dl, data.details_labels || {});
+    const locImages = Array.isArray(data.location_images) ? data.location_images.filter(Boolean) : [];
+
+    const anyPhotos = assets.some(a => (a.photos||[]).length) || photos.length;
+    const anyAerial = assets.some(a => a.aerial_view || (Array.isArray(a.boundary)&&a.boundary.length)) || locImages.length || aerialImg;
+    const anyPlans  = plans.length || assets.some(a => (a.plans||[]).length);
+    const navTabsP = [
+      {key:'a',  label:T.activa, show:true},
+      {key:'l',  label:T.loc,    show:true},
+      {key:'ae', label:(SL.aerial || data.tab_aerial || L.aerial), show:!!anyAerial},
+      {key:'p',  label:T.photos, show:!!anyPhotos},
+      {key:'pl', label:T.plans,  show:!!anyPlans},
+      {key:'s',  label:T.sales,  show:true},
+    ].filter(t => t.show);
+
+    function headerP(activeKey, sectionLabel, metaText){
+      const hrefFor = k => k==='a'?A.activa : k==='l'?A.loc : k==='ae'?A.aerial : k==='p'?A.photos : k==='pl'?A.plans : A.sales;
+      const navInner = navTabsP.map((t,i)=>{
+        const a = activeKey===t.key;
+        return (i>0?'<span class="div">|</span>':'') + `<a href="#${hrefFor(t.key)}"><span class="tab${a?' active':''}">${esc(t.label)}</span></a>`;
+      }).join('');
+      const metaBits = [];
+      if (metaText) metaBits.push(`<span>${esc(metaText)}</span>`);
+      else if (shortLoc) metaBits.push(`<span>${esc(shortLoc)}</span>`);
+      if (ref) metaBits.push(`<span class="ref">${esc(ref)}</span>`);
+      return `
+        <div class="pg-header">
+          <div class="logo"><div class="l1">RODSCHINSON</div><div class="l2">INVESTMENT</div></div>
+          <div class="sep"></div>
+          <div class="title-block"><div class="sec">${esc(sectionLabel||'')}</div><div class="meta">${metaBits.join('<span class="dot"></span>')}</div></div>
+          <div class="disc">${esc(disclaimer)}</div>
+        </div>
+        <div class="pg-nav"><div class="mark"></div>${navInner}</div>`;
+    }
+
+    // ── generic table/bullets pagination (1 wide OR 2 half cards per page) ──
+    const chunkArr = (a,n)=>{const o=[];for(let i=0;i<a.length;i+=n)o.push(a.slice(i,i+n));return o;};
+    const rowTblP = rows => `<table><tbody>${rows.map(r=>`<tr><td>${esc(r.label||'')}</td><td>${esc(r.value||'')}</td></tr>`).join('')}</tbody></table>`;
+    const bulletListP = items => `<ul class="d-bullets">${items.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`;
+    // multi-column table (e.g. Post | 2025 | 2024) — denser than two stacked
+    // single-value tables and reads cleanly across the page.
+    function colTblP(columns, rows){
+      const w0 = Math.max(34, 100 - (columns.length-1)*Math.min(28, Math.round(54/(columns.length-1))));
+      const head = `<thead><tr>${columns.map((c,i)=>`<th class="${i===0?'l':''}"${i===0?` style="width:${w0}%"`:''}>${esc(c)}</th>`).join('')}</tr></thead>`;
+      const body = `<tbody>${rows.map(r=>`<tr>${r.map((cell,i)=>`<td class="${i===0?'l':'r'}">${esc(cell==null?'':cell)}</td>`).join('')}</tr>`).join('')}</tbody>`;
+      return `<table class="u-table">${head}${body}</table>`;
+    }
+    // Estimated rendered height (px) of a card — drives height-packing so a page
+    // is never overfilled (which would clip text) nor near-empty.
+    const CH_BASE=60, CH_ROW=22, CH_CROW=19, CH_CHEAD=18, CH_BULL=21, DECK_GAP=12;
+    function cardHeight(c){
+      if (c.kind==='coltable') return CH_BASE + CH_CHEAD + c.rows.length*CH_CROW;
+      if (c.kind==='bullets')  return CH_BASE + Math.ceil(c.rows.length/2)*CH_BULL;
+      return CH_BASE + c.rows.length*CH_ROW;
+    }
+    function makeCards(specs){
+      const cards = [];
+      for (const s of specs){
+        if (s.columns && Array.isArray(s.rows2d) && s.rows2d.length){
+          chunkArr(s.rows2d,14).forEach((c,i,arr)=>cards.push({head:s.head,kind:'coltable',columns:s.columns,rows:c,wide:true,tag:arr.length>1?`${i+1}/${arr.length}`:''}));
+        } else if (s.bullets && s.bullets.length){
+          if (s.bullets.length <= 14) cards.push({head:s.head,kind:'bullets',rows:s.bullets,wide:false});
+          else chunkArr(s.bullets,22).forEach((c,i,arr)=>cards.push({head:s.head,kind:'bullets',rows:c,wide:true,tag:arr.length>1?`${i+1}/${arr.length}`:''}));
+        } else if (s.rows && s.rows.length){
+          if (s.rows.length <= 13) cards.push({head:s.head,kind:'table',rows:s.rows,wide:false});
+          else chunkArr(s.rows,18).forEach((c,i,arr)=>cards.push({head:s.head,kind:'table',rows:c,wide:true,tag:arr.length>1?`${i+1}/${arr.length}`:''}));
+        }
+      }
+      cards.forEach(c=>{ c.h = cardHeight(c); });
+      return cards;
+    }
+    // Pack cards into pages by REAL height. Half cards pair up two-across (the
+    // page row is as tall as the taller of the pair); wide cards span the row.
+    // Each block is {type, cards[]}. First page is shorter when a KPI strip shows.
+    function packByHeight(cards, firstBudget, restBudget){
+      const pages=[]; let blocks=[], used=0, budget=firstBudget;
+      const flush=()=>{ if(blocks.length){ pages.push(blocks); blocks=[]; used=0; budget=restBudget; } };
+      for (let i=0;i<cards.length;i++){
+        const c=cards[i];
+        if (c.wide){
+          if (used>0 && used+c.h>budget) flush();
+          blocks.push({type:'wide',cards:[c]}); used+=c.h+DECK_GAP;
+        } else {
+          const n=cards[i+1];
+          const pair = (n && !n.wide) ? [c,n] : [c];
+          const ph = Math.max.apply(null, pair.map(x=>x.h));
+          if (used>0 && used+ph>budget) flush();
+          blocks.push({type:'pair',cards:pair}); used+=ph+DECK_GAP;
+          if (pair.length===2) i++;
+        }
+      }
+      flush();
+      return pages;
+    }
+    function cardHtmlP(c){
+      const cls=['d-card']; if(c.wide)cls.push('wide'); if(c.kind==='bullets'&&!c.wide)cls.push('narrow'); if(c.kind==='coltable')cls.push('u-card');
+      const tag=c.tag?`<span class="d-head-tag">${esc(c.tag)}</span>`:'';
+      const body=c.kind==='coltable'?colTblP(c.columns,c.rows):(c.kind==='table'?rowTblP(c.rows):bulletListP(c.rows));
+      return `<div class="${cls.join(' ')}"><div class="d-head"><span>${esc(c.head)}</span>${tag}</div>${body}</div>`;
+    }
+    function pushDetail(sectionKey, anchor, navKey, headerLabel, dTitle, metaText, cardSpecs, kpiHtml){
+      const cards = makeCards(cardSpecs);
+      if (!cards.length) return;
+      const budget0 = kpiHtml ? 470 : 540;
+      const pages = packByHeight(cards, budget0, 540);
+      pages.forEach((blocks, idx)=>{
+        currentSection = sectionKey;
+        if (idx===0 && anchor) sectionAnchor = anchor;
+        const suffix = idx===0 ? '' : `<span class="d-suffix">${esc(DL.continued||'(continued)')}</span>`;
+        const deck = blocks.map(b=>{
+          if (b.type==='pair' && b.cards.length===2) return `<div class="d-pair">${b.cards.map(cardHtmlP).join('')}</div>`;
+          return cardHtmlP(b.cards[0]); // wide or lone half → full width
+        }).join('');
+        // Estimate how full the page is; a sparse page top-aligns (`.few`) so
+        // its cards cluster cleanly instead of drifting apart with huge gaps,
+        // while a well-filled page distributes its small slack (space-between).
+        const fill = blocks.reduce((s,b)=> s + Math.max.apply(null, b.cards.map(c=>c.h)) + DECK_GAP, 0);
+        const few = (blocks.length <= 1 || fill < (idx===0?budget0:540) * 0.7) ? ' few' : '';
+        pushPage(`
+          ${headerP(navKey, headerLabel, metaText)}
+          <div class="pg-body"><div class="details">
+            <div class="d-title"><span>${esc(dTitle)}</span>${suffix}</div>
+            ${idx===0 ? (kpiHtml||'') : ''}
+            <div class="d-deck${few}">${deck}</div>
+          </div></div>`);
+      });
+    }
+    function pushGallery(sectionKey, anchor, photoList, metaText){
+      const ph = (photoList||[]).filter(Boolean);
+      if (!ph.length) return;
+      let first = true, i = 0;
+      const page = (slice, cls)=>{
+        currentSection = sectionKey;
+        if (first && anchor){ sectionAnchor = anchor; first = false; }
+        pushPage(`
+          ${headerP('p', SL.photos, metaText)}
+          <div class="pg-body"><div class="${cls}">
+            ${slice.map(p=>{const cat=data.photo_labels&&data.photo_labels[p];return `<div class="photo-tile"><img class="fill-img" src="${esc(fileUrl(p))}" alt="">${cat?`<div class="photo-cat">${esc(cat)}</div>`:''}</div>`;}).join('')}
+          </div></div>`);
+      };
+      if (ph.length >= 3){ page(ph.slice(0,3),'photos-3'); i = 3; }
+      while (i < ph.length){
+        const rem = ph.length - i; let take, cls;
+        if (rem >= 8){ take=4; cls='photos-4'; }
+        else if (rem===7){ take=4; cls='photos-4'; }
+        else if (rem===6){ take=6; cls='photos-6'; }
+        else if (rem===5){ take=5; cls='photos-6'; }
+        else if (rem===4){ take=4; cls='photos-4'; }
+        else if (rem===3){ take=3; cls='photos-3'; }
+        else if (rem===2){ take=2; cls='photos-2'; }
+        else { take=1; cls='photos-1'; }
+        page(ph.slice(i,i+take), cls); i += take;
+      }
+    }
+
+    const boundaryCaptionP = data.boundary_caption ||
+      ({EN:'Indicative property boundary',FR:'Limite indicative de la propriété',NL:'Indicatieve perceelsgrens'}[data.language] || 'Limite indicative de la propriété');
+
+    function pushAerial(sectionKey, anchor, a, metaText){
+      const img = a.aerial_view || a.map_url || '';
+      if (!img) return;
+      const aMaps = a.google_maps_url || mapsUrlFor(a.address || '') || '';
+      const hasPoly = Array.isArray(a.boundary) && a.boundary.length >= 3;
+      currentSection = sectionKey;
+      if (anchor) sectionAnchor = anchor;
+      pushPage(`
+        ${headerP('ae', SL.aerial || L.aerial, metaText)}
+        <div class="pg-body"><div class="aerial">
+          <div class="a-frame">
+            <img class="a-img" src="${esc(fileUrl(img))}" alt="aerial">
+            <div class="a-overlay">${boundarySvg(a.boundary, true)}${hasPoly?'':'<div class="a-pin"></div>'}</div>
+            ${aMaps ? `<a class="map-cta" href="${esc(aMaps)}" target="_blank">Google Maps</a><a class="a-frame-link" href="${esc(aMaps)}" target="_blank" aria-label="Open in Google Maps"></a>` : ''}
+            <div class="a-caption">${esc(boundaryCaptionP)}</div>
+          </div>
+          <div class="a-side">
+            <div class="a-eyebrow">${esc(SL.aerial || L.aerial)}</div>
+            <div class="a-title">${esc(a.short || a.name || '')}</div>
+            <div class="a-rule"></div>
+            ${a.address ? `<div class="a-row"><div class="k">${esc(addrLbl)}</div><div class="v">${esc(a.address)}</div></div>` : ''}
+            ${a.terrain ? `<div class="a-row"><div class="k">${esc(data.terrain_label||'Terrein')}</div><div class="v">${esc(a.terrain)}</div></div>` : ''}
+            ${aMaps ? `<a class="a-maplink" href="${esc(aMaps)}" target="_blank">${esc(mapLinkTxt)}</a>` : ''}
+            <div class="a-legend">${esc(boundaryCaptionP)}</div>
+          </div>
+        </div></div>`);
+    }
+
+    // ── 1) COVER (shared) ──
+    currentSection = 'cover';
+    pushPage(`
+      <div class="cover">
+        ${coverPhoto?`<div class="cover-bg"><img class="fill-img" src="${esc(fileUrl(coverPhoto))}" alt=""></div>`:''}
+        ${ref?`<div class="ref-tag">${esc(ref)}</div>`:''}
+        <div class="wordmark"><div class="wm-main">RODSCHINSON</div><div class="wm-line"></div><div class="wm-sub">INVESTMENT</div></div>
+        ${data.cover_badge === '' ? '' : `<div class="badge">${esc((data.cover_badge || 'Property Teaser')).toUpperCase()}</div>`}
+        ${loc?`<div class="c-loc">${esc(loc)}</div>`:''}
+        <div class="c-title">${esc(name || title)}</div>
+        ${price?`<div class="price-box"><div class="price-label">${esc(priceLbl)}</div><div class="price-val">${esc(price)}</div></div>`:''}
+        <div class="footer">rodschinson.com  |  +32 2 550 36 87  |  assets@rodschinson.com</div>
+      </div>`);
+
+    // ── 2) PORTFOLIO OVERVIEW (Activa) ──
+    currentSection = 'activa';
+    sectionAnchor = A.activa;
+    const ov = data.portfolio_overview || {};
+    const pfItems = assets.map((a,i)=>`
+      <div class="pf-item">
+        <div class="n">${i+1}</div>
+        <div class="nm"><div class="t">${esc(a.name || a.short || '')}</div>${a.subtitle?`<div class="s">${esc(a.subtitle)}</div>`:''}</div>
+        <div class="kv"><div class="k">${esc(data.terrain_label||'Terrein')}</div><div class="v">${esc(a.terrain || '—')}</div></div>
+        <div class="kv"><div class="k">${esc(data.income_label||'Opbrengst/jaar')}</div><div class="v">${esc(a.annual_income || '—')}</div></div>
+      </div>`).join('');
+    const pfTotals = (ov.totals && ov.totals.length) ? `
+      <div class="pf-totals">${ov.totals.map(t=>`
+        <div class="tt"><div class="k">${esc(t.k||'')}</div><div class="v${t.cyan?' cyan':''}">${esc(t.v||'')}</div></div>`).join('')}
+      </div>` : '';
+    const cFacts = Array.isArray(data.company_facts) ? data.company_facts.filter(f=>f&&(f.k||f.v)) : [];
+    const pfFacts = cFacts.length ? `
+      <div class="pf-facts">
+        <div class="pf-facts-head">${esc(data.company_facts_head || 'Over de vennootschap')}</div>
+        <div class="pf-facts-grid">${cFacts.map(f=>`
+          <div class="ff"><div class="k">${esc(f.k||'')}</div><div class="v">${esc(f.v||'')}</div></div>`).join('')}
+        </div>
+      </div>` : '';
+    pushPage(`
+      ${headerP('a', SL.activa)}
+      <div class="pg-body"><div class="pf">
+        <div class="pf-head">${esc(title)}</div>
+        ${ov.sub?`<div class="pf-sub">${esc(ov.sub)}</div>`:''}
+        <div class="pf-list"${pfFacts?' style="flex:0 0 auto"':''}>${pfItems}</div>
+        ${pfFacts}
+        ${pfTotals}
+      </div></div>`);
+
+    // ── 3) COMPANY FINANCIALS (Details, shared) ──
+    const kpis = Array.isArray(data.key_metrics) ? data.key_metrics.slice(0,5) : [];
+    const kpiHtml = kpis.length ? `<div class="kpi-strip">${kpis.map(k=>`<div class="kpi-cell"><div class="kpi-label">${esc(k.label||'')}</div><div class="kpi-value">${esc(k.value||'')}</div>${k.sub?`<div class="kpi-sub">${esc(k.sub)}</div>`:''}</div>`).join('')}</div>` : '';
+    const companyTables = (Array.isArray(data.company_tables)?data.company_tables:[]).map(t=>({head:t.head,columns:t.columns,rows2d:t.rows}));
+    const companySingles = (data.company_singles && Array.isArray(data.company_singles.rows) && data.company_singles.rows.length)
+      ? [{head:data.company_singles.head||DL.financials, rows:data.company_singles.rows}] : [];
+    pushDetail('details', A.details, 'a', SL.details, DL.details, '', [
+      ...companyTables,
+      ...companySingles,
+      ...(companyTables.length||companySingles.length ? [] : [{head:DL.financials, rows:(data.financial_summary_rows||[])}]),
+      {head:DL.valuation,  rows:(data.valuation_rows||[])},
+      {head:DL.specs,      rows:(data.company_specs_rows||data.technical_specs_rows||[])},
+      {head:DL.other,      bullets:(data.extra_bullets||[])},
+    ], kpiHtml);
+
+    // ── 4) LOCATION OVERVIEW (cadastral plans live with the map) ──
+    currentSection = 'localisation';
+    sectionAnchor = A.loc;
+    const cad = locImages.slice(0,4);
+    const gCls = cad.length<=1?'g1':(cad.length===2?'g2':'g4');
+    const rootMaps = data.google_maps_url || mapsUrlFor(data.address||'') || (streetMap?fileUrl(streetMap):'');
+    pushPage(`
+      ${headerP('l', SL.locatie)}
+      <div class="pg-body"><div class="loc-over">
+        <div class="lo-grid ${gCls}">
+          ${(cad.length?cad:[{url:streetMap}]).map(c=>{
+            const tMaps = (c && (c.maps || (c.address?mapsUrlFor(c.address):''))) || rootMaps;
+            const link = (tMaps && tMaps!=='#') ? `<a class="lo-tile-link" href="${esc(tMaps)}" target="_blank" aria-label="Open in Google Maps"></a>` : '';
+            return `<div class="lo-tile"><img class="fill-img" src="${esc(fileUrl(c.url||c))}" alt="">${c.caption?`<div class="cap">${esc(c.caption)}</div>`:''}${(tMaps&&tMaps!=='#')?'<span class="map-cta">Google Maps</span>':''}${link}</div>`;
+          }).join('')}
+        </div>
+        <div class="lo-side">
+          <div class="lo-eyebrow">${esc(SL.locatie)}</div>
+          <div class="lo-title">${esc(shortLoc || name || title)}</div>
+          <div class="lo-rule"></div>
+          ${data.address?`<div class="lo-addr">${esc(data.address)}</div>`:''}
+          ${(rootMaps&&rootMaps!=='#')?`<a class="lo-link" href="${esc(rootMaps)}" target="_blank">${esc(mapLinkTxt)}</a>`:''}
+          <div class="lo-legend">${esc(boundaryCaptionP)}</div>
+        </div>
+      </div></div>`);
+
+    // ── 5) PER-BUILDING BLOCKS ──
+    assets.forEach((a, idx)=>{
+      const aName = a.name || a.short || `${L.asset} ${idx+1}`;
+      const meta  = a.short || aName;
+      // 5a) building divider
+      currentSection = 'activa';
+      const chips = (a.metrics||[]).slice(0,4).map(m=>`<div class="ad-chip"><div class="k">${esc(m.k||'')}</div><div class="v">${esc(m.v||'')}</div></div>`).join('');
+      pushPage(`<div class="asset-divider">
+          <div class="ad-index">${String(idx+1).padStart(2,'0')}</div>
+          <div class="ad-eyebrow">${esc(data.asset_eyebrow || L.asset)} ${idx+1} / ${assets.length}</div>
+          <div class="ad-title">${esc(aName)}</div>
+          ${a.address?`<div class="ad-addr">${esc(a.address)}</div>`:''}
+          ${chips?`<div class="ad-chips">${chips}</div>`:''}
+        </div>`);
+      // 5b) presentation (Activa)
+      const aBullets = Array.isArray(a.bullets) ? a.bullets.filter(Boolean) : [];
+      const aPhoto = a.activa_photo || (a.photos||[])[0] || '';
+      currentSection = 'activa';
+      pushPage(`
+        ${headerP('a', SL.activa, meta)}
+        <div class="pg-body"><div class="activa">
+          <div class="left">
+            <div class="a-asset-eyebrow">${esc(data.asset_eyebrow || L.asset)} ${idx+1} / ${assets.length}</div>
+            <div class="a-title">${esc(aName)}</div>
+            ${a.address?`<div class="a-label">${esc(addrLbl)}</div><div class="a-val">${esc(a.address)}</div>`:''}
+            <div class="a-label">${esc(descLbl)}</div>
+            <ul class="a-bullets${aBullets.length>8?' cols-2':''}">${aBullets.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>
+            ${a.annual_income?`<div class="a-price"><span>${esc(data.income_label||'Opbrengst/jaar')}</span><span class="val">${esc(a.annual_income)}</span></div>`:''}
+          </div>
+          <div class="right">${aPhoto?`<img class="a-photo" src="${esc(fileUrl(aPhoto))}" alt="">`:''}</div>
+        </div></div>`);
+      // 5c) per-building details — a multi-column rent roll (when supplied)
+      // leads, so every unit's surface / EPC / rent reads in one organised table.
+      const hasUnitTable = a.unit_table && Array.isArray(a.unit_table.rows) && a.unit_table.rows.length;
+      pushDetail('details', '', 'a', SL.details, `${DL.details} — ${meta}`, meta, [
+        ...(hasUnitTable ? [{head:a.unit_table.head||DL.income, columns:a.unit_table.columns, rows2d:a.unit_table.rows}] : []),
+        {head:DL.surfaces, rows:(a.surfaces||[]).map(s=>({label:String(s.floor||s.label||''),value:String(s.area||s.value||'')})).filter(r=>r.label||r.value)},
+        ...(hasUnitTable ? [] : [{head:DL.income, rows:(a.rental_income_rows||[])}]),
+        // optional per-asset extra tables (e.g. certificates, acquisition) — let
+        // each building carry as much real, organised data as it has.
+        ...((Array.isArray(a.extra_tables)?a.extra_tables:[]).filter(t=>t&&Array.isArray(t.rows)&&t.rows.length).map(t=>({head:t.head, rows:t.rows}))),
+        {head:DL.specs,    rows:(a.technical_specs_rows||[])},
+        {head:DL.leases,   rows:(a.lease_terms_rows||[])},
+        {head:DL.amenities, bullets:(a.amenities_bullets||[])},
+      ], '');
+      // 5d) building aerial with red outline (photos shown together below)
+      pushAerial('aerial', '', a, meta);
+    });
+
+    // ── 5.5) COMBINED PHOTO GALLERY — all buildings together, not per asset.
+    // Exclude the cadastral / location images (they live on the Locatie page and
+    // each building's aerial) so they don't reappear at the end of the gallery.
+    const locExclude = new Set();
+    locImages.forEach(c => locExclude.add(String((c && c.url) || c)));
+    assets.forEach(a => { if (a.aerial_view) locExclude.add(String(a.aerial_view)); });
+    const galleryPhotos = [];
+    const pushUnique = p => { if (p && !locExclude.has(String(p)) && galleryPhotos.indexOf(p) === -1) galleryPhotos.push(p); };
+    assets.forEach(a => (a.photos||[]).forEach(pushUnique));
+    photos.forEach(pushUnique);
+    pushGallery('gallery', A.photos, galleryPhotos, '');
+
+    // ── 6) PLANS (shared, if any) ──
+    if (plans.length){
+      currentSection = 'plans';
+      sectionAnchor = A.plans;
+      plans.forEach(pl=>{
+        pushPage(`${headerP('pl', SL.plans)}<div class="pg-body"><div class="plan-wrap"><img class="plan-img" src="${esc(fileUrl(pl))}" alt="plan"></div></div>`);
+      });
+    }
+
+    // ── 7) SALES (shared) ──
+    currentSection = 'sales';
+    sectionAnchor = A.sales;
+    pushPage(`
+      ${headerP('s', SL.sales)}
+      <div class="pg-body"><div class="sales">
+        <div class="s-left">
+          <div class="s-name">${esc(agentName)}</div>
+          <div class="s-role">${esc(agentRole)}</div>
+          <div class="s-infos">
+            <div class="s-label">${esc(data.infos_label || 'Infos :')}</div>
+            <a href="tel:${esc(agentPhone.replace(/\s+/g,''))}">${esc(agentPhone)}</a>
+            <a href="mailto:${esc(agentEmail)}">${esc(agentEmail)}</a>
+          </div>
+          <div class="s-price"><span>${esc(priceLbl)}</span><span class="val">${esc(price)}</span></div>
+        </div>
+        <div class="s-right">
+          <div class="s-photo">${salesPhoto?`<img src="${esc(fileUrl(salesPhoto))}" alt="">`:''}</div>
+          <div class="s-cta"><div class="s-cta-label">${esc(docsHelper)}</div><a href="${esc(docsUrl)}" target="_blank">${esc(docsLabel)}</a></div>
+        </div>
+      </div></div>`);
+
+    document.getElementById('doc').innerHTML = pages.join('');
+    window.rotatePortraitPlans = function(){
+      document.querySelectorAll('.plan-img').forEach(img=>{
+        if(!img.complete || !img.naturalWidth) return;
+        if(img.naturalHeight > img.naturalWidth * 1.05) img.classList.add('rotated');
+      });
+    };
+    return true;
+  }
+
   // COVER (gradient, no photo)
   pushPage(`
     <div class="cover">
+      ${coverPhoto?`<div class="cover-bg"><img class="fill-img" src="${esc(fileUrl(coverPhoto))}" alt=""></div>`:''}
       ${ref?`<div class="ref-tag">${esc(ref)}</div>`:''}
       <div class="wordmark">
         <div class="wm-main">RODSCHINSON</div>
@@ -808,7 +1347,7 @@ window.loadLongTeaser = function(data, brandName){
     ${header('l', SL.locatie)}
     <div class="pg-body">
       <div class="locatie">
-        <div class="map" style="background-image:url('${esc(fileUrl(streetMap))}')"></div>
+        <div class="map">${streetMap?`<img class="fill-img" src="${esc(fileUrl(streetMap))}" alt="">`:''}</div>
         <div class="info">
           <div class="l-title">${esc(shortLoc || name || title)}</div>
           <div class="l-rule"></div>
@@ -825,7 +1364,7 @@ window.loadLongTeaser = function(data, brandName){
     sectionAnchor = A.aerial;
     const boundaryCaption = data.boundary_caption ||
       ({EN:'Indicative property boundary', FR:'Limite indicative de la propriété', NL:'Indicatieve perceelsgrens'}[data.language] || 'Limite indicative de la propriété');
-    const aerialLabel = SL.aerial || (data.tab_aerial || 'Vue aérienne');
+    const aerialLabel = SL.aerial || (data.tab_aerial || L.aerial);
     pushPage(`
       ${header('ae', aerialLabel)}
       <div class="pg-body">
@@ -833,8 +1372,8 @@ window.loadLongTeaser = function(data, brandName){
           <div class="a-frame">
             <img class="a-img" src="${esc(fileUrl(aerialImg))}" alt="aerial">
             <div class="a-overlay">
-              <div class="a-boundary"></div>
-              <div class="a-pin"></div>
+              ${boundarySvg(data.boundary, true)}
+              ${(!Array.isArray(data.boundary) || data.boundary.length < 3) ? '<div class="a-pin"></div>' : ''}
             </div>
             <div class="a-caption">${esc(boundaryCaption)}</div>
           </div>
@@ -845,6 +1384,7 @@ window.loadLongTeaser = function(data, brandName){
             ${address ? `<div class="a-row"><div class="k">${esc(addrLbl)}</div><div class="v">${esc(address)}</div></div>` : ''}
             ${ref     ? `<div class="a-row"><div class="k">Référence</div><div class="v">${esc(ref)}</div></div>` : ''}
             ${price   ? `<div class="a-row"><div class="k">${esc(priceLbl)}</div><div class="v">${esc(price)}</div></div>` : ''}
+            ${(mapsUrl && mapsUrl !== '#') ? `<a class="a-maplink" href="${esc(mapsUrl)}" target="_blank">${esc(mapLinkTxt)}</a>` : ''}
             <div class="a-legend">${esc(boundaryCaption)}</div>
           </div>
         </div>
@@ -857,36 +1397,38 @@ window.loadLongTeaser = function(data, brandName){
   if(photos.length){
     currentSection = 'gallery';
     sectionAnchor = A.photos;
-    let i = 0;
-    function pushGalleryPage(slice, gridClass){
-      pushPage(`
-        ${header('p', SL.photos)}
-        <div class="pg-body">
-          <div class="${gridClass}">
-            ${slice.map(p=>`<div class="photo-tile" style="background-image:url('${esc(fileUrl(p))}')"></div>`).join('')}
-          </div>
-        </div>`);
-    }
-    if(photos.length >= 3){
-      pushGalleryPage(photos.slice(0,3), 'photos-3');
-      i = 3;
-    }
-    while(i < photos.length){
-      const remaining = photos.length - i;
-      let take, cls;
-      // Prefer 4-tile (2x2) pages — larger, more premium presentation than
-      // 6-tile pages. Only step up to 6 when we'd otherwise leave a sparse
-      // trailing pair. Drop to 3/2 only at the very end.
-      if(remaining >= 8){ take = 4; cls = 'photos-4'; }
-      else if(remaining === 7){ take = 4; cls = 'photos-4'; }       // 4 + 3
-      else if(remaining === 6){ take = 6; cls = 'photos-6'; }       // 1 page of 6
-      else if(remaining === 5){ take = 5; cls = 'photos-6'; }       // 1 page of 5 (3+2)
-      else if(remaining === 4){ take = 4; cls = 'photos-4'; }
-      else if(remaining === 3){ take = 3; cls = 'photos-3'; }
-      else { take = remaining; cls = 'photos-2'; }
-      pushGalleryPage(photos.slice(i, i + take), cls);
-      i += take;
-    }
+    const galTile = p=>{const cat=data.photo_labels&&data.photo_labels[p];return `<div class="photo-tile"><img class="fill-img" src="${esc(fileUrl(p))}" alt="">${cat?`<div class="photo-cat">${esc(cat)}</div>`:''}</div>`;};
+    const galPage = (slice, gridClass, heading)=>{
+      const grid = `<div class="${gridClass}">${slice.map(galTile).join('')}</div>`;
+      const body = heading
+        ? `<div class="gal-col"><div class="gal-head"><span>${esc(heading)}</span></div>${grid}</div>`
+        : grid;
+      pushPage(`${header('p', SL.photos)}<div class="pg-body">${body}</div>`);
+    };
+    // Paginate one photo list; the section heading shows on its first page only.
+    const paginate = (list, label)=>{
+      let i = 0, first = true;
+      const head = ()=>{ const h = !label ? '' : (first ? label : `${label} ${L.dl.continued||''}`); first = false; return h; };
+      if(list.length >= 3){ galPage(list.slice(0,3), 'photos-3', head()); i = 3; }
+      while(i < list.length){
+        const rem = list.length - i; let take, cls;
+        if(rem >= 8){ take = 4; cls = 'photos-4'; }
+        else if(rem === 7){ take = 4; cls = 'photos-4'; }
+        else if(rem === 6){ take = 6; cls = 'photos-6'; }
+        else if(rem === 5){ take = 5; cls = 'photos-6'; }
+        else if(rem === 4){ take = 4; cls = 'photos-4'; }
+        else if(rem === 3){ take = 3; cls = 'photos-3'; }
+        else { take = rem; cls = 'photos-2'; }
+        galPage(list.slice(i, i + take), cls, head());
+        i += take;
+      }
+    };
+    // When the user tagged photos into ≥2 categories, render labelled sections
+    // (EXTERIEUR / INTERIEUR …); otherwise one continuous gallery.
+    const sections = Array.isArray(data.photo_sections)
+      ? data.photo_sections.filter(s=>s && Array.isArray(s.photos) && s.photos.length) : [];
+    if(sections.length >= 2){ sections.forEach(s=>paginate(s.photos, s.label)); }
+    else { paginate(photos, ''); }
   }
 
   // PLANS — 1 per page, auto-rotate portrait images

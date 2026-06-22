@@ -435,6 +435,12 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
   const [photos, setPhotos] = useState([])
   const [plans, setPlans] = useState([])
   const [mapImage, setMapImage] = useState('')
+  // Per-role page images + gallery photo categories
+  const [coverImage, setCoverImage] = useState('')       // first page (cover)
+  const [salesImage, setSalesImage] = useState('')       // last contact page
+  const [aerialImage, setAerialImage] = useState('')     // aerial view page
+  const [cadastralImage, setCadastralImage] = useState('') // cadastral parcel / map page
+  const [photoCats, setPhotoCats] = useState([])         // parallel to photos
   const [documents, setDocuments] = useState([])
   const [agentId, setAgentId] = useState(LONG_TEASER_AGENTS[0].id)
 
@@ -532,6 +538,36 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
     e.target.value = ''
   }
 
+  // Single-image role uploader (cover / contact / aerial / cadastral)
+  const handleSingleFile = (e, setter) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setter(reader.result)
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  // Gallery photos keep a parallel category (exterior / interior / general)
+  const PHOTO_CATS = ['Exterieur', 'Interieur', 'Algemeen']
+  const handlePhotoFiles = (e) => {
+    const files = Array.from(e.target.files)
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        setPhotos(prev => [...prev, reader.result])
+        setPhotoCats(prev => [...prev, 'Exterieur'])
+      }
+      reader.readAsDataURL(file)
+    })
+    e.target.value = ''
+  }
+  const removePhoto = (i) => {
+    setPhotos(prev => prev.filter((_, idx) => idx !== i))
+    setPhotoCats(prev => prev.filter((_, idx) => idx !== i))
+  }
+  const setPhotoCat = (i, val) => setPhotoCats(prev => prev.map((c, idx) => idx === i ? val : c))
+
   const handleDocFiles = (e) => {
     const files = Array.from(e.target.files)
     files.forEach(file => {
@@ -547,7 +583,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
   const handleGenerate = async () => {
     setLoading(true)
     const agent = LONG_TEASER_AGENTS.find(a => a.id === agentId) || LONG_TEASER_AGENTS[0]
-    await onGenerate({ prop, brand, language, photos, plans, mapImage, documents, fields: { address, paymentTerms, sharepointUrl, expertiseUrl, surfaces, agent } })
+    await onGenerate({ prop, brand, language, photos, plans, mapImage, documents, coverImage, salesImage, aerialImage, cadastralImage, photoCats, fields: { address, paymentTerms, sharepointUrl, expertiseUrl, surfaces, agent } })
     setLoading(false)
     onClose()
   }
@@ -600,27 +636,64 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
             <span style={{ fontSize: 12 }}>ℹ️</span> How to add photos &amp; request changes
           </div>
           <ul style={{ margin: 0, paddingLeft: 16, fontSize: 11, lineHeight: 1.55, color: text }}>
-            <li><b>Building photo (cover &amp; gallery):</b> add it under <i>Photos</i> below — the first photo becomes the cover &amp; gallery lead.</li>
-            <li><b>Aerial / cadastral view:</b> upload it under <i>Map Image</i> — it appears on the dedicated “Vue aérienne” page with the property boundary caption.</li>
+            <li><b>Page images:</b> pick the exact picture for the <i>cover</i>, the <i>contact</i> page, the <i>aerial view</i> and the <i>cadastral parcel</i> under <i>Page images</i>. Leave empty to auto-pick from the gallery.</li>
+            <li><b>Gallery photos:</b> add them under <i>Gallery photos</i> and tag each <i>Exterieur / Interieur</i> — the gallery is organised by category.</li>
             <li><b>Floor plans:</b> drop images or a multi-page PDF in <i>Floor Plans</i>; each page becomes a plan slide.</li>
             <li><b>Source docs (PDF / Word):</b> drop dossiers under <i>Source Documents</i>; the AI extracts price, yield, surfaces, leases, etc. into empty fields.</li>
             <li><b>Apply changes later:</b> reopen this form, edit / re-upload, then regenerate — fields you leave empty fall back to AI extraction.</li>
           </ul>
         </div>
 
-        {/* Photos upload */}
+        {/* Page images — choose which picture goes on each key page */}
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Photos (exterior + interior)</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
-            {photos.map((p, i) => (
-              <div key={i} style={{ position: 'relative', width: 64, height: 48, borderRadius: 4, overflow: 'hidden', border: `1px solid ${border}` }}>
-                <img src={p} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button onClick={() => removeFile(setPhotos, i)} style={{ position: 'absolute', top: 1, right: 1, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 16, height: 16, fontSize: 10, cursor: 'pointer', lineHeight: '14px' }}>x</button>
+          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>
+            Page images <span style={{ textTransform: 'none', color: '#00B6FF', fontWeight: 500 }}>(optional — pick a picture per page)</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {[
+              ['🏠 Cover (first page)', coverImage, setCoverImage],
+              ['📞 Contact (last page)', salesImage, setSalesImage],
+              ['🛰️ Aerial view', aerialImage, setAerialImage],
+              ['🗺️ Cadastral parcel', cadastralImage, setCadastralImage],
+            ].map(([label, val, setter], idx) => (
+              <div key={idx}>
+                <div style={{ fontSize: 9.5, fontWeight: 600, color: muted, marginBottom: 3 }}>{label}</div>
+                {val ? (
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 4, overflow: 'hidden', border: `1px solid ${border}` }}>
+                    <img src={val} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button onClick={() => setter('')} style={{ position: 'absolute', top: 1, right: 1, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 16, height: 16, fontSize: 10, cursor: 'pointer', lineHeight: '14px' }}>x</button>
+                  </div>
+                ) : (
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: 56, borderRadius: 4, border: `2px dashed ${border}`, cursor: 'pointer', fontSize: 11, color: muted }}>
+                    + Upload
+                    <input type="file" accept="image/*" onChange={e => handleSingleFile(e, setter)} style={{ display: 'none' }} />
+                  </label>
+                )}
               </div>
             ))}
-            <label style={{ width: 64, height: 48, borderRadius: 4, border: `2px dashed ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: muted }}>
+          </div>
+        </div>
+
+        {/* Photos upload — gallery, each tagged exterior / interior / general */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>
+            Gallery photos <span style={{ textTransform: 'none', color: '#00B6FF', fontWeight: 500 }}>(tag each as exterior / interior to organise the gallery)</span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
+            {photos.map((p, i) => (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 3, width: 72 }}>
+                <div style={{ position: 'relative', width: 72, height: 52, borderRadius: 4, overflow: 'hidden', border: `1px solid ${border}` }}>
+                  <img src={p} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <button onClick={() => removePhoto(i)} style={{ position: 'absolute', top: 1, right: 1, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 16, height: 16, fontSize: 10, cursor: 'pointer', lineHeight: '14px' }}>x</button>
+                </div>
+                <select value={photoCats[i] || 'Exterieur'} onChange={e => setPhotoCat(i, e.target.value)} style={{ width: '100%', fontSize: 9.5, padding: '2px 3px', borderRadius: 3, border: `1px solid ${border}`, background: bg, color: text }}>
+                  {PHOTO_CATS.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            ))}
+            <label style={{ width: 72, height: 52, borderRadius: 4, border: `2px dashed ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: muted }}>
               +
-              <input type="file" accept="image/*" multiple onChange={e => handleFiles(e, setPhotos)} style={{ display: 'none' }} />
+              <input type="file" accept="image/*" multiple onChange={handlePhotoFiles} style={{ display: 'none' }} />
             </label>
           </div>
         </div>
@@ -677,26 +750,10 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
           </div>
         </div>
 
-        {/* Address + Map */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 10, marginBottom: 12 }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>Full Address</div>
-            <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Street, Postal Code, City" style={inputStyle} />
-          </div>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>Map Image</div>
-            {mapImage ? (
-              <div style={{ position: 'relative', width: '100%', height: 32, borderRadius: 4, overflow: 'hidden', border: `1px solid ${border}` }}>
-                <img src={mapImage} alt="map" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button onClick={() => setMapImage('')} style={{ position: 'absolute', top: 1, right: 1, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 16, height: 16, fontSize: 10, cursor: 'pointer', lineHeight: '14px' }}>x</button>
-              </div>
-            ) : (
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: 32, borderRadius: 4, border: `1px dashed ${border}`, cursor: 'pointer', fontSize: 11, color: muted }}>
-                + Upload map
-                <input type="file" accept="image/*" onChange={handleMapFile} style={{ display: 'none' }} />
-              </label>
-            )}
-          </div>
+        {/* Address */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>Full Address</div>
+          <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Street, Postal Code, City" style={inputStyle} />
         </div>
 
         {/* Surface table */}
@@ -1050,7 +1107,7 @@ export default function Properties() {
   }
 
   // Generate long teaser
-  const handleGenerateLongTeaser = async ({ prop, brand, language, photos, plans, mapImage, documents, fields }) => {
+  const handleGenerateLongTeaser = async ({ prop, brand, language, photos, plans, mapImage, documents, coverImage, salesImage, aerialImage, cadastralImage, photoCats, fields }) => {
     try {
       const payload = {
         subject: prop.title || 'Property Long Teaser',
@@ -1063,6 +1120,11 @@ export default function Properties() {
         photos,
         plans,
         map_image: mapImage || '',
+        cover_image: coverImage || '',
+        sales_image: salesImage || '',
+        aerial_image: aerialImage || '',
+        cadastral_image: cadastralImage || '',
+        photo_categories: photoCats || [],
         documents: documents || [],
         long_teaser_fields: {
           address: fields.address,

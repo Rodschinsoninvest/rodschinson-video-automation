@@ -9,6 +9,7 @@ import os
 import re
 import smtplib
 import sys
+import urllib.parse
 import uuid
 import zipfile
 import logging
@@ -2383,6 +2384,52 @@ RULES:
             elif map_data:
                 map_image_path = map_data
 
+            # Per-role page images chosen in the form: cover (first page), contact
+            # (last page), aerial view and cadastral parcel. Each is a single image
+            # decoded to disk; empty values fall back to the template's defaults.
+            def _decode_single(field_key: str, fname: str) -> str:
+                val = data.get(field_key, "")
+                if val and isinstance(val, str) and val.startswith("data:"):
+                    import base64 as _b64
+                    header, b64data = val.split(",", 1)
+                    ext = "jpg" if ("jpeg" in header or "jpg" in header) else "png"
+                    fpath = upload_dir / f"{fname}.{ext}"
+                    fpath.write_bytes(_b64.b64decode(b64data))
+                    return f"file://{fpath}"
+                return val if isinstance(val, str) else ""
+
+            cover_image_path     = _decode_single("cover_image", "cover")
+            sales_image_path     = _decode_single("sales_image", "sales")
+            aerial_image_path    = _decode_single("aerial_image", "aerial")
+            cadastral_image_path = _decode_single("cadastral_image", "cadastral")
+
+            # Gallery photo categories (parallel to data["photos"]). Group the gallery
+            # so exterior shots lead, then interior, then anything else — and keep a
+            # per-image label so each tile shows its category.
+            photo_cats = data.get("photo_categories") or []
+            _cat_order = {"Exterieur": 0, "Exterior": 0, "Extérieur": 0,
+                          "Interieur": 1, "Interior": 1, "Intérieur": 1,
+                          "Algemeen": 2, "General": 2, "Général": 2}
+            def _cat_for(idx: int) -> str:
+                return str(photo_cats[idx]).strip() if idx < len(photo_cats) and photo_cats[idx] else ""
+            photo_labels: dict[str, str] = {}
+            for _idx, _p in enumerate(photo_paths):
+                _c = _cat_for(_idx)
+                if _c:
+                    photo_labels[_p] = _c
+            photo_sections: list[dict] = []
+            if photo_labels:  # only reorder when the user actually tagged photos
+                _indexed = list(enumerate(photo_paths))
+                _indexed.sort(key=lambda t: (_cat_order.get(_cat_for(t[0]), 8), t[0]))
+                photo_paths = [p for _, p in _indexed]
+                # Group the (now ordered) photos into labelled gallery sections.
+                from collections import OrderedDict as _OD
+                _groups = _OD()
+                for _p in photo_paths:
+                    _groups.setdefault(photo_labels.get(_p) or "Overige", []).append(_p)
+                if len(_groups) >= 2:  # only worth headings when ≥2 categories
+                    photo_sections = [{"label": k, "photos": v} for k, v in _groups.items()]
+
             # Extract text from source documents (PDF, DOCX, images) and use Claude
             # to fill in any missing fields the user didn't provide
             documents = data.get("documents", [])
@@ -2503,6 +2550,9 @@ Return JSON in {lang_label_for_extract}:
   ],
   "extra_bullets": [
     "Short stand-alone fact that does not fit the structured groups above"
+  ],
+  "assets": [
+    {{"name": "Building 1 — short descriptive name", "short": "City · type", "address": "street + city of THIS building", "terrain": "land m²", "annual_income": "€X/year", "metrics": [{{"k": "Land", "v": "X m²"}}, {{"k": "Units", "v": "5 apts"}}], "bullets": ["fact about this building"], "surfaces": [{{"floor": "...", "area": "X m²"}}], "rental_income_rows": [{{"label": "...", "value": "..."}}], "technical_specs_rows": [{{"label": "...", "value": "..."}}], "lease_terms_rows": [{{"label": "...", "value": "..."}}], "amenities_bullets": ["..."]}}
   ]
 }}
 
@@ -2516,6 +2566,7 @@ EXTRACTION RULES:
 - valuation: price stack \u2014 asset valuation, net equity price, debt assumed, share-deal vs asset-deal split, transaction fees. Leave empty if no breakdown given.
 - amenities: bullet list of property features (parquet, mouldings, garden, terrace, lift, AC, fireplaces, etc.). Short phrases.
 - extra_bullets: 0-8 misc facts that don't fit any structured group. Keep short.
+- assets: ONLY when the documents describe MULTIPLE DISTINCT buildings/properties held in one company or portfolio (e.g. a patrimonial company selling several buildings). Output ONE entry per building, each with its OWN address, land surface, annual income, descriptive bullets, surfaces, rental rows, technical specs, lease terms and amenities. Keep COMPANY-WIDE figures (consolidated financials, valuation/price stack, share-deal structure, company registration, portfolio-level totals) at the TOP level — NOT inside assets. OMIT the "assets" key entirely for a single-building asset.
 - DO NOT duplicate the same fact across groups.
 - DO NOT repeat anything already present in the user's "Current Description" above.
 - DO NOT include reference numbers, owner names, internal IDs, preparation dates.
@@ -2655,6 +2706,13 @@ EXTRACTION RULES:
                 "sharepoint_label": {"EN": "Access full dossier", "FR": "Acc\u00e9der au dossier complet", "NL": "Volledig dossier openen"}.get(language, "Access full dossier"),
                 "expertise_url": extra.get("expertise_url", ""),
                 "map_url": map_image_path or extra.get("map_url", ""),
+                # Real Google-Maps URL so the Locatie link opens the map, not the
+                # uploaded map image. Explicit value wins; else derive from address.
+                "google_maps_url": (
+                    extra.get("google_maps_url")
+                    or (f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(merged_address)}"
+                        if merged_address else "")
+                ),
                 "surfaces": merged_surfaces,
                 # Structured extracted groups — rendered as tables on a "Details" page
                 "rental_income_rows":     rental_income_rows,
@@ -2678,6 +2736,75 @@ EXTRACTION RULES:
                 "agent_phone": (extra.get("agent_phone") or "+32 2 550 36 87"),
                 "agent_email": (extra.get("agent_email") or "assets.brussels@rodschinson.com"),
             }
+
+            # Apply the user's per-role image choices (override the order-based
+            # fallbacks). Cadastral parcel image lands on the location/map page.
+            if cover_image_path:
+                teaser_data["cover_photo"] = cover_image_path
+            if sales_image_path:
+                teaser_data["sales_photo"] = sales_image_path
+            if aerial_image_path:
+                teaser_data["aerial_view"] = aerial_image_path
+            if cadastral_image_path:
+                teaser_data["map_url"] = cadastral_image_path
+            if photo_labels:
+                teaser_data["photo_labels"] = photo_labels
+            if photo_sections:
+                teaser_data["photo_sections"] = photo_sections
+
+            # ── Portfolio (multi-building) passthrough ───────────────────────
+            # When extraction or the user supplies multiple distinct buildings,
+            # the renderer switches to portfolio mode and organises content per
+            # building instead of dumping everything into one flat asset.
+            def _clean_assets(raw):
+                out = []
+                for a in raw or []:
+                    if not isinstance(a, dict):
+                        continue
+                    name = str(a.get("name") or a.get("short") or "").strip()
+                    if not name:
+                        continue
+                    out.append({
+                        "name": name,
+                        "short": str(a.get("short", "")).strip(),
+                        "subtitle": str(a.get("subtitle", "")).strip(),
+                        "address": str(a.get("address", "")).strip(),
+                        "terrain": str(a.get("terrain", "")).strip(),
+                        "annual_income": str(a.get("annual_income", "")).strip(),
+                        "metrics": [m for m in (a.get("metrics") or []) if isinstance(m, dict) and m.get("v")],
+                        "bullets": [str(b).strip() for b in (a.get("bullets") or []) if str(b).strip()],
+                        "photos": [p for p in (a.get("photos") or []) if isinstance(p, str)],
+                        "plans": [p for p in (a.get("plans") or []) if isinstance(p, str)],
+                        "activa_photo": str(a.get("activa_photo", "")).strip(),
+                        "aerial_view": str(a.get("aerial_view", "")).strip(),
+                        "map_url": str(a.get("map_url", "")).strip(),
+                        "google_maps_url": str(a.get("google_maps_url", "")).strip(),
+                        "boundary": a.get("boundary") if isinstance(a.get("boundary"), list) else None,
+                        "surfaces": a.get("surfaces") or [],
+                        "rental_income_rows": _clean_rows(a.get("rental_income_rows")),
+                        "technical_specs_rows": _clean_rows(a.get("technical_specs_rows")),
+                        "lease_terms_rows": _clean_rows(a.get("lease_terms_rows")),
+                        "amenities_bullets": [str(b).strip() for b in (a.get("amenities_bullets") or []) if str(b).strip()],
+                    })
+                return out
+
+            _assets = _clean_assets(extra.get("assets") or extracted_fields.get("assets"))
+            if _assets:
+                teaser_data["assets"] = _assets
+                teaser_data["language"] = language
+                teaser_data["asset_eyebrow"]   = {"EN": "Asset", "FR": "Actif", "NL": "Pand"}.get(language, "Asset")
+                teaser_data["terrain_label"]   = {"EN": "Land", "FR": "Terrain", "NL": "Terrein"}.get(language, "Land")
+                teaser_data["income_label"]    = {"EN": "Income/year", "FR": "Revenu/an", "NL": "Opbrengst/jaar"}.get(language, "Income/year")
+                teaser_data["boundary_caption"] = {"EN": "Indicative property boundary", "FR": "Limite indicative de la propriété", "NL": "Indicatieve perceelsgrens"}.get(language, "Indicative property boundary")
+                teaser_data["company_specs_rows"] = _clean_rows(extra.get("company_specs_rows") or extracted_fields.get("company_specs"))
+                if extra.get("portfolio_overview"):
+                    teaser_data["portfolio_overview"] = extra["portfolio_overview"]
+                if extra.get("key_metrics"):
+                    teaser_data["key_metrics"] = extra["key_metrics"]
+            if isinstance(extra.get("boundary"), list):
+                teaser_data["boundary"] = extra["boundary"]
+            if extra.get("location_images"):
+                teaser_data["location_images"] = extra["location_images"]
 
             _job_update(job, status="running", step="Rendering PDF", progress=50)
             await _save_job(job)
@@ -6898,7 +7025,7 @@ async def long_teaser_regenerate(job_id: str, request: Request, body: dict | Non
                 pptx_cmd = [
                     str(ROOT.parent / "rodschinson-venv311" / "bin" / "python"),
                     str(ROOT / "scripts" / "build_long_teaser_pptx.py"),
-                    "--json", str(paths["json"]),
+                    "--script", str(paths["json"]),
                     "--output", str(paths["pptx"]),
                 ]
                 # Fallback: if the venv path doesn't exist, use system python3.
