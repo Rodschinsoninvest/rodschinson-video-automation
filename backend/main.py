@@ -2403,10 +2403,38 @@ RULES:
             aerial_image_path    = _decode_single("aerial_image", "aerial")
             cadastral_image_path = _decode_single("cadastral_image", "cadastral")
 
-            # Gallery photo categories (parallel to data["photos"]). Group the gallery
+            # De-duplicate near-identical gallery shots (average-hash, conservative
+            # threshold) so the same photo doesn't appear twice. Keeps categories aligned.
+            _orig_cats = list(data.get("photo_categories") or [])
+
+            def _ahash(p):
+                try:
+                    from PIL import Image
+                    fp = p[7:] if p.startswith("file://") else p
+                    im = Image.open(fp).convert("L").resize((8, 8))
+                    px = list(im.getdata())
+                    avg = sum(px) / len(px)
+                    return sum(1 << i for i, v in enumerate(px) if v > avg)
+                except Exception:
+                    return None
+
+            _seen_hashes, _kept = [], []
+            for _i, _p in enumerate(photo_paths):
+                _h = _ahash(_p)
+                if _h is not None and any(bin(_h ^ _s).count("1") <= 3 for _s in _seen_hashes):
+                    continue
+                if _h is not None:
+                    _seen_hashes.append(_h)
+                _kept.append(_i)
+            if len(_kept) < len(photo_paths):
+                log.info("[%s] gallery de-dupe: %d -> %d photos", job_id[:8], len(photo_paths), len(_kept))
+                photo_paths = [photo_paths[i] for i in _kept]
+                _orig_cats = [_orig_cats[i] if i < len(_orig_cats) else "" for i in _kept]
+
+            # Gallery photo categories (parallel to photo_paths). Group the gallery
             # so exterior shots lead, then interior, then anything else — and keep a
             # per-image label so each tile shows its category.
-            photo_cats = data.get("photo_categories") or []
+            photo_cats = _orig_cats
             _cat_order = {"Exterieur": 0, "Exterior": 0, "Extérieur": 0,
                           "Interieur": 1, "Interior": 1, "Intérieur": 1,
                           "Algemeen": 2, "General": 2, "Général": 2}
@@ -2741,6 +2769,11 @@ EXTRACTION RULES:
             # fallbacks). Cadastral parcel image lands on the location/map page.
             if cover_image_path:
                 teaser_data["cover_photo"] = cover_image_path
+            elif photo_paths:
+                # auto-pick a hero for the cover: first exterior shot, else first photo
+                teaser_data["cover_photo"] = next(
+                    (p for p in photo_paths if str(photo_labels.get(p, "")).lower().startswith("ext")),
+                    photo_paths[0])
             if sales_image_path:
                 teaser_data["sales_photo"] = sales_image_path
             if aerial_image_path:
@@ -2805,6 +2838,44 @@ EXTRACTION RULES:
                 teaser_data["boundary"] = extra["boundary"]
             if extra.get("location_images"):
                 teaser_data["location_images"] = extra["location_images"]
+
+            # Real Flanders aerial (orthophoto) + true cadastral parcel outline,
+            # derived from each building's address. Network-backed and best-effort:
+            # any failure silently falls back to whatever image was already set.
+            try:
+                import geo_flanders as _geo
+
+                def _enrich_aerial(address, basename):
+                    if not address:
+                        return None
+                    try:
+                        return _geo.aerial_for_address(address, upload_dir / f"{basename}.png")
+                    except Exception:
+                        return None
+
+                if _assets:
+                    _loc_aerials = []
+                    for _i, _a in enumerate(teaser_data["assets"]):
+                        if _a.get("aerial_view"):
+                            continue  # respect a user/extracted image
+                        _r = _enrich_aerial(_a.get("address", ""), f"aerial_{_i:02d}")
+                        if _r:
+                            _a["aerial_view"] = _r["aerial_view"]
+                            _a["boundary"] = _r["boundary"]
+                            _loc_aerials.append({
+                                "url": _r["aerial_view"],
+                                "caption": _a.get("subtitle") or _a.get("short") or _a.get("name", ""),
+                                "address": _a.get("address", ""),
+                            })
+                    if _loc_aerials and not teaser_data.get("location_images"):
+                        teaser_data["location_images"] = _loc_aerials
+                elif not teaser_data.get("aerial_view") and merged_address:
+                    _r = _enrich_aerial(merged_address, "aerial_main")
+                    if _r:
+                        teaser_data["aerial_view"] = _r["aerial_view"]
+                        teaser_data["boundary"] = _r["boundary"]
+            except Exception as _geo_err:
+                log.warning("[%s] aerial enrichment skipped: %s", job_id[:8], _geo_err)
 
             _job_update(job, status="running", step="Rendering PDF", progress=50)
             await _save_job(job)
