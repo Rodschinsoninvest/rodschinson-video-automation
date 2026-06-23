@@ -2508,10 +2508,12 @@ RULES:
             # Ask Claude to extract ALL relevant data from documents (not just missing fields).
             # Claude decides what's relevant for a property teaser; user-provided values still win.
             extracted_fields: dict = {}
+            # Always defined (also used by the title/description translation below,
+            # which runs even when there are no source documents to extract from).
+            api_key = os.getenv("ANTHROPIC_API_KEY", "")
             if extracted_text_chunks:
                 _job_update(job, status="running", step="AI analyzing documents", progress=30)
                 await _save_job(job)
-                api_key = os.getenv("ANTHROPIC_API_KEY", "")
                 lang_label_for_extract = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(language, "English")
                 # Total cap: 180k chars (~45k tokens) — leaves headroom inside the
                 # 200k-context model so all docs can be read together, not summarised.
