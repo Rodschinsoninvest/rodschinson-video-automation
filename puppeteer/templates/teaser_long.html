@@ -887,53 +887,6 @@ window.loadLongTeaser = function(data, brandName){
       {head:DL.other,      bullets:(data.extra_bullets||[])},
     ], kpiHtml);
 
-    // ── 3b) CHARTS — key figures at a glance (rent split + yield sensitivity) ──
-    const numFrom = s => { const m = String(s==null?'':s).replace(/[^\d]/g,''); return m ? parseInt(m,10) : 0; };
-    function hbarChart(items){
-      const max = Math.max(1, ...items.map(i=>i.value));
-      const rowH = 46, w = 560, h = items.length*rowH + 4;
-      return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMinYMid meet" class="chart-svg">${items.map((it,idx)=>{
-        const y = idx*rowH + 6, bw = Math.max(4, it.value/max*w);
-        return `<text x="0" y="${y+12}" class="c-lbl">${esc(it.label)}</text>`
-             + `<text x="${w}" y="${y+12}" class="c-val" text-anchor="end">${esc(it.display)}</text>`
-             + `<rect x="0" y="${y+20}" width="${w}" height="11" rx="5.5" class="c-track"></rect>`
-             + `<rect x="0" y="${y+20}" width="${bw}" height="11" rx="5.5" class="c-bar"></rect>`;
-      }).join('')}</svg>`;
-    }
-    function colChart(items){
-      const max = Math.max(1, ...items.map(i=>i.value));
-      const w = 560, h = 220, padB = 38, padT = 16, gap = w/items.length, colW = Math.min(86, gap*0.5);
-      const grid = [0,0.25,0.5,0.75,1].map(g=>{const gy=padT+(1-g)*(h-padB-padT);return `<line x1="0" y1="${gy}" x2="${w}" y2="${gy}" class="c-grid"></line>`;}).join('');
-      return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" class="chart-svg">${grid}${items.map((it,idx)=>{
-        const cx = idx*gap + gap/2, bh = it.value/max*(h-padB-padT), y = h-padB-bh;
-        return `<rect x="${cx-colW/2}" y="${y}" width="${colW}" height="${bh}" rx="4" class="c-bar2"></rect>`
-             + `<text x="${cx}" y="${y-7}" class="c-val" text-anchor="middle">${esc(it.display)}</text>`
-             + `<text x="${cx}" y="${h-14}" class="c-axis" text-anchor="middle">${esc(it.label)}</text>`;
-      }).join('')}</svg>`;
-    }
-    const rentItems = assets.map(a=>({label:a.short||a.name||'', value:numFrom(a.annual_income), display:String(a.annual_income||'').replace('/jaar','')}))
-                            .filter(i=>i.value>0);
-    const yieldItems = (Array.isArray(data.valuation_rows)?data.valuation_rows:[])
-      .filter(r=>/yield|rendement/i.test(r.label||''))
-      .map(r=>{const m=String(r.label).match(/(\d+[.,]?\d*)\s*%/);return {label:m?m[1]+'%':(r.label||''), value:numFrom(r.value), display:String(r.value||'')};})
-      .filter(i=>i.value>0);
-    if (rentItems.length >= 2 || yieldItems.length >= 2){
-      currentSection = 'activa';
-      const chartsTitle = {NL:'Kerncijfers in beeld',FR:'Indicateurs clés en image',EN:'Key figures at a glance'}[LANG] || 'Key figures at a glance';
-      const rentHead = {NL:'Huuropbrengst per pand',FR:'Revenu locatif par actif',EN:'Rental income per asset'}[LANG] || 'Rental income per asset';
-      const yieldHead = {NL:'Waardering bij rendement',FR:'Valorisation selon le rendement',EN:'Value by yield'}[LANG] || 'Value by yield';
-      const yieldTag = {NL:'indicatief, o.b.v. huurrol',FR:'indicatif, base loyers',EN:'indicative, rent-roll basis'}[LANG] || '';
-      const cards = [];
-      if (rentItems.length >= 2) cards.push(`<div class="chart-card"><div class="cc-head"><span>${esc(rentHead)}</span></div><div class="cc-body">${hbarChart(rentItems)}</div></div>`);
-      if (yieldItems.length >= 2) cards.push(`<div class="chart-card"><div class="cc-head"><span>${esc(yieldHead)}</span><span class="cc-tag">${esc(yieldTag)}</span></div><div class="cc-body">${colChart(yieldItems)}</div></div>`);
-      pushPage(`
-        ${headerP('a', chartsTitle)}
-        <div class="pg-body"><div class="charts">
-          <div class="ch-title">${esc(chartsTitle)}</div>
-          ${cards.join('')}
-        </div></div>`);
-    }
-
     // ── 4) LOCATION OVERVIEW (cadastral plans live with the map) ──
     currentSection = 'localisation';
     sectionAnchor = A.loc;
