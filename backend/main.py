@@ -2585,6 +2585,8 @@ Return JSON in {lang_label_for_extract}:
 }}
 
 EXTRACTION RULES:
+- EXACT FIGURES ONLY: copy numbers verbatim from the documents — the precise amount, to the cent/unit as written (e.g. "€1.994,93", "€178.565,52", "5,95%"). NEVER approximate, round, or prefix a figure with "±", "+/-", "ca.", "circa", "approximately", "about", "~" or "around". If a value is computable from given figures (e.g. annual = monthly × 12), compute it exactly rather than rounding. Only state a figure that is actually supported by the documents; if a number is genuinely unknown, omit it — do not guess or invent.
+- SIGNS: write a loss/negative result with an explicit word ("X verlies" / "X loss" / "X perte"), not a bare "-"; write positive results as the plain number (no leading "+").
 - BE EXHAUSTIVE: extract every relevant figure / fact in the documents. We have multi-page room to display many tables; do not pre-trim.
 - surfaces: include ALL surface/area mentions (habitable surface, total surface, land surface, per-floor breakdown, parking, basement, garden). Keep original notation.
 - rental_income: ONE row per unit/tenant with the monthly or annual rent. If a unit has step rents (mois 1-12, mois 13-36, etc.), output ONE row per step. Leave empty if the asset is not income-producing.
@@ -2633,13 +2635,34 @@ EXTRACTION RULES:
 
             # Structured groups from document extraction — rendered as tables on a
             # dedicated "Details" page in Activa, NOT merged into the description.
+            import re as _re
+            _APPROX_SYM = _re.compile(r'^\s*(?:±|\+/-|~)\s*')
+            # word markers only when followed by a number/currency (so "café" is safe)
+            _APPROX_WORD = _re.compile(
+                r'^\s*(?:approximately|circa|ongeveer|environ|approx|about|around|ca|env)\b\.?\s+(?=[€$£\d-])',
+                _re.IGNORECASE)
+
+            def _exactify(s):
+                """Strip approximation markers so displayed figures stay exact."""
+                s = str(s)
+                prev = None
+                while prev != s:
+                    prev = s
+                    s = _APPROX_SYM.sub('', s).strip()
+                    s = _APPROX_WORD.sub('', s).strip()
+                s = _re.sub(r'^\+(?=\s*[€$£]\s*\d)', '', s).strip()   # +€767 -> €767
+                if s.startswith('+') and s.rstrip().endswith('%'):    # +5% -> 5% (keep phone +32 intact)
+                    s = s[1:].strip()
+                return (s.replace('± ', '').replace('±', '')
+                         .replace('+/- ', '').replace('+/-', '')).strip()
+
             def _clean_rows(rows):
                 out = []
                 for r in rows or []:
                     if not isinstance(r, dict):
                         continue
                     lab = str(r.get("label", "")).strip()
-                    val = str(r.get("value", "")).strip()
+                    val = _exactify(str(r.get("value", "")).strip())
                     if lab and val:
                         out.append({"label": lab, "value": val})
                 return out
@@ -2803,9 +2826,9 @@ EXTRACTION RULES:
                         "subtitle": str(a.get("subtitle", "")).strip(),
                         "address": str(a.get("address", "")).strip(),
                         "terrain": str(a.get("terrain", "")).strip(),
-                        "annual_income": str(a.get("annual_income", "")).strip(),
-                        "metrics": [m for m in (a.get("metrics") or []) if isinstance(m, dict) and m.get("v")],
-                        "bullets": [str(b).strip() for b in (a.get("bullets") or []) if str(b).strip()],
+                        "annual_income": _exactify(str(a.get("annual_income", "")).strip()),
+                        "metrics": [{**m, "v": _exactify(str(m.get("v", "")))} for m in (a.get("metrics") or []) if isinstance(m, dict) and m.get("v")],
+                        "bullets": [_exactify(str(b).strip()) for b in (a.get("bullets") or []) if str(b).strip()],
                         "photos": [p for p in (a.get("photos") or []) if isinstance(p, str)],
                         "plans": [p for p in (a.get("plans") or []) if isinstance(p, str)],
                         "activa_photo": str(a.get("activa_photo", "")).strip(),
