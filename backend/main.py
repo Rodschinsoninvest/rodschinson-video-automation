@@ -2727,8 +2727,47 @@ EXTRACTION RULES:
                 }
 
             # Build teaser JSON
+            # Translate the passthrough title + description into the teaser language.
+            # Extracted rows are already produced in-language; this covers the source
+            # copy so an FR property generated as NL doesn't come out half-French.
+            _lang_label = {"EN": "English", "FR": "French", "NL": "Dutch"}.get(str(language).upper(), "")
+            _src_title = property_data.get("title", subject) or ""
+
+            async def _translate(text):
+                text = (text or "").strip()
+                if not text or not api_key or not _lang_label:
+                    return text
+                try:
+                    tprompt = (
+                        f"Translate the following property-teaser text into {_lang_label}. "
+                        f"If it is already in {_lang_label}, return it unchanged. "
+                        f"Keep proper nouns, place/city names, brand names, reference codes and all "
+                        f"numbers/units EXACTLY as written. Preserve bullet separators (•) and line "
+                        f"breaks. Output ONLY the translation, with no preamble or quotes.\n\n{text}")
+                    async with _claude_semaphore:
+                        async with httpx.AsyncClient() as client:
+                            r = await client.post(
+                                "https://api.anthropic.com/v1/messages",
+                                headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                                json={"model": "claude-sonnet-4-6", "max_tokens": 2000,
+                                      "messages": [{"role": "user", "content": tprompt}]},
+                                timeout=60)
+                    if r.status_code == 200:
+                        out = (r.json()["content"][0]["text"] or "").strip()
+                        return out or text
+                    log.warning("[%s] translation HTTP %s", job_id[:8], r.status_code)
+                except Exception as _te:
+                    log.warning("[%s] translation skipped: %s", job_id[:8], _te)
+                return text
+
+            desc = await _translate(desc)
+            _title_nl = await _translate(_src_title)
+
             teaser_data = {
-                "title": property_data.get("title", subject),
+                "title": _title_nl,
+                # Drives language-aware UI labels in the template for EVERY teaser
+                # (single-asset included) — without it the template defaults to French.
+                "language": language,
                 "reference": property_data.get("reference", ""),
                 "price": property_data.get("price", ""),
                 "description": desc,

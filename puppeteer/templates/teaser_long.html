@@ -776,7 +776,7 @@ window.loadLongTeaser = function(data, brandName){
         pushPage(`
           ${headerP('p', SL.photos, metaText)}
           <div class="pg-body"><div class="${cls}">
-            ${slice.map(p=>{const cat=data.photo_labels&&data.photo_labels[p];return `<div class="photo-tile"><img class="fill-img" src="${esc(fileUrl(p))}" alt="">${cat?`<div class="photo-cat">${esc(cat)}</div>`:''}</div>`;}).join('')}
+            ${slice.map(p=>`<div class="photo-tile"><img class="fill-img" src="${esc(fileUrl(p))}" alt=""></div>`).join('')}
           </div></div>`);
       };
       if (ph.length >= 3){ page(ph.slice(0,3),'photos-3'); i = 3; }
@@ -1417,7 +1417,7 @@ window.loadLongTeaser = function(data, brandName){
   if(photos.length){
     currentSection = 'gallery';
     sectionAnchor = A.photos;
-    const galTile = p=>{const cat=data.photo_labels&&data.photo_labels[p];return `<div class="photo-tile"><img class="fill-img" src="${esc(fileUrl(p))}" alt="">${cat?`<div class="photo-cat">${esc(cat)}</div>`:''}</div>`;};
+    const galTile = p=>`<div class="photo-tile"><img class="fill-img" src="${esc(fileUrl(p))}" alt=""></div>`;
     const galPage = (slice, gridClass, heading)=>{
       const grid = `<div class="${gridClass}">${slice.map(galTile).join('')}</div>`;
       const body = heading
@@ -1445,10 +1445,9 @@ window.loadLongTeaser = function(data, brandName){
     };
     // When the user tagged photos into ≥2 categories, render labelled sections
     // (EXTERIEUR / INTERIEUR …); otherwise one continuous gallery.
-    const sections = Array.isArray(data.photo_sections)
-      ? data.photo_sections.filter(s=>s && Array.isArray(s.photos) && s.photos.length) : [];
-    if(sections.length >= 2){ sections.forEach(s=>paginate(s.photos, s.label)); }
-    else { paginate(photos, ''); }
+    // Photos render as one continuous gallery (no category labels on the tiles);
+    // backend ordering keeps exterior shots first.
+    paginate(photos, '');
   }
 
   // PLANS — 1 per page, auto-rotate portrait images
