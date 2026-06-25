@@ -1298,20 +1298,36 @@ window.loadLongTeaser = function(data, brandName){
   pushBulletCategory(DL.amenities, amenities);
   pushBulletCategory(DL.other, extras);
 
-  // Pack pieces into pages: 1 wide piece OR 2 half pieces per page.
-  const detailPages = [];
-  let bucket = [];
-  function flushBucket(){
-    if (bucket.length){ detailPages.push(bucket); bucket = []; }
+  // Pack pieces into pages by estimated height so several small categories
+  // share a page instead of each taking its own near-empty one. Half-width
+  // cards pair two-across (the grid row is as tall as the taller card); wide
+  // cards span the full width. The first page is shorter when a KPI strip shows.
+  const _hasKpi = Array.isArray(data.key_metrics) && data.key_metrics.length > 0;
+  const PG_FIRST = _hasKpi ? 470 : 540, PG_REST = 540;
+  const PC_BASE = 60, PC_ROW = 22, PC_BULL = 21, PC_CHEAD = 18, PC_CROW = 19, PC_GAP = 12;
+  function pieceHeight(p){
+    if (p.kind === 'unit-table') return PC_BASE + PC_CHEAD + ((p.payload.units.length||0) + 1) * PC_CROW;
+    if (p.kind === 'bullets')    return PC_BASE + (p.wide ? Math.ceil(p.rows.length/2) : p.rows.length) * PC_BULL;
+    return PC_BASE + (p.rows ? p.rows.length : 0) * PC_ROW;
   }
-  for (const p of pieces){
+  pieces.forEach(p => { p._h = pieceHeight(p); });
+
+  const detailPages = [];
+  let bucket = [], used = 0, budget = PG_FIRST;
+  const flushBucket = () => { if (bucket.length){ detailPages.push(bucket); bucket = []; used = 0; budget = PG_REST; } };
+  for (let i = 0; i < pieces.length; i++){
+    const p = pieces[i];
     if (p.wide){
-      flushBucket();
-      detailPages.push([p]);
-      continue;
+      if (used > 0 && used + p._h > budget) flushBucket();
+      bucket.push(p); used += p._h + PC_GAP;
+    } else {
+      const n = pieces[i+1];
+      const pair = (n && !n.wide) ? [p, n] : [p];   // pair consecutive half cards
+      const ph = Math.max.apply(null, pair.map(x => x._h));
+      if (used > 0 && used + ph > budget) flushBucket();
+      pair.forEach(x => bucket.push(x)); used += ph + PC_GAP;
+      if (pair.length === 2) i++;
     }
-    if (bucket.length >= 2){ flushBucket(); }
-    bucket.push(p);
   }
   flushBucket();
 

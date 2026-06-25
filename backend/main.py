@@ -354,6 +354,30 @@ async def _run(cmd: list[str], cwd: Path | None = None, timeout: int = 600,
     return proc.returncode or 0, stdout.decode(errors="replace"), stderr.decode(errors="replace")
 
 
+def _downscale_photo(raw: bytes, max_edge: int = 2000, quality: int = 85) -> bytes | None:
+    """Cap a photo's longest edge at ``max_edge`` and re-encode as JPEG for PDF
+    embedding. Source teaser photos are often 6000px / ~5MB each — far more than
+    an A4 page needs — which bloats the PDF (100MB+) and slows rasterisation.
+    Returns JPEG bytes, or ``None`` if the image can't be processed (caller then
+    falls back to the original bytes)."""
+    try:
+        import io
+        from PIL import Image, ImageOps
+        im = Image.open(io.BytesIO(raw))
+        im = ImageOps.exif_transpose(im)        # bake in camera orientation
+        if im.mode != "RGB":
+            im = im.convert("RGB")
+        w, h = im.size
+        if max(w, h) > max_edge:
+            s = max_edge / max(w, h)
+            im = im.resize((round(w * s), round(h * s)), Image.LANCZOS)
+        buf = io.BytesIO()
+        im.save(buf, format="JPEG", quality=quality, optimize=True, progressive=True)
+        return buf.getvalue()
+    except Exception:
+        return None
+
+
 async def _library_load() -> list[dict]:
     if not LIBRARY_FILE.exists(): return []
     try:
@@ -2293,9 +2317,17 @@ RULES:
                 if photo.startswith("data:"):
                     import base64 as _b64
                     header, b64data = photo.split(",", 1)
-                    ext = "jpg" if "jpeg" in header or "jpg" in header else "png"
-                    fpath = upload_dir / f"photo_{i:02d}.{ext}"
-                    fpath.write_bytes(_b64.b64decode(b64data))
+                    raw = _b64.b64decode(b64data)
+                    # Downscale/recompress for PDF embedding (longest edge 2000px,
+                    # JPEG 85%). Keeps the PDF small without visible print-quality loss.
+                    small = _downscale_photo(raw)
+                    if small is not None:
+                        fpath = upload_dir / f"photo_{i:02d}.jpg"
+                        fpath.write_bytes(small)
+                    else:
+                        ext = "jpg" if "jpeg" in header or "jpg" in header else "png"
+                        fpath = upload_dir / f"photo_{i:02d}.{ext}"
+                        fpath.write_bytes(raw)
                     photo_paths.append(f"file://{fpath}")
                 else:
                     photo_paths.append(photo)
@@ -2967,7 +2999,7 @@ EXTRACTION RULES:
                     "--brand-accent", brand_data.get("accentColor", "#C8A96E"),
                 ]
 
-            code, out, err = await _run(render_cmd, cwd=PUPPET, timeout=90, job_id=job_id)
+            code, out, err = await _run(render_cmd, cwd=PUPPET, timeout=180, job_id=job_id)
             if code != 0:
                 raise RuntimeError(f"Long teaser render failed (exit {code})\n{err[-600:]}")
 

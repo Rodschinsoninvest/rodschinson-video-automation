@@ -47,6 +47,10 @@ async function main() {
 
   try {
     const page = await browser.newPage();
+    // Heavy teasers (many hi-res photos/plans at 2x) take >30s to rasterise.
+    // Raise the default timeout so page.pdf()/screenshot() don't abort early;
+    // the backend subprocess cap is the real hard ceiling.
+    page.setDefaultTimeout(0);
     await page.setViewport({ width: 1123, height: 794, deviceScaleFactor: 2 });
     await page.goto(`file://${tmplPath}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
     await new Promise(r => setTimeout(r, 300));
