@@ -38,8 +38,8 @@ const TEXT_FIELDS_BY_SECTION = {
     ['payment_terms', 'Payment terms / transaction structuring'],
   ],
   localisation: [
-    ['map_url',       'Google Maps URL (file:// or https://)'],
-    ['map_link_text', '"View on Maps" link text'],
+    ['google_maps_url', 'Google Maps link (https://) — where the link opens'],
+    ['map_link_text',   '"View on Maps" link text'],
   ],
   aerial: [
     ['aerial_view',      'Aerial image path (file://)'],
@@ -86,7 +86,7 @@ const IMAGE_FIELDS_BY_SECTION = {
   cover:        [['cover_photo', 'Cover photo']],
   activa:       [['activa_photo', 'Description page photo']],
   aerial:       [['aerial_view',  'Aerial image']],
-  localisation: [['map_url',      'Map image']],
+  localisation: [['street_map',   'Google Maps photo']],
   sales:        [['sales_photo',  'Contact-page photo']],
 }
 

@@ -462,6 +462,10 @@ function mapsUrlFor(addr){
   if(!a) return '';
   return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a);
 }
+// A maps LINK must be a real web URL — never a local image path (file://…). The
+// map-image field and the maps-link field used to share one key, so replacing
+// the image could make the link open the picture. This guards against that.
+function httpUrlOnly(u){ return (typeof u==='string' && /^https?:\/\//i.test(u.trim())) ? u.trim() : ''; }
 // Render the red property outline as an SVG polygon when points are supplied,
 // else a dashed red fallback rectangle. `points` is an array of [x,y] in 0..100.
 function boundarySvg(points, dashed){
@@ -504,15 +508,17 @@ window.loadLongTeaser = function(data, brandName){
   const descLbl   = data.description_label || 'Beschrijving :';
   const mapLinkTxt= data.map_link_text || L.maplink;
   // Prefer an explicit maps URL, else a real Google-Maps search built from the
-  // address. The local map IMAGE (data.map_url) is only a last resort so the
-  // link never silently opens a picture instead of the map.
-  const mapsUrl   = data.google_maps_url || mapsUrlFor(data.address || '') || data.map_url || '#';
+  // address. Legacy map_url is honoured ONLY when it's a real web URL, so a
+  // map image stored there can never become the link.
+  const mapsUrl   = httpUrlOnly(data.google_maps_url) || httpUrlOnly(data.map_url) || mapsUrlFor(data.address || '') || '#';
 
   const photos = (data.photos||[]).filter(Boolean);
   const plans  = (data.plans||[]).filter(Boolean);
   const maps   = (data.maps||[]).filter(Boolean);
-  // Map belongs ONLY on the Locatie page (never on the Activa page)
-  const streetMap  = maps[0] || data.map_url || '';
+  // Map belongs ONLY on the Locatie page (never on the Activa page). The
+  // dedicated street_map image field wins; legacy map_url is used as the image
+  // only when it isn't a web URL (i.e. it's actually a stored picture).
+  const streetMap  = data.street_map || maps[0] || (httpUrlOnly(data.map_url) ? '' : (data.map_url || '')) || '';
   // Activa right panel shows a property PHOTO (exterior preferred), never a map
   const activaPhoto = data.activa_photo || photos[0] || '';
   // Cover photo: prefer explicit cover_photo, then first photo (user uploads exterior first)
@@ -892,7 +898,7 @@ window.loadLongTeaser = function(data, brandName){
     sectionAnchor = A.loc;
     const cad = locImages.slice(0,4);
     const gCls = cad.length<=1?'g1':(cad.length===2?'g2':'g4');
-    const rootMaps = data.google_maps_url || mapsUrlFor(data.address||'') || (streetMap?fileUrl(streetMap):'');
+    const rootMaps = httpUrlOnly(data.google_maps_url) || httpUrlOnly(data.map_url) || mapsUrlFor(data.address||'') || '';
     pushPage(`
       ${headerP('l', SL.locatie)}
       <div class="pg-body"><div class="loc-over">
