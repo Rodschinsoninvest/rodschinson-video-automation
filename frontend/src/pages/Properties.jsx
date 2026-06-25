@@ -832,7 +832,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
 // own aerial view + cadastral parcel) and location page. Optional shared
 // documents feed the AI extraction that fills financials per building.
 const IMG_RE = /\.(jpe?g|png|webp|gif|bmp|tiff?)$/i
-function PortfolioTeaserModal({ brands, onClose, onGenerate, dark }) {
+function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, dark }) {
   const [mode, setMode] = useState('single')      // 'single' | 'multiple'
   const [brand, setBrand] = useState(brands[0]?.id || 'rodschinson')
   const [language, setLanguage] = useState('FR')
@@ -843,6 +843,12 @@ function PortfolioTeaserModal({ brands, onClose, onGenerate, dark }) {
   const [documents, setDocuments] = useState([])
   const [reading, setReading] = useState(false)
   const [loading, setLoading] = useState(false)
+  // Shared deal details (same as the single-property form)
+  const [odooId, setOdooId] = useState('')        // optional: seed company-wide data from an Odoo property
+  const [sharepointUrl, setSharepointUrl] = useState('')
+  const [expertiseUrl, setExpertiseUrl] = useState('')
+  const [paymentTerms, setPaymentTerms] = useState('')
+  const [agentId, setAgentId] = useState(LONG_TEASER_AGENTS[0].id)
 
   const bg = dark ? '#1a1a1a' : '#fff'
   const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
@@ -927,11 +933,28 @@ function PortfolioTeaserModal({ brands, onClose, onGenerate, dark }) {
       : photos.length > 0
   )
 
+  const odooProp = odooId ? properties.find(p => String(p.odoo_id) === String(odooId)) : null
+  // Picking an Odoo property seeds the title/address if the user hasn't typed them.
+  const pickOdoo = (id) => {
+    setOdooId(id)
+    const p = id ? properties.find(x => String(x.odoo_id) === String(id)) : null
+    if (p) {
+      if (!title.trim()) setTitle(p.title || '')
+      if (mode === 'single' && !address.trim() && p.address) setAddress(p.address)
+    }
+  }
+
   const handleSubmit = async () => {
     if (!canGenerate) return
     setLoading(true)
     try {
-      await onGenerate({ mode, title, address, brand, language, folderAssets: assets, photos, documents })
+      const agent = LONG_TEASER_AGENTS.find(a => a.id === agentId) || LONG_TEASER_AGENTS[0]
+      await onGenerate({
+        mode, title, address, brand, language,
+        folderAssets: assets, photos, documents,
+        odooProp,
+        sharepointUrl, expertiseUrl, paymentTerms, agent,
+      })
       onClose()
     } finally {
       setLoading(false)
@@ -1044,6 +1067,45 @@ function PortfolioTeaserModal({ brands, onClose, onGenerate, dark }) {
             ))}
           </div>
         )}
+
+        {/* Pull data from Odoo (optional) */}
+        {properties.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Pull data from Odoo <span style={{ textTransform: 'none', fontWeight: 500 }}>(optional — title, price, reference, contact)</span></label>
+            <select value={odooId} onChange={e => pickOdoo(e.target.value)} style={inputStyle}>
+              <option value="">— None (manual) —</option>
+              {properties.map(p => (
+                <option key={p.odoo_id} value={p.odoo_id}>{p.title}{p.reference ? ` · ${p.reference}` : ''}{p.price ? ` · ${p.price}` : ''}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Deal links */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>SharePoint dossier URL</label>
+            <input value={sharepointUrl} onChange={e => setSharepointUrl(e.target.value)} placeholder="https://…" style={inputStyle} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Expertise PDF URL</label>
+            <input value={expertiseUrl} onChange={e => setExpertiseUrl(e.target.value)} placeholder="https://…" style={inputStyle} />
+          </div>
+        </div>
+
+        {/* Payment terms */}
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Payment terms <span style={{ fontWeight: 500 }}>(optional)</span></label>
+          <input value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} placeholder="e.g. crédit vendeur sur 24 mois" style={inputStyle} />
+        </div>
+
+        {/* Contact agent */}
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Contact agent <span style={{ fontWeight: 500 }}>(appears on the sales conditions page)</span></label>
+          <select value={agentId} onChange={e => setAgentId(e.target.value)} style={inputStyle}>
+            {LONG_TEASER_AGENTS.map(a => <option key={a.id} value={a.id}>{a.name} — {a.email} — {a.phone}</option>)}
+          </select>
+        </div>
 
         {/* Title + brand + language */}
         <div style={{ marginBottom: 12 }}>
@@ -1404,24 +1466,38 @@ export default function Properties() {
 
   // Generate a long teaser created from scratch — single property OR multiple
   // assets (one subfolder per building, each with its own address + gallery).
-  const handleGenerateFolderTeaser = async ({ mode, title, address, brand, language, folderAssets, photos, documents }) => {
+  const handleGenerateFolderTeaser = async ({ mode, title, address, brand, language, folderAssets, photos, documents, odooProp, sharepointUrl, expertiseUrl, paymentTerms, agent }) => {
     try {
       const isMulti = mode === 'multiple'
+      // Company-wide data: an Odoo property seeds title/price/reference; manual title wins.
+      const property_data = {
+        ...(odooProp || {}),
+        title: title || odooProp?.title || (isMulti ? 'Portfolio Teaser' : 'Long Teaser'),
+      }
       const payload = {
-        subject: title || (isMulti ? 'Portfolio Teaser' : 'Long Teaser'),
+        subject: property_data.title,
         brand,
         language,
         contentType: 'property_long_teaser',
         template: 'teaser_long',
         platforms: ['email'],
-        property_data: { title: title || (isMulti ? 'Portfolio Teaser' : 'Long Teaser') },
+        property_data,
         documents: documents || [],
         // Multiple → one asset per subfolder (name + address + gallery).
         // Single → a flat gallery + one address.
         ...(isMulti
           ? { folder_assets: folderAssets.map(a => ({ name: a.name, address: a.address || '', photos: a.photos })) }
           : { photos: photos || [] }),
-        long_teaser_fields: isMulti ? {} : { address: address || '' },
+        long_teaser_fields: {
+          ...(isMulti ? {} : { address: address || '' }),
+          sharepoint_url: sharepointUrl || '',
+          expertise_url: expertiseUrl || '',
+          payment_terms: paymentTerms || '',
+          agent_name: agent?.name || '',
+          agent_email: agent?.email || '',
+          agent_phone: agent?.phone || '',
+          agent_role: agent?.role || '',
+        },
       }
       const fd = new FormData()
       fd.append('payload', JSON.stringify(payload))
@@ -1660,6 +1736,7 @@ export default function Properties() {
       {showFolderTeaser && (
         <PortfolioTeaserModal
           brands={brands}
+          properties={properties}
           dark={dark}
           onClose={() => setShowFolderTeaser(false)}
           onGenerate={handleGenerateFolderTeaser}
