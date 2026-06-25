@@ -2917,9 +2917,84 @@ EXTRACTION RULES:
                     })
                 return out
 
-            _assets = _clean_assets(extra.get("assets") or extracted_fields.get("assets"))
+            # ── Folder-defined assets (one subfolder per building) ───────────
+            # Each subfolder becomes one asset; its images are that building's
+            # gallery. The folder is the source of truth for the asset LIST and
+            # galleries; document extraction (above) supplies financials, matched
+            # to each asset by name (then by position as a fallback).
+            def _norm_name(s):
+                return _re.sub(r"[^a-z0-9]+", " ", str(s or "").lower()).strip()
+
+            folder_assets = []
+            for ai, fa in enumerate(data.get("folder_assets") or []):
+                if not isinstance(fa, dict):
+                    continue
+                a_name = str(fa.get("name") or f"Asset {ai+1}").strip()
+                a_dir = upload_dir / f"asset_{ai:02d}"
+                a_dir.mkdir(parents=True, exist_ok=True)
+                a_photos = []
+                for pi, photo in enumerate(fa.get("photos") or []):
+                    if not isinstance(photo, str):
+                        continue
+                    if photo.startswith("data:"):
+                        try:
+                            import base64 as _b64
+                            header, b64data = photo.split(",", 1)
+                            raw = _b64.b64decode(b64data)
+                            small = _downscale_photo(raw)
+                            if small is not None:
+                                fpath = a_dir / f"photo_{pi:02d}.jpg"
+                                fpath.write_bytes(small)
+                            else:
+                                ext = "jpg" if ("jpeg" in header or "jpg" in header) else "png"
+                                fpath = a_dir / f"photo_{pi:02d}.{ext}"
+                                fpath.write_bytes(raw)
+                            a_photos.append(f"file://{fpath}")
+                        except Exception as _pe:
+                            log.warning("[%s] folder asset photo decode failed: %s", job_id[:8], _pe)
+                    else:
+                        a_photos.append(photo)
+                folder_assets.append({"name": a_name, "photos": a_photos})
+            if folder_assets:
+                log.info("[%s] folder assets: %d (photos: %s)", job_id[:8],
+                         len(folder_assets), [len(a["photos"]) for a in folder_assets])
+
+            def _merge_folder_assets(folders, extracted):
+                """Attach each folder's gallery to the best-matching extracted asset
+                (by normalised name, else by position); the folder name + photos win."""
+                ex = [a for a in (extracted or []) if isinstance(a, dict)]
+                used = set()
+                merged = []
+                for idx, fa in enumerate(folders):
+                    key = _norm_name(fa["name"])
+                    match = None
+                    for a in ex:
+                        if id(a) in used:
+                            continue
+                        ak = _norm_name(a.get("name"))
+                        if ak and (ak == key or ak in key or key in ak):
+                            match = a; used.add(id(a)); break
+                    if match is None and idx < len(ex) and id(ex[idx]) not in used:
+                        match = ex[idx]; used.add(id(ex[idx]))
+                    base = dict(match) if match else {}
+                    base["name"] = fa["name"] or base.get("name") or f"Asset {idx+1}"
+                    base["photos"] = fa["photos"]
+                    merged.append(base)
+                return merged
+
+            _merged_assets = (_merge_folder_assets(folder_assets, extracted_fields.get("assets"))
+                              if folder_assets else None)
+
+            _assets = _clean_assets(_merged_assets or extra.get("assets") or extracted_fields.get("assets"))
             if _assets:
                 teaser_data["assets"] = _assets
+                # Folder mode usually has no flat gallery, so seed the cover from
+                # the first building's first photo when nothing else was chosen.
+                if not teaser_data.get("cover_photo"):
+                    for _a in _assets:
+                        if _a.get("photos"):
+                            teaser_data["cover_photo"] = _a["photos"][0]
+                            break
                 teaser_data["language"] = language
                 teaser_data["asset_eyebrow"]   = {"EN": "Asset", "FR": "Actif", "NL": "Pand"}.get(language, "Asset")
                 teaser_data["terrain_label"]   = {"EN": "Land", "FR": "Terrain", "NL": "Terrein"}.get(language, "Land")

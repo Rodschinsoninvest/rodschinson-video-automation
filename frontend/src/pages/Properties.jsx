@@ -825,6 +825,183 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
   )
 }
 
+// ── Portfolio Teaser (folder) modal ──────────────────────────────────────────
+// Upload ONE folder that holds a subfolder per building; each subfolder's images
+// become that building's photo gallery. Optional shared documents feed the AI
+// extraction that fills in financials (matched to each building by name).
+const IMG_RE = /\.(jpe?g|png|webp|gif|bmp|tiff?)$/i
+function PortfolioTeaserModal({ brands, onClose, onGenerate, dark }) {
+  const [brand, setBrand] = useState(brands[0]?.id || 'rodschinson')
+  const [language, setLanguage] = useState('FR')
+  const [title, setTitle] = useState('')
+  const [assets, setAssets] = useState([])      // [{ name, photos:[dataURI] }]
+  const [documents, setDocuments] = useState([])
+  const [reading, setReading] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const bg = dark ? '#1a1a1a' : '#fff'
+  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const text = dark ? '#fff' : '#0D1F3C'
+  const muted = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
+  const inputStyle = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 12, border: `1px solid ${border}`, background: bg, color: text }
+
+  const readAsDataUrl = (file) => new Promise((resolve) => {
+    const r = new FileReader()
+    r.onload = () => resolve(r.result)
+    r.onerror = () => resolve(null)
+    r.readAsDataURL(file)
+  })
+
+  // A folder pick gives files with webkitRelativePath like "Root/Building A/img.jpg".
+  // Group by the FIRST subfolder under the root → one asset per subfolder.
+  const handleFolderPick = async (e) => {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ''
+    if (!files.length) return
+    setReading(true)
+    try {
+      const groups = new Map()  // subfolder name → [File]
+      for (const f of files) {
+        if (!IMG_RE.test(f.name)) continue
+        const rel = f.webkitRelativePath || f.name
+        const parts = rel.split('/').filter(Boolean)
+        // parts[0] is the chosen folder; parts[1] is the per-asset subfolder.
+        const sub = parts.length >= 3 ? parts[1] : (parts.length === 2 ? parts[0] : '(root)')
+        if (!groups.has(sub)) groups.set(sub, [])
+        groups.get(sub).push(f)
+      }
+      const next = []
+      for (const [name, groupFiles] of groups) {
+        groupFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+        const photos = (await Promise.all(groupFiles.map(readAsDataUrl))).filter(Boolean)
+        if (photos.length) next.push({ name, photos })
+      }
+      next.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+      setAssets(next)
+    } finally {
+      setReading(false)
+    }
+  }
+
+  const handleDocFiles = async (e) => {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ''
+    for (const file of files) {
+      const data = await readAsDataUrl(file)
+      if (data) setDocuments(prev => [...prev, { name: file.name, type: file.type, data }])
+    }
+  }
+
+  const renameAsset = (i, name) => setAssets(prev => prev.map((a, idx) => idx === i ? { ...a, name } : a))
+  const removeAsset = (i) => setAssets(prev => prev.filter((_, idx) => idx !== i))
+  const moveAsset = (i, dir) => setAssets(prev => {
+    const j = i + dir
+    if (j < 0 || j >= prev.length) return prev
+    const n = [...prev]; [n[i], n[j]] = [n[j], n[i]]; return n
+  })
+
+  const totalPhotos = assets.reduce((s, a) => s + a.photos.length, 0)
+  const canGenerate = assets.length > 0 && assets.every(a => a.name.trim()) && !loading && !reading
+
+  const handleSubmit = async () => {
+    if (!canGenerate) return
+    setLoading(true)
+    try {
+      await onGenerate({ title, brand, language, folderAssets: assets, documents })
+      onClose()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div style={{ background: bg, borderRadius: 16, padding: 24, maxWidth: 640, width: '92%', border: `1px solid ${border}`, maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <span style={{ fontSize: 24 }}>🗂️</span>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: text }}>Portfolio Teaser</div>
+            <div style={{ fontSize: 11, color: '#08316F', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Multiple assets — one folder</div>
+          </div>
+        </div>
+        <p style={{ fontSize: 12, color: muted, margin: '0 0 14px', lineHeight: 1.5 }}>
+          Pick one folder containing a <b>subfolder per building</b>. Each subfolder’s images become that building’s gallery. Add shared documents (optional) to auto-fill financials per building.
+        </p>
+
+        {/* Folder picker */}
+        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Asset folder</label>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: '#08316F', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+          📁 {reading ? 'Reading folder…' : 'Choose folder…'}
+          <input type="file" webkitdirectory="" directory="" multiple style={{ display: 'none' }} onChange={handleFolderPick} />
+        </label>
+        {assets.length > 0 && (
+          <div style={{ fontSize: 11, color: muted, marginBottom: 10 }}>{assets.length} asset(s) · {totalPhotos} photo(s) detected</div>
+        )}
+
+        {/* Detected assets */}
+        {assets.length > 0 && (
+          <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+            {assets.map((a, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, border: `1px solid ${border}`, borderRadius: 8, padding: 8 }}>
+                <span style={{ fontSize: 11, color: muted, width: 22, textAlign: 'center' }}>{i + 1}</span>
+                <input value={a.name} onChange={e => renameAsset(i, e.target.value)} placeholder="Building name" style={{ ...inputStyle, flex: 1 }} />
+                <span style={{ fontSize: 11, color: muted, whiteSpace: 'nowrap' }}>{a.photos.length} 📷</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <button onClick={() => moveAsset(i, -1)} disabled={i === 0} style={{ padding: '1px 6px', borderRadius: 3, border: `1px solid ${border}`, background: bg, color: muted, cursor: i === 0 ? 'not-allowed' : 'pointer', fontSize: 10 }}>↑</button>
+                  <button onClick={() => moveAsset(i, 1)} disabled={i === assets.length - 1} style={{ padding: '1px 6px', borderRadius: 3, border: `1px solid ${border}`, background: bg, color: muted, cursor: i === assets.length - 1 ? 'not-allowed' : 'pointer', fontSize: 10 }}>↓</button>
+                </div>
+                <button onClick={() => removeAsset(i)} style={{ padding: '4px 8px', borderRadius: 4, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Shared documents */}
+        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Shared documents <span style={{ textTransform: 'none', fontWeight: 500 }}>(optional — financials, leases…)</span></label>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: muted, fontSize: 12, marginBottom: documents.length ? 6 : 16 }}>
+          + Add documents
+          <input type="file" accept=".pdf,.doc,.docx,.txt,image/*" multiple style={{ display: 'none' }} onChange={handleDocFiles} />
+        </label>
+        {documents.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+            {documents.map((d, i) => (
+              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: text, background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderRadius: 6, padding: '4px 8px' }}>
+                📄 {d.name}
+                <button onClick={() => setDocuments(prev => prev.filter((_, idx) => idx !== i))} style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 12, padding: 0 }}>×</button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Title + brand + language */}
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Portfolio title</label>
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Patrimonial company — 3 buildings" style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Brand</label>
+            <select value={brand} onChange={e => setBrand(e.target.value)} style={inputStyle}>{brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Language</label>
+            <select value={language} onChange={e => setLanguage(e.target.value)} style={inputStyle}>{LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}</select>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '9px 18px', borderRadius: 8, border: `1px solid ${border}`, background: 'transparent', color: muted, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+          <button onClick={handleSubmit} disabled={!canGenerate} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', cursor: canGenerate ? 'pointer' : 'not-allowed', background: canGenerate ? 'linear-gradient(135deg,#08316F,#0a4a9a)' : 'rgba(8,49,111,0.35)', color: '#fff', fontSize: 13, fontWeight: 700 }}>
+            {loading ? 'Starting…' : 'Generate Portfolio Teaser'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Valuation modal ──────────────────────────────────────────────────────────
 function ValuationModal({ prop, brands, onClose, onGenerate, dark }) {
   const [brand, setBrand] = useState(brands[0]?.id || 'rodschinson')
@@ -963,6 +1140,7 @@ export default function Properties() {
   const [modalProp, setModalProp] = useState(null)
   const [selectedIds, setSelectedIds] = useState([])
   const [showPortfolio, setShowPortfolio] = useState(false)
+  const [showFolderTeaser, setShowFolderTeaser] = useState(false)
   const [valuationProp, setValuationProp] = useState(null)
   const [longTeaserProp, setLongTeaserProp] = useState(null)
 
@@ -1153,6 +1331,36 @@ export default function Properties() {
     }
   }
 
+  // Generate a multi-asset long teaser from a folder (one subfolder per building)
+  const handleGenerateFolderTeaser = async ({ title, brand, language, folderAssets, documents }) => {
+    try {
+      const payload = {
+        subject: title || 'Portfolio Teaser',
+        brand,
+        language,
+        contentType: 'property_long_teaser',
+        template: 'teaser_long',
+        platforms: ['email'],
+        property_data: { title: title || 'Portfolio Teaser' },
+        documents: documents || [],
+        folder_assets: folderAssets.map(a => ({ name: a.name, photos: a.photos })),
+        long_teaser_fields: {},
+      }
+      const fd = new FormData()
+      fd.append('payload', JSON.stringify(payload))
+      const res = await apiFetch('/api/generate', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || 'Portfolio teaser generation failed')
+      }
+      const { job_id } = await res.json()
+      trackJob(job_id, { title: `Portfolio Teaser: ${title || ''}`.trim(), contentType: 'property_long_teaser' })
+      toast('Portfolio teaser generation started', 'success')
+    } catch (e) {
+      toast(e.message, 'error')
+    }
+  }
+
   // Filtered list
   const assetTypes = [...new Set(properties.map(p => p.asset_type).filter(Boolean))]
   const filtered = properties.filter(p => {
@@ -1182,6 +1390,13 @@ export default function Properties() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button onClick={() => setShowFolderTeaser(true)} style={{
+            padding: '9px 20px', borderRadius: 8, cursor: 'pointer',
+            border: '1px solid rgba(8,49,111,0.3)', background: 'rgba(8,49,111,0.06)',
+            color: '#08316F', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
+          }} title="Build a multi-asset long teaser by uploading one folder with a subfolder per building">
+            🗂️ Portfolio Teaser (folder)
+          </button>
           {properties.length > 0 && (
             <button onClick={() => setShowPortfolio(true)} style={{
               padding: '9px 20px', borderRadius: 8, cursor: 'pointer',
@@ -1361,6 +1576,16 @@ export default function Properties() {
           dark={dark}
           onClose={() => setLongTeaserProp(null)}
           onGenerate={handleGenerateLongTeaser}
+        />
+      )}
+
+      {/* Portfolio Teaser (folder) modal */}
+      {showFolderTeaser && (
+        <PortfolioTeaserModal
+          brands={brands}
+          dark={dark}
+          onClose={() => setShowFolderTeaser(false)}
+          onGenerate={handleGenerateFolderTeaser}
         />
       )}
     </div>

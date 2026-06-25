@@ -919,6 +919,13 @@ window.loadLongTeaser = function(data, brandName){
         </div>
       </div></div>`);
 
+    // Images that must NOT appear in a building's photo gallery (they live on
+    // the Locatie page / the building's own aerial page).
+    const locExclude = new Set();
+    locImages.forEach(c => locExclude.add(String((c && c.url) || c)));
+    assets.forEach(a => { if (a.aerial_view) locExclude.add(String(a.aerial_view)); });
+    let galleryAnchorSet = false;
+
     // ── 5) PER-BUILDING BLOCKS ──
     assets.forEach((a, idx)=>{
       const aName = a.name || a.short || `${L.asset} ${idx+1}`;
@@ -964,21 +971,26 @@ window.loadLongTeaser = function(data, brandName){
         {head:DL.leases,   rows:(a.lease_terms_rows||[])},
         {head:DL.amenities, bullets:(a.amenities_bullets||[])},
       ], '');
-      // 5d) building aerial with red outline (photos shown together below)
+      // 5d) building aerial with red outline
       pushAerial('aerial', '', a, meta);
+      // 5e) THIS building's own photo gallery (its subfolder of images), shown
+      // under the building name so each asset keeps its own reportage.
+      const aGallery = [];
+      (a.photos||[]).forEach(p => {
+        if (p && !locExclude.has(String(p)) && aGallery.indexOf(p) === -1) aGallery.push(p);
+      });
+      if (aGallery.length){
+        pushGallery('gallery', galleryAnchorSet ? '' : A.photos, aGallery, meta);
+        galleryAnchorSet = true;
+      }
     });
 
-    // ── 5.5) COMBINED PHOTO GALLERY — all buildings together, not per asset.
-    // Exclude the cadastral / location images (they live on the Locatie page and
-    // each building's aerial) so they don't reappear at the end of the gallery.
-    const locExclude = new Set();
-    locImages.forEach(c => locExclude.add(String((c && c.url) || c)));
-    assets.forEach(a => { if (a.aerial_view) locExclude.add(String(a.aerial_view)); });
-    const galleryPhotos = [];
-    const pushUnique = p => { if (p && !locExclude.has(String(p)) && galleryPhotos.indexOf(p) === -1) galleryPhotos.push(p); };
-    assets.forEach(a => (a.photos||[]).forEach(pushUnique));
-    photos.forEach(pushUnique);
-    pushGallery('gallery', A.photos, galleryPhotos, '');
+    // ── 5.5) Any leftover top-level photos not tied to a building ──
+    if (photos.length){
+      const extra = [];
+      photos.forEach(p => { if (p && !locExclude.has(String(p)) && extra.indexOf(p) === -1) extra.push(p); });
+      if (extra.length){ pushGallery('gallery', galleryAnchorSet ? '' : A.photos, extra, ''); galleryAnchorSet = true; }
+    }
 
     // ── 6) PLANS (shared, if any) ──
     if (plans.length){
