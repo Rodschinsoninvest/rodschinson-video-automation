@@ -7354,22 +7354,23 @@ async def long_teaser_delete_asset(job_id: str, filename: str, request: Request)
     return None
 
 
-@app.get("/api/long-teaser/{job_id}/asset-blob/{filename}")
+@app.get("/api/long-teaser/{job_id}/asset-blob/{filename:path}")
 async def long_teaser_asset_blob(job_id: str, filename: str, request: Request):
     """Stream an asset file back to the frontend so the editor can preview it
-    without relying on local file:// URLs (which the browser blocks)."""
+    without relying on local file:// URLs (which the browser blocks). Accepts a
+    sub-path (e.g. ``asset_00/photo_00.jpg``) for per-building galleries."""
     from fastapi.responses import FileResponse
     await _get_request_user(request)
     paths = _teaser_paths(job_id)
-    safe = Path(filename).name
-    if safe in ("", ".", ".."):
+    rel = (filename or "").strip().lstrip("/")
+    if not rel or ".." in rel.split("/"):
         raise HTTPException(422, "Invalid filename")
-    target = paths["assets_dir"] / safe
+    target = paths["assets_dir"] / rel
     try:
         target_resolved = target.resolve(strict=True)
         adir_resolved   = paths["assets_dir"].resolve(strict=True)
     except FileNotFoundError:
         raise HTTPException(404, "Asset not found")
-    if adir_resolved not in target_resolved.parents:
+    if adir_resolved != target_resolved and adir_resolved not in target_resolved.parents:
         raise HTTPException(403, "Path traversal blocked")
     return FileResponse(str(target_resolved))
