@@ -2954,7 +2954,11 @@ EXTRACTION RULES:
                             log.warning("[%s] folder asset photo decode failed: %s", job_id[:8], _pe)
                     else:
                         a_photos.append(photo)
-                folder_assets.append({"name": a_name, "photos": a_photos})
+                folder_assets.append({
+                    "name": a_name,
+                    "address": str(fa.get("address", "")).strip(),
+                    "photos": a_photos,
+                })
             if folder_assets:
                 log.info("[%s] folder assets: %d (photos: %s)", job_id[:8],
                          len(folder_assets), [len(a["photos"]) for a in folder_assets])
@@ -2979,6 +2983,8 @@ EXTRACTION RULES:
                     base = dict(match) if match else {}
                     base["name"] = fa["name"] or base.get("name") or f"Asset {idx+1}"
                     base["photos"] = fa["photos"]
+                    if fa.get("address"):
+                        base["address"] = fa["address"]   # user address drives per-asset aerial + cadastral
                     merged.append(base)
                 return merged
 

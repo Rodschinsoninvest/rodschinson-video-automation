@@ -825,16 +825,21 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
   )
 }
 
-// ── Portfolio Teaser (folder) modal ──────────────────────────────────────────
-// Upload ONE folder that holds a subfolder per building; each subfolder's images
-// become that building's photo gallery. Optional shared documents feed the AI
-// extraction that fills in financials (matched to each building by name).
+// ── New Long Teaser modal (single property OR multiple assets) ────────────────
+// Single: a flat gallery + one address.
+// Multiple: ONE folder with a subfolder per building; each subfolder's images
+// become that building's gallery, and each building gets its own address (→ its
+// own aerial view + cadastral parcel) and location page. Optional shared
+// documents feed the AI extraction that fills financials per building.
 const IMG_RE = /\.(jpe?g|png|webp|gif|bmp|tiff?)$/i
 function PortfolioTeaserModal({ brands, onClose, onGenerate, dark }) {
+  const [mode, setMode] = useState('single')      // 'single' | 'multiple'
   const [brand, setBrand] = useState(brands[0]?.id || 'rodschinson')
   const [language, setLanguage] = useState('FR')
   const [title, setTitle] = useState('')
-  const [assets, setAssets] = useState([])      // [{ name, photos:[dataURI] }]
+  const [address, setAddress] = useState('')      // single mode
+  const [photos, setPhotos] = useState([])        // single mode flat gallery [dataURI]
+  const [assets, setAssets] = useState([])        // multiple mode [{ name, address, photos:[dataURI] }]
   const [documents, setDocuments] = useState([])
   const [reading, setReading] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -873,11 +878,26 @@ function PortfolioTeaserModal({ brands, onClose, onGenerate, dark }) {
       const next = []
       for (const [name, groupFiles] of groups) {
         groupFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
-        const photos = (await Promise.all(groupFiles.map(readAsDataUrl))).filter(Boolean)
-        if (photos.length) next.push({ name, photos })
+        const ph = (await Promise.all(groupFiles.map(readAsDataUrl))).filter(Boolean)
+        if (ph.length) next.push({ name, address: '', photos: ph })
       }
       next.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
       setAssets(next)
+    } finally {
+      setReading(false)
+    }
+  }
+
+  // Single mode: flat gallery from a folder or selected images.
+  const handlePhotoPick = async (e) => {
+    const files = Array.from(e.target.files || []).filter(f => IMG_RE.test(f.name))
+    e.target.value = ''
+    if (!files.length) return
+    setReading(true)
+    try {
+      files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+      const ph = (await Promise.all(files.map(readAsDataUrl))).filter(Boolean)
+      setPhotos(prev => [...prev, ...ph])
     } finally {
       setReading(false)
     }
@@ -892,7 +912,7 @@ function PortfolioTeaserModal({ brands, onClose, onGenerate, dark }) {
     }
   }
 
-  const renameAsset = (i, name) => setAssets(prev => prev.map((a, idx) => idx === i ? { ...a, name } : a))
+  const setAssetField = (i, key, val) => setAssets(prev => prev.map((a, idx) => idx === i ? { ...a, [key]: val } : a))
   const removeAsset = (i) => setAssets(prev => prev.filter((_, idx) => idx !== i))
   const moveAsset = (i, dir) => setAssets(prev => {
     const j = i + dir
@@ -901,64 +921,115 @@ function PortfolioTeaserModal({ brands, onClose, onGenerate, dark }) {
   })
 
   const totalPhotos = assets.reduce((s, a) => s + a.photos.length, 0)
-  const canGenerate = assets.length > 0 && assets.every(a => a.name.trim()) && !loading && !reading
+  const canGenerate = !loading && !reading && (
+    mode === 'multiple'
+      ? assets.length > 0 && assets.every(a => a.name.trim())
+      : photos.length > 0
+  )
 
   const handleSubmit = async () => {
     if (!canGenerate) return
     setLoading(true)
     try {
-      await onGenerate({ title, brand, language, folderAssets: assets, documents })
+      await onGenerate({ mode, title, address, brand, language, folderAssets: assets, photos, documents })
       onClose()
     } finally {
       setLoading(false)
     }
   }
 
+  const Tab = ({ id, label, sub }) => {
+    const on = mode === id
+    return (
+      <button onClick={() => setMode(id)} style={{
+        flex: 1, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+        border: `1px solid ${on ? '#08316F' : border}`,
+        background: on ? (dark ? 'rgba(0,182,255,0.12)' : 'rgba(8,49,111,0.06)') : 'transparent',
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: on ? '#08316F' : text }}>{label}</div>
+        <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>{sub}</div>
+      </button>
+    )
+  }
+
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
       <div style={{ background: bg, borderRadius: 16, padding: 24, maxWidth: 640, width: '92%', border: `1px solid ${border}`, maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
           <span style={{ fontSize: 24 }}>🗂️</span>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: text }}>Portfolio Teaser</div>
-            <div style={{ fontSize: 11, color: '#08316F', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Multiple assets — one folder</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: text }}>New Long Teaser</div>
+            <div style={{ fontSize: 11, color: '#08316F', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Single property or multiple assets</div>
           </div>
         </div>
-        <p style={{ fontSize: 12, color: muted, margin: '0 0 14px', lineHeight: 1.5 }}>
-          Pick one folder containing a <b>subfolder per building</b>. Each subfolder’s images become that building’s gallery. Add shared documents (optional) to auto-fill financials per building.
-        </p>
 
-        {/* Folder picker */}
-        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Asset folder</label>
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: '#08316F', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-          📁 {reading ? 'Reading folder…' : 'Choose folder…'}
-          <input type="file" webkitdirectory="" directory="" multiple style={{ display: 'none' }} onChange={handleFolderPick} />
-        </label>
-        {assets.length > 0 && (
-          <div style={{ fontSize: 11, color: muted, marginBottom: 10 }}>{assets.length} asset(s) · {totalPhotos} photo(s) detected</div>
-        )}
+        {/* Mode selector */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+          <Tab id="single"   label="Single property"  sub="One gallery + one address" />
+          <Tab id="multiple" label="Multiple assets"  sub="One folder, a subfolder per building" />
+        </div>
 
-        {/* Detected assets */}
-        {assets.length > 0 && (
-          <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
-            {assets.map((a, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, border: `1px solid ${border}`, borderRadius: 8, padding: 8 }}>
-                <span style={{ fontSize: 11, color: muted, width: 22, textAlign: 'center' }}>{i + 1}</span>
-                <input value={a.name} onChange={e => renameAsset(i, e.target.value)} placeholder="Building name" style={{ ...inputStyle, flex: 1 }} />
-                <span style={{ fontSize: 11, color: muted, whiteSpace: 'nowrap' }}>{a.photos.length} 📷</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <button onClick={() => moveAsset(i, -1)} disabled={i === 0} style={{ padding: '1px 6px', borderRadius: 3, border: `1px solid ${border}`, background: bg, color: muted, cursor: i === 0 ? 'not-allowed' : 'pointer', fontSize: 10 }}>↑</button>
-                  <button onClick={() => moveAsset(i, 1)} disabled={i === assets.length - 1} style={{ padding: '1px 6px', borderRadius: 3, border: `1px solid ${border}`, background: bg, color: muted, cursor: i === assets.length - 1 ? 'not-allowed' : 'pointer', fontSize: 10 }}>↓</button>
-                </div>
-                <button onClick={() => removeAsset(i)} style={{ padding: '4px 8px', borderRadius: 4, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>×</button>
+        {mode === 'multiple' ? (
+          <>
+            <p style={{ fontSize: 12, color: muted, margin: '0 0 12px', lineHeight: 1.5 }}>
+              Pick one folder containing a <b>subfolder per building</b>. Each subfolder’s images become that building’s gallery; give each its address so it gets its own location + aerial view.
+            </p>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: '#08316F', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+              📁 {reading ? 'Reading folder…' : 'Choose folder…'}
+              <input type="file" webkitdirectory="" directory="" multiple style={{ display: 'none' }} onChange={handleFolderPick} />
+            </label>
+            {assets.length > 0 && (
+              <div style={{ fontSize: 11, color: muted, marginBottom: 10 }}>{assets.length} asset(s) · {totalPhotos} photo(s) detected</div>
+            )}
+            {assets.length > 0 && (
+              <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+                {assets.map((a, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, border: `1px solid ${border}`, borderRadius: 8, padding: 8 }}>
+                    <span style={{ fontSize: 11, color: muted, width: 18, textAlign: 'center', paddingTop: 8 }}>{i + 1}</span>
+                    <div style={{ flex: 1, display: 'grid', gap: 6 }}>
+                      <input value={a.name} onChange={e => setAssetField(i, 'name', e.target.value)} placeholder="Building name" style={inputStyle} />
+                      <input value={a.address} onChange={e => setAssetField(i, 'address', e.target.value)} placeholder="Address (street, postal code, city) — drives the aerial view" style={inputStyle} />
+                    </div>
+                    <span style={{ fontSize: 11, color: muted, whiteSpace: 'nowrap', paddingTop: 8 }}>{a.photos.length} 📷</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 4 }}>
+                      <button onClick={() => moveAsset(i, -1)} disabled={i === 0} style={{ padding: '1px 6px', borderRadius: 3, border: `1px solid ${border}`, background: bg, color: muted, cursor: i === 0 ? 'not-allowed' : 'pointer', fontSize: 10 }}>↑</button>
+                      <button onClick={() => moveAsset(i, 1)} disabled={i === assets.length - 1} style={{ padding: '1px 6px', borderRadius: 3, border: `1px solid ${border}`, background: bg, color: muted, cursor: i === assets.length - 1 ? 'not-allowed' : 'pointer', fontSize: 10 }}>↓</button>
+                    </div>
+                    <button onClick={() => removeAsset(i)} style={{ padding: '4px 8px', borderRadius: 4, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer', marginTop: 4 }}>×</button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Address <span style={{ fontWeight: 500 }}>(drives the location + aerial view)</span></label>
+              <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Street, postal code, city" style={inputStyle} />
+            </div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Gallery</label>
+            <div style={{ display: 'flex', gap: 8, marginBottom: photos.length ? 8 : 16 }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: '#08316F', fontSize: 13, fontWeight: 600 }}>
+                🖼️ Add images
+                <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handlePhotoPick} />
+              </label>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: muted, fontSize: 13, fontWeight: 600 }}>
+                📁 From folder
+                <input type="file" webkitdirectory="" directory="" multiple style={{ display: 'none' }} onChange={handlePhotoPick} />
+              </label>
+            </div>
+            {photos.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, fontSize: 12, color: muted }}>
+                {reading ? 'Reading…' : `${photos.length} photo(s)`}
+                <button onClick={() => setPhotos([])} style={{ padding: '3px 10px', borderRadius: 6, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>Clear</button>
+              </div>
+            )}
+          </>
         )}
 
         {/* Shared documents */}
-        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Shared documents <span style={{ textTransform: 'none', fontWeight: 500 }}>(optional — financials, leases…)</span></label>
+        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Documents <span style={{ textTransform: 'none', fontWeight: 500 }}>(optional — financials, leases…)</span></label>
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: muted, fontSize: 12, marginBottom: documents.length ? 6 : 16 }}>
           + Add documents
           <input type="file" accept=".pdf,.doc,.docx,.txt,image/*" multiple style={{ display: 'none' }} onChange={handleDocFiles} />
@@ -976,8 +1047,8 @@ function PortfolioTeaserModal({ brands, onClose, onGenerate, dark }) {
 
         {/* Title + brand + language */}
         <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Portfolio title</label>
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Patrimonial company — 3 buildings" style={inputStyle} />
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>{mode === 'multiple' ? 'Portfolio title' : 'Title'}</label>
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder={mode === 'multiple' ? 'e.g. Patrimonial company — 3 buildings' : 'e.g. Office building — Avenue Louise'} style={inputStyle} />
         </div>
         <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
           <div style={{ flex: 1 }}>
@@ -994,7 +1065,7 @@ function PortfolioTeaserModal({ brands, onClose, onGenerate, dark }) {
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={{ padding: '9px 18px', borderRadius: 8, border: `1px solid ${border}`, background: 'transparent', color: muted, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
           <button onClick={handleSubmit} disabled={!canGenerate} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', cursor: canGenerate ? 'pointer' : 'not-allowed', background: canGenerate ? 'linear-gradient(135deg,#08316F,#0a4a9a)' : 'rgba(8,49,111,0.35)', color: '#fff', fontSize: 13, fontWeight: 700 }}>
-            {loading ? 'Starting…' : 'Generate Portfolio Teaser'}
+            {loading ? 'Starting…' : (mode === 'multiple' ? 'Generate Portfolio Teaser' : 'Generate Long Teaser')}
           </button>
         </div>
       </div>
@@ -1331,20 +1402,26 @@ export default function Properties() {
     }
   }
 
-  // Generate a multi-asset long teaser from a folder (one subfolder per building)
-  const handleGenerateFolderTeaser = async ({ title, brand, language, folderAssets, documents }) => {
+  // Generate a long teaser created from scratch — single property OR multiple
+  // assets (one subfolder per building, each with its own address + gallery).
+  const handleGenerateFolderTeaser = async ({ mode, title, address, brand, language, folderAssets, photos, documents }) => {
     try {
+      const isMulti = mode === 'multiple'
       const payload = {
-        subject: title || 'Portfolio Teaser',
+        subject: title || (isMulti ? 'Portfolio Teaser' : 'Long Teaser'),
         brand,
         language,
         contentType: 'property_long_teaser',
         template: 'teaser_long',
         platforms: ['email'],
-        property_data: { title: title || 'Portfolio Teaser' },
+        property_data: { title: title || (isMulti ? 'Portfolio Teaser' : 'Long Teaser') },
         documents: documents || [],
-        folder_assets: folderAssets.map(a => ({ name: a.name, photos: a.photos })),
-        long_teaser_fields: {},
+        // Multiple → one asset per subfolder (name + address + gallery).
+        // Single → a flat gallery + one address.
+        ...(isMulti
+          ? { folder_assets: folderAssets.map(a => ({ name: a.name, address: a.address || '', photos: a.photos })) }
+          : { photos: photos || [] }),
+        long_teaser_fields: isMulti ? {} : { address: address || '' },
       }
       const fd = new FormData()
       fd.append('payload', JSON.stringify(payload))
@@ -1354,8 +1431,8 @@ export default function Properties() {
         throw new Error(err.detail || 'Portfolio teaser generation failed')
       }
       const { job_id } = await res.json()
-      trackJob(job_id, { title: `Portfolio Teaser: ${title || ''}`.trim(), contentType: 'property_long_teaser' })
-      toast('Portfolio teaser generation started', 'success')
+      trackJob(job_id, { title: `${mode === 'multiple' ? 'Portfolio' : 'Long'} Teaser: ${title || ''}`.trim(), contentType: 'property_long_teaser' })
+      toast('Teaser generation started', 'success')
     } catch (e) {
       toast(e.message, 'error')
     }
@@ -1394,8 +1471,8 @@ export default function Properties() {
             padding: '9px 20px', borderRadius: 8, cursor: 'pointer',
             border: '1px solid rgba(8,49,111,0.3)', background: 'rgba(8,49,111,0.06)',
             color: '#08316F', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
-          }} title="Build a multi-asset long teaser by uploading one folder with a subfolder per building">
-            🗂️ Portfolio Teaser (folder)
+          }} title="Create a long teaser from scratch — single property or multiple assets (one subfolder per building)">
+            ＋ New Long Teaser
           </button>
           {properties.length > 0 && (
             <button onClick={() => setShowPortfolio(true)} style={{
