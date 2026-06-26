@@ -97,8 +97,13 @@ async def _lifespan(_: FastAPI):
                     log.warning("Recovered orphaned job %s", data.get("job_id", "")[:8])
             except Exception as e:
                 log.warning("Could not recover job file %s: %s", p.name, e)
+
+    # ── startup: weekly retention cleanup (purges old generated files) ──
+    _cleanup_task = asyncio.create_task(_cleanup_loop())
+    log.info("Retention cleanup scheduled (every 24h, age > %sd)", os.getenv("RETENTION_DAYS", "7"))
+
     yield  # server runs
-    # (no shutdown logic needed)
+    _cleanup_task.cancel()
 
 
 app = FastAPI(title="Rodschinson Content Studio API", lifespan=_lifespan)
@@ -338,6 +343,10 @@ _jobs: dict[str, dict] = {}
 _job_tasks: dict[str, asyncio.Task]                         = {}  # asyncio task per job
 _job_procs: dict[str, asyncio.subprocess.Process]           = {}  # active subprocess per job
 VALID_STATUSES = {"Draft", "Ready", "Approved", "Scheduled", "Published"}
+
+# ── Retention: weekly purge of generated files (keeps the Library record) ────────
+RETENTION_DAYS = int(os.getenv("RETENTION_DAYS", "7"))
+_PROTECTED_STATUSES = {"Approved", "Scheduled", "Published"}  # never auto-purged
 VALID_SLOTS    = {"morning", "noon", "afternoon", "evening"}
 
 # ── Rate limiter for /api/generate ────────────────────────────────────────────
@@ -4238,6 +4247,55 @@ def _purge_job_files(job_id: str, entry: dict | None = None) -> int:
                 except Exception:
                     pass
     return removed
+
+
+async def _cleanup_old_outputs() -> int:
+    """Weekly retention: delete the heavy files of Library items older than
+    RETENTION_DAYS while KEEPING the record. Never touches Approved / Scheduled /
+    Published, and skips already-purged items. Returns count purged."""
+    from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+    try:
+        entries = await _library_load()
+    except Exception:
+        return 0
+    if not entries:
+        return 0
+    cutoff = _dt.now(_tz.utc) - _td(days=RETENTION_DAYS)
+    changed = 0
+    for e in entries:
+        if e.get("files_purged") or e.get("status") in _PROTECTED_STATUSES:
+            continue
+        ts = e.get("created_at") or e.get("updated_at") or ""
+        try:
+            when = _dt.fromisoformat(ts)
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=_tz.utc)
+        except Exception:
+            continue
+        if when > cutoff:
+            continue
+        n = _purge_job_files(e.get("job_id", ""), e)
+        e["files_purged"] = True
+        e["purged_at"] = _now()
+        e["output_file"] = None
+        e["thumbnail"] = None
+        e["slide_images"] = []
+        changed += 1
+        log.info("[cleanup] purged %s (%s) — %d files", (e.get("job_id") or "")[:8], e.get("status"), n)
+    if changed:
+        await _library_save(entries)
+        await _audit(None, "cleanup", f"purged files for {changed} item(s) older than {RETENTION_DAYS}d")
+    return changed
+
+
+async def _cleanup_loop():
+    """Run retention cleanup on boot, then daily."""
+    while True:
+        try:
+            await _cleanup_old_outputs()
+        except Exception as ex:
+            log.warning("[cleanup] error: %s", ex)
+        await asyncio.sleep(24 * 3600)
 
 
 @app.delete("/api/library/{job_id}", status_code=204)
