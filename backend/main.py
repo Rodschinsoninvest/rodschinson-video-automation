@@ -255,6 +255,33 @@ def _get_request_token(request: Request) -> str | None:
         return auth[7:]
     return request.cookies.get("cs_token")
 
+# ── Signed media URLs ───────────────────────────────────────────────────────────
+# Media routes (video/image/download/carousel) can't carry an Authorization
+# header when loaded as <img>/<video>/<a> or fetched by an external service
+# (Metricool). They are served when EITHER a valid session (Bearer or cs_token
+# cookie) OR a valid time-limited signature is present — never world-open.
+_MEDIA_URL_TTL = int(os.getenv("MEDIA_URL_TTL", str(30 * 24 * 3600)))  # 30 days
+
+def _media_signature(path: str, exp: int) -> str:
+    return _hmac.new(_APP_SECRET.encode(), f"{path}|{exp}".encode(), hashlib.sha256).hexdigest()[:32]
+
+def _sign_media_url(base: str, path: str, ttl: int | None = None) -> str:
+    """Return an absolute, signed, expiring URL for an external fetcher."""
+    exp = int(_time.time()) + (ttl or _MEDIA_URL_TTL)
+    sig = _media_signature(path, exp)
+    sep = "&" if "?" in path else "?"
+    return f"{base}{path}{sep}exp={exp}&sig={sig}"
+
+def _media_sig_ok(request: Request) -> bool:
+    try:
+        exp = int(request.query_params.get("exp", "0"))
+        sig = request.query_params.get("sig", "")
+        if not sig or exp < int(_time.time()):
+            return False
+        return _hmac.compare_digest(sig, _media_signature(request.url.path, exp))
+    except Exception:
+        return False
+
 # Auth middleware — protects all /api/* routes except /api/auth/*
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse as _JSONResponse
@@ -262,25 +289,26 @@ from starlette.responses import JSONResponse as _JSONResponse
 class _AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        # Skip auth for: non-api routes, auth endpoints, OPTIONS preflight,
-        # and media-serving routes (browsers can't send Authorization on <video>/<img> src)
+        # Truly public: health check, auth endpoints, job status polling.
+        _PUBLIC_PREFIXES = ("/api/health", "/api/auth/", "/api/jobs/")
+        # Media: served with a valid session OR a valid time-limited signature
+        # (browsers load these as <img>/<video>/<a>; Metricool fetches them too).
         _MEDIA_PREFIXES = (
-            "/api/health",       # public — load-balancer / Railway healthcheck
-            "/api/auth/",
-            "/api/video/",
-            "/api/image/",
-            "/api/carousel-png/",
-            "/api/carousel-slides/",
-            "/api/download/",
-            "/api/jobs/",        # job status polling during generation
+            "/api/video/", "/api/image/", "/api/carousel-png/",
+            "/api/carousel-slides/", "/api/download/",
         )
         if (not path.startswith("/api/")
-                or any(path.startswith(p) for p in _MEDIA_PREFIXES)
                 or request.method == "OPTIONS"
-                or not _AUTH_ENABLED):
+                or not _AUTH_ENABLED
+                or any(path.startswith(p) for p in _PUBLIC_PREFIXES)):
             return await call_next(request)
         token = _get_request_token(request)
-        if not token or not _verify_token(token):
+        authed = bool(token and _verify_token(token))
+        if any(path.startswith(p) for p in _MEDIA_PREFIXES):
+            if authed or _media_sig_ok(request):
+                return await call_next(request)
+            return _JSONResponse({"detail": "Not authenticated"}, status_code=401)
+        if not authed:
             return _JSONResponse({"detail": "Not authenticated"}, status_code=401)
         return await call_next(request)
 
@@ -4427,13 +4455,13 @@ async def publish_content(job_id: str, body: PublishRequest = PublishRequest()):
         if ctype == "carousel":
             slide_images = entry.get("slide_images", [])
             media_urls = [
-                f"{backend_url}/api/carousel-png/{job_id}/{i}"
+                _sign_media_url(backend_url, f"/api/carousel-png/{job_id}/{i}")
                 for i in range(len(slide_images))
             ]
         elif ctype in ("video", "reel"):
-            media_urls = [f"{backend_url}/api/video/{job_id}"]
+            media_urls = [_sign_media_url(backend_url, f"/api/video/{job_id}")]
         elif ctype == "image_post":
-            media_urls = [f"{backend_url}/api/image/{job_id}"]
+            media_urls = [_sign_media_url(backend_url, f"/api/image/{job_id}")]
     elif entry.get("public_media_url"):
         media_urls = [entry["public_media_url"]]
 
@@ -4610,11 +4638,11 @@ async def publish_schedule_entry(entry_id: str, request: Request):
         if backend_url:
             if _ctype == "carousel":
                 _nimgs = len(lib_entry.get("slide_images", []))
-                _sched_media = [f"{backend_url}/api/carousel-png/{_jid}/{i}" for i in range(_nimgs)] or None
+                _sched_media = [_sign_media_url(backend_url, f"/api/carousel-png/{_jid}/{i}") for i in range(_nimgs)] or None
             elif _ctype in ("video", "reel"):
-                _sched_media = [f"{backend_url}/api/video/{_jid}"]
+                _sched_media = [_sign_media_url(backend_url, f"/api/video/{_jid}")]
             elif _ctype == "image_post":
-                _sched_media = [f"{backend_url}/api/image/{_jid}"]
+                _sched_media = [_sign_media_url(backend_url, f"/api/image/{_jid}")]
             else:
                 _sched_media = None
         elif lib_entry.get("public_media_url"):

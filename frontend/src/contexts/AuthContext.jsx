@@ -7,6 +7,14 @@ export function AuthProvider({ children }) {
   const [username, setUsername] = useState(null)
   const [checking, setChecking] = useState(true)  // verifying token on mount
 
+  // Mirror the token into a cookie so media loaded as <img>/<video>/<a>
+  // (which can't send an Authorization header) is still authenticated.
+  useEffect(() => {
+    const secure = typeof location !== 'undefined' && location.protocol === 'https:' ? '; Secure' : ''
+    if (token) document.cookie = `cs_token=${token}; path=/; max-age=604800; SameSite=Lax${secure}`
+    else document.cookie = `cs_token=; path=/; max-age=0; SameSite=Lax${secure}`
+  }, [token])
+
   const verify = useCallback(async (t) => {
     if (!t) { setChecking(false); return }
     const controller = new AbortController()
