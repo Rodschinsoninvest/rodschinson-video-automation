@@ -107,6 +107,25 @@ app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS,
 # ── Auth ───────────────────────────────────────────────────────────────────────
 import hmac as _hmac
 import time as _time
+import bcrypt as _bcrypt
+
+def _hash_pw(plain: str) -> str:
+    """Hash a password with bcrypt for storage."""
+    return _bcrypt.hashpw(plain.encode(), _bcrypt.gensalt()).decode()
+
+def _is_hashed(stored: str) -> bool:
+    return isinstance(stored, str) and stored.startswith(("$2a$", "$2b$", "$2y$"))
+
+def _verify_pw(plain: str, stored: str) -> bool:
+    """Constant-time check; supports bcrypt hashes and legacy plaintext."""
+    if not stored:
+        return False
+    if _is_hashed(stored):
+        try:
+            return _bcrypt.checkpw(plain.encode(), stored.encode())
+        except Exception:
+            return False
+    return _hmac.compare_digest(plain, stored)   # legacy plaintext (migrated on next login)
 
 _AUTH_ENABLED  = os.getenv("AUTH_ENABLED", "true").lower() not in ("false", "0", "no")
 _APP_USERNAME  = os.getenv("APP_USERNAME", "admin")
@@ -5471,9 +5490,13 @@ class LoginRequest(BaseModel):
 @app.post("/api/auth/login")
 async def auth_login(body: LoginRequest):
     users = await _users_load()
-    user = next((u for u in users if u["username"] == body.username and u["password"] == body.password), None)
+    user = next((u for u in users if u["username"] == body.username and _verify_pw(body.password, u.get("password", ""))), None)
+    # Lazy migration: re-store any matched plaintext password as a bcrypt hash.
+    if user and not _is_hashed(user.get("password", "")):
+        user["password"] = _hash_pw(body.password)
+        await _users_save(users)
     # Legacy fallback: single admin credentials from env
-    if not user and body.username == _APP_USERNAME and body.password == _APP_PASSWORD:
+    if not user and body.username == _APP_USERNAME and _APP_PASSWORD and _hmac.compare_digest(body.password, _APP_PASSWORD):
         user = {"username": body.username, "role": "admin", "email": ""}
     if not user:
         raise HTTPException(401, "Invalid credentials")
@@ -5519,7 +5542,7 @@ async def create_user(body: UserCreate, request: Request):
     users = await _users_load()
     if any(x["username"] == body.username for x in users):
         raise HTTPException(409, "Username already exists")
-    entry = {"id": str(uuid.uuid4()), "username": body.username, "password": body.password,
+    entry = {"id": str(uuid.uuid4()), "username": body.username, "password": _hash_pw(body.password),
              "role": body.role, "email": body.email, "created_at": _now()}
     users.append(entry)
     await _users_save(users)
@@ -5538,7 +5561,7 @@ async def update_user(user_id: str, body: UserUpdate, request: Request):
     target = next((x for x in users if x["id"] == user_id or x["username"] == user_id), None)
     if not target:
         raise HTTPException(404, "User not found")
-    if body.password: target["password"] = body.password
+    if body.password: target["password"] = _hash_pw(body.password)
     if body.role:
         if body.role not in _ROLE_RANK:
             raise HTTPException(422, f"role must be one of {list(_ROLE_RANK)}")
