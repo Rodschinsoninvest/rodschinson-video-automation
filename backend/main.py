@@ -59,6 +59,7 @@ ASSETS_DIR            = OUTPUT / "assets"
 ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 ASSETS_FILE           = OUTPUT / "assets.json"
 PROPERTIES_FILE       = OUTPUT / "properties.json"
+AUDIT_FILE            = OUTPUT / "audit.jsonl"
 TEASER_DIR            = OUTPUT / "teaser"
 TEASER_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -510,6 +511,23 @@ def _require_role(user: dict | None, min_role: str) -> None:
         raise HTTPException(401, "Not authenticated")
     if _ROLE_RANK.get(user.get("role", ""), 0) < _ROLE_RANK.get(min_role, 99):
         raise HTTPException(403, f"Requires role '{min_role}' or higher")
+
+
+# ── Audit log (who did what) ────────────────────────────────────────────────────
+async def _audit(actor, action: str, detail: str = "") -> None:
+    """Append an audit record. `actor` is a user dict (or None for anonymous)."""
+    try:
+        rec = {
+            "ts": _now(),
+            "user": (actor or {}).get("username") or "anonymous",
+            "role": (actor or {}).get("role") or "",
+            "action": action,
+            "detail": detail,
+        }
+        async with aiofiles.open(AUDIT_FILE, "a") as f:
+            await f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
 
 
 # ── Comments storage ───────────────────────────────────────────────────────────
@@ -3325,6 +3343,11 @@ async def generate(request: Request):
     await _save_job(job)
     task = asyncio.create_task(_run_pipeline(job_id, data, logo_path))
     _job_tasks[job_id] = task
+    try:
+        await _audit(await _get_request_user(request), "generate",
+                     f"{data.get('contentType','')} — {(data.get('subject') or '')[:80]}")
+    except Exception:
+        pass
     return {"job_id": job_id, "status": "pending"}
 
 
@@ -4173,13 +4196,63 @@ class StatusUpdate(BaseModel):
     status: str
 
 
+def _purge_job_files(job_id: str, entry: dict | None = None) -> int:
+    """Delete every file/dir generated for a job — explicit entry paths, the job
+    record, and anything in the output subdirs whose name contains the job's
+    short id. Returns the number of items removed."""
+    import shutil
+    short = (job_id or "")[:8]
+    removed = 0
+    paths: list[str] = []
+    if entry:
+        for k in ("output_file", "thumbnail", "script_path"):
+            if entry.get(k):
+                paths.append(str(entry[k]))
+        paths += [str(s) for s in (entry.get("slide_images") or []) if s]
+    for p in paths:
+        try:
+            fp = Path(p.replace("file://", ""))
+            if fp.is_file():
+                fp.unlink(); removed += 1
+        except Exception:
+            pass
+    try:
+        jf = JOBS_DIR / f"{job_id}.json"
+        if jf.exists():
+            jf.unlink(); removed += 1
+    except Exception:
+        pass
+    if short:
+        for base in (TEASER_DIR, OUTPUT / "video", OUTPUT / "images", OUTPUT / "images" / "ai",
+                     OUTPUT / "carousel", OUTPUT / "audio", OUTPUT / "scenes",
+                     OUTPUT / "subtitles", OUTPUT / "text", OUTPUT / "scripts"):
+            if not base.exists():
+                continue
+            for item in base.glob(f"*{short}*"):
+                try:
+                    if item.is_dir():
+                        shutil.rmtree(item, ignore_errors=True)
+                    else:
+                        item.unlink()
+                    removed += 1
+                except Exception:
+                    pass
+    return removed
+
+
 @app.delete("/api/library/{job_id}", status_code=204)
-async def delete_library_entry(job_id: str):
+async def delete_library_entry(job_id: str, request: Request):
     entries = await _library_load()
-    updated = [e for e in entries if e.get("job_id") != job_id]
-    if len(updated) == len(entries):
+    entry = next((e for e in entries if e.get("job_id") == job_id), None)
+    if not entry:
         raise HTTPException(404, "Library entry not found")
-    await _library_save(updated)
+    n = _purge_job_files(job_id, entry)
+    await _library_save([e for e in entries if e.get("job_id") != job_id])
+    try:
+        u = await _get_request_user(request)
+        await _audit(u, "delete", f"library item {job_id[:8]} ({entry.get('content_type','')}) — {n} files removed")
+    except Exception:
+        pass
 
 
 @app.patch("/api/library/{job_id}/status")
@@ -5606,6 +5679,7 @@ async def auth_login(body: LoginRequest):
     if not user:
         raise HTTPException(401, "Invalid credentials")
     token = _make_token(user["username"])
+    await _audit(user, "login", "")
     return {"token": token, "username": user["username"], "role": user.get("role", "admin")}
 
 @app.post("/api/auth/logout")
@@ -5624,6 +5698,24 @@ async def auth_me(request: Request):
 
 
 # ── Users management endpoints ─────────────────────────────────────────────────
+
+@app.get("/api/audit")
+async def get_audit(request: Request, limit: int = 300):
+    """Recent audit records (most recent first). Admin only."""
+    u = await _get_request_user(request)
+    _require_role(u, "admin")
+    if not AUDIT_FILE.exists():
+        return []
+    async with aiofiles.open(AUDIT_FILE) as f:
+        lines = (await f.read()).splitlines()
+    out = []
+    for ln in lines[-max(1, min(limit, 2000)):][::-1]:
+        try:
+            out.append(json.loads(ln))
+        except Exception:
+            pass
+    return out
+
 
 @app.get("/api/users")
 async def list_users(request: Request):
@@ -5651,6 +5743,7 @@ async def create_user(body: UserCreate, request: Request):
              "role": body.role, "email": body.email, "created_at": _now()}
     users.append(entry)
     await _users_save(users)
+    await _audit(u, "user.create", f"{entry['username']} ({entry['role']})")
     return {"id": entry["id"], "username": entry["username"], "role": entry["role"]}
 
 class UserUpdate(BaseModel):
@@ -5673,6 +5766,8 @@ async def update_user(user_id: str, body: UserUpdate, request: Request):
         target["role"] = body.role
     if body.email is not None: target["email"] = body.email
     await _users_save(users)
+    _changed = [k for k, v in (("password", body.password), ("role", body.role), ("email", body.email)) if v is not None]
+    await _audit(u, "user.update", f"{target['username']} — {', '.join(_changed) or 'no changes'}")
     return {"id": target["id"], "username": target["username"], "role": target["role"]}
 
 @app.delete("/api/users/{user_id}", status_code=204)
@@ -5684,6 +5779,7 @@ async def delete_user(user_id: str, request: Request):
     if len(updated) == len(users):
         raise HTTPException(404, "User not found")
     await _users_save(updated)
+    await _audit(u, "user.delete", str(user_id))
 
 
 # ── Comments endpoints ─────────────────────────────────────────────────────────
