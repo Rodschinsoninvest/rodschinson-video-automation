@@ -4,7 +4,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useGeneration } from '../contexts/GenerationContext'
 import { useToast } from '../contexts/ToastContext'
 import { CarouselSlidePreview } from '../components/CarouselPreview'
-import { apiFetch } from '../utils/apiFetch'
+import { apiFetch, downloadAsset } from '../utils/apiFetch'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -956,7 +956,7 @@ function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose })
           )}
           <button onClick={() => setShowRepurpose(true)} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(0,182,255,0.3)', background: 'rgba(0,182,255,0.06)', color: '#00B6FF', fontSize: 12, fontWeight: 600 }}>♻ Repurpose</button>
           {item.output_file && (
-            <button onClick={() => window.open(`/api/download/${item.job_id}`, '_blank')} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.06)', color: '#16a34a', fontSize: 12, fontWeight: 600 }}>⬇ Download</button>
+            <button onClick={() => downloadAsset(`/api/download/${item.job_id}`).catch(e=>alert(e.message))} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.06)', color: '#16a34a', fontSize: 12, fontWeight: 600 }}>⬇ Download</button>
           )}
           {prevStatus && (
             <button onClick={() => { onStatusChange(item.job_id, prevStatus); onClose() }} style={{
@@ -1705,7 +1705,7 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
           {item.content_type === 'carousel' && slides && (
             <div style={{ background: 'rgba(0,182,255,0.06)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, border: '1px solid rgba(0,182,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ color: '#00B6FF', fontSize: 12 }}>🖼️ {slides.length} slides ready</span>
-              <button onClick={() => window.open(`/api/download/${item.job_id}`, '_blank')} style={{ padding: '4px 12px', borderRadius: 5, cursor: 'pointer', border: '1px solid rgba(22,163,74,0.4)', background: 'rgba(22,163,74,0.08)', color: '#16a34a', fontSize: 11, fontWeight: 600 }}>⬇ Download PNGs</button>
+              <button onClick={() => downloadAsset(`/api/download/${item.job_id}`).catch(e=>alert(e.message))} style={{ padding: '4px 12px', borderRadius: 5, cursor: 'pointer', border: '1px solid rgba(22,163,74,0.4)', background: 'rgba(22,163,74,0.08)', color: '#16a34a', fontSize: 11, fontWeight: 600 }}>⬇ Download PNGs</button>
             </div>
           )}
 
@@ -1819,7 +1819,7 @@ function ContentCard({ item, onStatusChange, onRegenerate, onDelete, selected, o
           <ActionBtn label="Preview" onClick={() => setPreview(true)} color="#0284c7" />
           <ActionBtn label="↻" onClick={() => onRegenerate(item)} color="#b45309" />
           {item.output_file && (
-            <ActionBtn label="⬇" onClick={() => window.open(`/api/download/${item.job_id}`, '_blank')} color="#16a34a" />
+            <ActionBtn label="⬇" onClick={() => downloadAsset(`/api/download/${item.job_id}`).catch(e=>alert(e.message))} color="#16a34a" />
           )}
           {nextStatus && nextStatus !== 'Scheduled' && (
             <ActionBtn label={`→ ${nextStatus}`} onClick={() => onStatusChange(item.job_id, nextStatus)} color={STATUS_META[nextStatus]?.color} />

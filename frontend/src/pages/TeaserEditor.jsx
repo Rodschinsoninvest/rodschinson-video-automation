@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
-import { apiFetch } from '../utils/apiFetch'
+import { apiFetch, downloadAsset } from '../utils/apiFetch'
 
 // ── Section schema ───────────────────────────────────────────────────────────
 // Each section defines: id (must match `currentSection` in teaser_long.html),
@@ -785,7 +785,7 @@ export default function TeaserEditor() {
         <div style={{ borderLeft: `1px solid ${border}`, background: panel, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <div style={{ padding: '10px 14px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>Preview</div>
-            <a href={`/api/download/${jobId}?_t=${pdfBust}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#00B6FF', textDecoration: 'none', fontWeight: 600 }}>⬇ Download PDF</a>
+            <button onClick={() => downloadAsset(`/api/download/${jobId}`, `${shortId || 'teaser'}.pdf`).catch(e => toast(e.message, 'error'))} style={{ fontSize: 11, color: '#00B6FF', textDecoration: 'none', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>⬇ Download PDF</button>
           </div>
           <PdfPreview jobId={jobId} cacheBust={pdfBust} />
         </div>
