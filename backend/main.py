@@ -246,6 +246,7 @@ class _AuthMiddleware(BaseHTTPMiddleware):
         # Skip auth for: non-api routes, auth endpoints, OPTIONS preflight,
         # and media-serving routes (browsers can't send Authorization on <video>/<img> src)
         _MEDIA_PREFIXES = (
+            "/api/health",       # public — load-balancer / Railway healthcheck
             "/api/auth/",
             "/api/video/",
             "/api/image/",

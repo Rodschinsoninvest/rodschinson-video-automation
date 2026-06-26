@@ -9,7 +9,7 @@
 # Proxy /api/* → Railway backend (set VITE_API_BASE in Netlify UI)
 [[redirects]]
   from   = "/api/*"
-  to     = "https://rodschinson-api.up.railway.app/api/:splat"
+  to     = "https://content-studio-production-84de.up.railway.app/api/:splat"
   status = 200
   force  = true
   headers = { X-From = "Netlify" }
