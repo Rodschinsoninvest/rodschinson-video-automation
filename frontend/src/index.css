@@ -22,19 +22,19 @@
   --cs-surface:      #ffffff;
   --cs-surface2:     #f6f8fb;
   --cs-surface3:     #f0f3f8;
-  --cs-border:       rgba(0,0,0,0.07);
-  --cs-border-sub:   rgba(0,0,0,0.04);
+  --cs-border:       rgba(0,0,0,0.12);
+  --cs-border-sub:   rgba(0,0,0,0.07);
   --cs-text:         #0c1526;
-  --cs-text-sub:     #3d4f66;
-  --cs-text-muted:   #7d91a8;
-  --cs-hover:        rgba(0,0,0,0.04);
+  --cs-text-sub:     #34465c;
+  --cs-text-muted:   #5b6f86;   /* WCAG-AA on white */
+  --cs-hover:        rgba(0,0,0,0.05);
   --cs-input-bg:     #f5f7fa;
   --cs-glow:         rgba(0,182,255,0.14);
   --cs-card-shine:   linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.5) 100%);
   /* sidebar always dark */
   --cs-sidebar-bg:   #08101e;
   --cs-sidebar-border: rgba(255,255,255,0.06);
-  --cs-sidebar-text: rgba(255,255,255,0.55);
+  --cs-sidebar-text: rgba(255,255,255,0.66);
   --cs-sidebar-active: rgba(255,255,255,0.95);
   --cs-sidebar-hover: rgba(255,255,255,0.06);
   --cs-sidebar-active-bg: rgba(0,182,255,0.12);
@@ -46,18 +46,18 @@
   --cs-surface:      #090f1d;
   --cs-surface2:     #0c1427;
   --cs-surface3:     #0f182e;
-  --cs-border:       rgba(255,255,255,0.07);
-  --cs-border-sub:   rgba(255,255,255,0.04);
+  --cs-border:       rgba(255,255,255,0.13);
+  --cs-border-sub:   rgba(255,255,255,0.08);
   --cs-text:         #e8edf6;
-  --cs-text-sub:     #8fa3be;
-  --cs-text-muted:   #4d6278;
-  --cs-hover:        rgba(255,255,255,0.05);
-  --cs-input-bg:     rgba(255,255,255,0.05);
+  --cs-text-sub:     #aab9cf;
+  --cs-text-muted:   #8194ac;   /* lighter so it reads on the near-black bg */
+  --cs-hover:        rgba(255,255,255,0.07);
+  --cs-input-bg:     rgba(255,255,255,0.06);
   --cs-glow:         rgba(0,182,255,0.2);
   --cs-card-shine:   linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
   --cs-sidebar-bg:   #030710;
-  --cs-sidebar-border: rgba(255,255,255,0.05);
-  --cs-sidebar-text: rgba(255,255,255,0.45);
+  --cs-sidebar-border: rgba(255,255,255,0.08);
+  --cs-sidebar-text: rgba(255,255,255,0.62);
   --cs-sidebar-active: rgba(255,255,255,0.92);
   --cs-sidebar-hover: rgba(255,255,255,0.05);
   --cs-sidebar-active-bg: rgba(0,182,255,0.11);
@@ -94,10 +94,10 @@ body {
 }
 
 /* ── Scrollbars ────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar          { width: 4px; height: 4px; }
+::-webkit-scrollbar          { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track    { background: transparent; }
-::-webkit-scrollbar-thumb    { background: rgba(255,255,255,0.1); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0,182,255,0.4); }
+::-webkit-scrollbar-thumb    { background: var(--cs-border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,182,255,0.5); }
 
 /* ── Typography ────────────────────────────────────────────────────────────── */
 h1, h2, h3 { letter-spacing: -0.5px; }

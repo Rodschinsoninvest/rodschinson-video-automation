@@ -447,9 +447,9 @@ export default function TeaserEditor() {
   // ── Theme ───────────────────────────────────────────────────────────────
   const bg     = dark ? '#0d0d0d' : '#f7f7fa'
   const panel  = dark ? '#1a1a1a' : '#fff'
-  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
+  const border = dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)'
   const text   = dark ? '#fff' : '#0D1F3C'
-  const muted  = dark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)'
+  const muted  = dark ? 'rgba(255,255,255,0.66)' : 'rgba(0,0,0,0.6)'
   const inputStyle = {
     width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 12,
     border: `1px solid ${border}`, background: panel, color: text, fontFamily: 'inherit',

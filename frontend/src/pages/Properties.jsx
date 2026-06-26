@@ -181,9 +181,9 @@ function GenerateModal({ prop, brands, onClose, onGenerate, dark }) {
   }
 
   const bg = dark ? '#1a1a1a' : '#fff'
-  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const border = dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.14)'
   const text = dark ? '#fff' : '#0D1F3C'
-  const muted = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
+  const muted = dark ? 'rgba(255,255,255,0.62)' : 'rgba(0,0,0,0.58)'
 
   return (
     <div style={{
@@ -283,9 +283,9 @@ function PortfolioModal({ properties, selectedIds, brands, onClose, onGenerate, 
   const [mode, setMode] = useState(selectedIds.length > 0 ? 'selected' : 'all')
 
   const bg = dark ? '#1a1a1a' : '#fff'
-  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const border = dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.14)'
   const text = dark ? '#fff' : '#0D1F3C'
-  const muted = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
+  const muted = dark ? 'rgba(255,255,255,0.62)' : 'rgba(0,0,0,0.58)'
 
   // Group by type for preview
   const targetProps = mode === 'selected'
@@ -505,9 +505,9 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
   }
 
   const bg = dark ? '#1a1a1a' : '#fff'
-  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const border = dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.14)'
   const text = dark ? '#fff' : '#0D1F3C'
-  const muted = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
+  const muted = dark ? 'rgba(255,255,255,0.62)' : 'rgba(0,0,0,0.58)'
   const inputStyle = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 12, border: `1px solid ${border}`, background: bg, color: text }
 
   const addSurface = () => setSurfaces(prev => [...prev, { floor: '', area: '' }])
@@ -860,9 +860,9 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
   const [agentId, setAgentId] = useState(LONG_TEASER_AGENTS[0].id)
 
   const bg = dark ? '#1a1a1a' : '#fff'
-  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const border = dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.14)'
   const text = dark ? '#fff' : '#0D1F3C'
-  const muted = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
+  const muted = dark ? 'rgba(255,255,255,0.62)' : 'rgba(0,0,0,0.58)'
   const inputStyle = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 12, border: `1px solid ${border}`, background: bg, color: text }
 
   const readAsDataUrl = (file) => new Promise((resolve) => {
@@ -1155,9 +1155,9 @@ function BuyersModal({ prop, brands, onClose, onGenerate, dark }) {
   const [stageFilter, setStageFilter] = useState([])   // selected stages; empty = all
 
   const bg = dark ? '#1a1a1a' : '#fff'
-  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const border = dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.14)'
   const text = dark ? '#fff' : '#0D1F3C'
-  const muted = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
+  const muted = dark ? 'rgba(255,255,255,0.62)' : 'rgba(0,0,0,0.58)'
   const inputStyle = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 12, border: `1px solid ${border}`, background: bg, color: text }
 
   useEffect(() => {
@@ -1262,9 +1262,9 @@ function ValuationModal({ prop, brands, onClose, onGenerate, dark }) {
 
   const methods = VALUATION_METHODS[prop.asset_type] || VALUATION_METHODS.building
   const bg = dark ? '#1a1a1a' : '#fff'
-  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const border = dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.14)'
   const text = dark ? '#fff' : '#0D1F3C'
-  const muted = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
+  const muted = dark ? 'rgba(255,255,255,0.62)' : 'rgba(0,0,0,0.58)'
 
   const handleGenerate = async () => {
     setLoading(true)
@@ -1676,8 +1676,8 @@ export default function Properties() {
   })
 
   const text = dark ? '#fff' : '#0D1F3C'
-  const muted = dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
-  const border = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
+  const muted = dark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.55)'
+  const border = dark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.12)'
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 1200, margin: '0 auto' }}>
