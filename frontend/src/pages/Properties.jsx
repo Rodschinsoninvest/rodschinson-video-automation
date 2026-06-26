@@ -443,7 +443,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
   const [surfaces, setSurfaces] = useState([])
   const [photos, setPhotos] = useState([])
   const [plans, setPlans] = useState([])
-  const [mapImage, setMapImage] = useState('')
+  const [mapImage] = useState('')
   // Per-role page images + gallery photo categories
   const [coverImage, setCoverImage] = useState('')       // first page (cover)
   const [salesImage, setSalesImage] = useState('')       // last contact page
@@ -514,16 +514,6 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
   const removeSurface = (i) => setSurfaces(prev => prev.filter((_, idx) => idx !== i))
   const updateSurface = (i, key, val) => setSurfaces(prev => prev.map((s, idx) => idx === i ? { ...s, [key]: val } : s))
 
-  const handleFiles = (e, setter) => {
-    const files = Array.from(e.target.files)
-    files.forEach(file => {
-      const reader = new FileReader()
-      reader.onload = () => setter(prev => [...prev, reader.result])
-      reader.readAsDataURL(file)
-    })
-    e.target.value = ''
-  }
-
   const handlePlanFiles = (e) => {
     const files = Array.from(e.target.files)
     files.forEach(file => {
@@ -538,14 +528,6 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
     e.target.value = ''
   }
 
-  const handleMapFile = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setMapImage(reader.result)
-    reader.readAsDataURL(file)
-    e.target.value = ''
-  }
 
   // Single-image role uploader (cover / contact / aerial / cadastral)
   const handleSingleFile = (e, setter) => {

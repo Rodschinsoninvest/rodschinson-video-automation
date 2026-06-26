@@ -281,7 +281,7 @@ function ContentPlanPanel({ strategy, brands }) {
           const { job_id } = await res.json()
           trackJob(job_id, { title: item.topic, contentType: genConfig.contentType })
         }
-      } catch { }
+      } catch { /* noop */ }
       setDone(d => d + 1)
     }
     setGenerating(false)
@@ -420,7 +420,7 @@ function StrategyResult({ strategy, onCalendarFill, brands }) {
       const data = await res.json()
       setFilled(data.created)
       onCalendarFill && onCalendarFill(data)
-    } catch { }
+    } catch { /* noop */ }
     finally { setFilling(false) }
   }
 
@@ -546,7 +546,7 @@ function ContentMixPanel({ brands }) {
     try {
       const res = await apiFetch(`/api/strategy/content-mix/${id}`)
       if (res.ok) setMix(await res.json())
-    } catch { }
+    } catch { /* noop */ }
     finally { setLoading(false) }
   }
 

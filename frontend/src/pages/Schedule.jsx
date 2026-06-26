@@ -150,7 +150,6 @@ function EmptySlot({ onClick }) {
 function PostDetailModal({ entry, onClose, onRemove, onPublished }) {
   const color = PLATFORM_COLORS[entry.platform] || PLATFORM_COLORS.pending
   const icon  = TYPE_ICONS[entry.content_type] || '📄'
-  const ps    = PUBLISH_STATUS[entry.publish_status] || PUBLISH_STATUS.local
   const [publishing, setPublishing] = useState(false)
   const [pubError, setPubError]     = useState('')
   const [localPs, setLocalPs]       = useState(entry.publish_status || 'local')
@@ -492,7 +491,7 @@ export default function Schedule() {
 
   async function handleRemove(entry) {
     setEntries(prev => prev.filter(e => e.id !== entry.id))
-    try { await apiFetch(`/api/schedule/${entry.id}`, { method: 'DELETE' }) } catch { }
+    try { await apiFetch(`/api/schedule/${entry.id}`, { method: 'DELETE' }) } catch { /* noop */ }
   }
 
   function handlePublished(entryId, newStatus) {

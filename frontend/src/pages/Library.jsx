@@ -249,7 +249,7 @@ function ScheduleInline({ item, onScheduled, onClose }) {
       })
       if (!res.ok) throw new Error(await res.text())
       onScheduled()
-    } catch (e) {
+    } catch {
       setErr('Schedule failed — API offline')
       setSaving(false)
     }
@@ -1535,7 +1535,6 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
   const gradient = TEMPLATE_GRADIENTS[item.template] || 'linear-gradient(135deg,#08316F,#0d1a30)'
   const type     = TYPE_META[item.content_type] || { icon: '📄', label: item.content_type }
   const isVideo  = VIDEO_TYPES.has(item.content_type)
-  const isImage  = IMAGE_TYPES.has(item.content_type)
   const isText   = TEXT_TYPES.has(item.content_type)
   const [slides, setSlides]         = useState(null)
   const [activeSlide, setActiveSlide] = useState(0)
@@ -1948,7 +1947,7 @@ export default function Library() {
   useTheme()
   const navigate  = useNavigate()
   const { jobs }  = useGeneration()
-  const { success, error: toastError, info } = useToast()
+  const { success, info } = useToast()
   const [items, setItems]     = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)

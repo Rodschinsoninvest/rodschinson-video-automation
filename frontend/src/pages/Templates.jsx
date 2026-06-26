@@ -329,7 +329,6 @@ function AddTemplateModal({ onClose, onSaved }) {
 
       // Determine HTML source
       if (htmlMode === 'generate') {
-        const fmtMeta = FORMATS.find(f => f.id === form.ratio)
         const html = buildStarterHTML(form.scenes, form.ratio, form.accent, form.bg)
         const blob = new Blob([html], { type: 'text/html' })
         fd.append('html_file', blob, `${form.label.toLowerCase().replace(/\s+/g,'_')}.html`)
@@ -538,7 +537,7 @@ export default function Templates() {
   const [templates, setTemplates] = useState([])
   const [loading, setLoading]     = useState(true)
   const [showAdd, setShowAdd]     = useState(false)
-  const [deleting, setDeleting]   = useState(null)
+  const [, setDeleting]   = useState(null)
   const [activeTab, setActiveTab] = useState('all')
 
   const load = async () => {
@@ -559,13 +558,6 @@ export default function Templates() {
       setTemplates(t => t.filter(x => x.id !== tmpl.id))
     } catch { error('Failed to delete template') } finally { setDeleting(null) }
   }
-
-  const grouped = templates.reduce((acc, t) => {
-    const k = t.ratio || '16:9'
-    if (!acc[k]) acc[k] = []
-    acc[k].push(t)
-    return acc
-  }, {})
 
   const filtered = activeTab === 'all' ? templates : templates.filter(t => t.ratio === activeTab)
 

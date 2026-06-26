@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * Shared carousel slide preview components.
  * Used in both NewContent (step-3 preview) and Library (modal preview).

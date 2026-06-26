@@ -162,7 +162,7 @@ export default function Settings() {
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         {/* Sidebar nav */}
         <div className="cs-card" style={{ width: 200, flexShrink: 0, padding: '8px 0', overflow: 'hidden' }}>
-          {GROUPS.map(({ id, label, icon: Icon }) => {
+          {GROUPS.map(({ id, label }) => {
             const isActive = activeGroup === id
             // Count configured fields in this group
             const configured = schema

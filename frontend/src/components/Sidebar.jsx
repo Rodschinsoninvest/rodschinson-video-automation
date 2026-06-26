@@ -41,7 +41,7 @@ const S = {
 }
 
 // ── Nav item ───────────────────────────────────────────────────────────────────
-function NavItem({ to, icon: Icon, label, onClick, end }) {
+function NavItem({ to, label, onClick, end }) {
   const [hov, setHov] = useState(false)
   return (
     <NavLink

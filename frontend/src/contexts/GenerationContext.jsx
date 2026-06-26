@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * GenerationContext — global background job tracking.
  * Polling continues even when the user navigates away from NewContent.

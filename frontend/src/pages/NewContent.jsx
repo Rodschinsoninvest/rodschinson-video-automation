@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
@@ -690,7 +691,7 @@ function VariationCard({ v, active, onClick, index }) {
 
 
 // ─── Live Generation Progress Panel ──────────────────────────────────────────
-function GenerationPanel({ job, typeDef, onDone, onReset }) {
+function GenerationPanel({ job, typeDef, onReset }) {
   const navigate = useNavigate()
   const isDone     = job?.status === 'done'
   const isError    = job?.status === 'error'
@@ -924,9 +925,8 @@ const AUTOSAVE_KEY = 'cs-draft-form'
 
 export default function NewContent() {
   useTheme()
-  const navigate = useNavigate()
   const { trackJob, jobs } = useGeneration()
-  const { success, error: toastError, info } = useToast()
+  const { error: toastError, info } = useToast()
   const { brands: apiBrands } = useBrands()
 
   const [step, setStep]   = useState(1)
@@ -935,13 +935,13 @@ export default function NewContent() {
     const regen = sessionStorage.getItem('cs-regenerate')
     if (regen) {
       sessionStorage.removeItem('cs-regenerate')
-      try { return { ...INITIAL_FORM, ...JSON.parse(regen) } } catch {}
+      try { return { ...INITIAL_FORM, ...JSON.parse(regen) } } catch { /* noop */ }
     }
     // Restore autosaved draft
     try {
       const saved = localStorage.getItem(AUTOSAVE_KEY)
       if (saved) return { ...INITIAL_FORM, ...JSON.parse(saved) }
-    } catch {}
+    } catch { /* noop */ }
     return INITIAL_FORM
   })
 
@@ -1032,7 +1032,7 @@ export default function NewContent() {
   useEffect(() => {
     clearTimeout(autosaveTimerRef.current)
     autosaveTimerRef.current = setTimeout(() => {
-      try { localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ ...form, logo: null })) } catch {}
+      try { localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ ...form, logo: null })) } catch { /* noop */ }
     }, 800)
     return () => clearTimeout(autosaveTimerRef.current)
   }, [form])
@@ -1225,7 +1225,7 @@ export default function NewContent() {
     setPreviewScript(null)
     setEditedScript('')
     setError(null)
-    try { localStorage.removeItem(AUTOSAVE_KEY) } catch {}
+    try { localStorage.removeItem(AUTOSAVE_KEY) } catch { /* noop */ }
   }
 
   const handleTemplateGenerated = (tpl) => {

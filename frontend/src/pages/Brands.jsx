@@ -93,9 +93,10 @@ function SizeField({ label, value, onChange, min = 8, max = 120 }) {
 }
 
 // ─── Logo uploader ────────────────────────────────────────────────────────────
-function LogoUploader({ brandId, currentLogoUrl, shortName, primaryColor, onUploaded }) {
+function LogoUploader({ currentLogoUrl, shortName, primaryColor, onUploaded }) {
   const fileRef = useRef()
-  const [preview, setPreview] = useState(currentLogoUrl ? `${currentLogoUrl}?t=${Date.now()}` : null)
+  // Lazy init so the cache-buster is computed once per mount, not every render.
+  const [preview, setPreview] = useState(() => currentLogoUrl ? `${currentLogoUrl}?t=${Date.now()}` : null)
   const [dragging, setDragging] = useState(false)
 
   const handleFile = (file) => {
@@ -364,7 +365,8 @@ function BrandModal({ brand, onClose, onSaved }) {
 // ─── Brand card ───────────────────────────────────────────────────────────────
 function BrandCard({ brand, onEdit, onDelete }) {
   const [hov, setHov] = useState(false)
-  const logoSrc = brand.logoUrl ? `${brand.logoUrl}?t=${Date.now()}` : null
+  // Stable cache-buster per mount (avoids Date.now() during render).
+  const [logoSrc] = useState(() => brand.logoUrl ? `${brand.logoUrl}?t=${Date.now()}` : null)
 
   return (
     <div
