@@ -2267,6 +2267,83 @@ RULES:
             script_path = val_path
             job["thumbnail"] = str(thumb_path)
 
+        # ── Buyer shortlist (applicants linked to an asset, from Odoo) ──────
+        elif content_type == "property_buyers":
+            property_data = data.get("property_data", {})
+            odoo_id = property_data.get("odoo_id") or data.get("odoo_id")
+            if not odoo_id:
+                raise RuntimeError("property_buyers requires property_data.odoo_id")
+
+            _job_update(job, status="running", step="Fetching buyers from Odoo", progress=15)
+            await _save_job(job)
+            uid = await _odoo_get_uid()
+            if not uid:
+                raise RuntimeError("Failed to authenticate with Odoo — check ODOO_API_KEY")
+            buyers = await _odoo_buyers_for_asset(uid, int(odoo_id))
+            # Optional stage filter passed from the UI.
+            _stages = data.get("buyer_stages") or property_data.get("buyer_stages")
+            if _stages:
+                _want = {str(s).lower() for s in _stages}
+                buyers = [b for b in buyers if b.get("stage", "").lower() in _want]
+            if not buyers:
+                raise RuntimeError("No buyers found for this asset in Odoo.")
+
+            L_buyers = {"EN": {"title": "Buyer Shortlist", "subtitle": "Applicants linked to this asset",
+                              "col_company": "Company", "col_contact": "Contact", "col_role": "Role",
+                              "col_email": "Email", "col_phone": "Phone", "col_location": "Location",
+                              "col_stage": "Stage", "count_label": "buyers", "asset_label": "Asset",
+                              "ref_label": "Reference", "generated": "Generated", "confidential": "Confidential — internal use only"},
+                       "FR": {"title": "Liste d'acquéreurs", "subtitle": "Candidats liés à cet actif",
+                              "col_company": "Société", "col_contact": "Contact", "col_role": "Fonction",
+                              "col_email": "Email", "col_phone": "Téléphone", "col_location": "Localité",
+                              "col_stage": "Étape", "count_label": "acquéreurs", "asset_label": "Actif",
+                              "ref_label": "Référence", "generated": "Généré le", "confidential": "Confidentiel — usage interne uniquement"},
+                       "NL": {"title": "Kopers shortlist", "subtitle": "Kandidaten gelinkt aan dit pand",
+                              "col_company": "Bedrijf", "col_contact": "Contact", "col_role": "Functie",
+                              "col_email": "E-mail", "col_phone": "Telefoon", "col_location": "Plaats",
+                              "col_stage": "Fase", "count_label": "kopers", "asset_label": "Pand",
+                              "ref_label": "Referentie", "generated": "Gegenereerd", "confidential": "Vertrouwelijk — enkel intern gebruik"},
+                      }.get(language, None)
+            from datetime import datetime as _dt
+            buyers_data = {
+                "labels": L_buyers or {"title": "Buyer Shortlist", "subtitle": "Applicants linked to this asset",
+                                       "col_company": "Company", "col_contact": "Contact", "col_role": "Role",
+                                       "col_email": "Email", "col_phone": "Phone", "col_location": "Location",
+                                       "col_stage": "Stage", "count_label": "buyers", "asset_label": "Asset",
+                                       "ref_label": "Reference", "generated": "Generated", "confidential": "Confidential — internal use only"},
+                "asset_name": property_data.get("title") or subject or "",
+                "reference": property_data.get("reference") or property_data.get("asset_code") or "",
+                "generated_at": _dt.now().strftime("%d %b %Y"),
+                "buyers": buyers,
+            }
+
+            _job_update(job, status="running", step="Rendering PDF", progress=55)
+            await _save_job(job)
+            buyers_path = TEASER_DIR / f"{job_id[:8]}_buyers.json"
+            async with aiofiles.open(buyers_path, "w") as f:
+                await f.write(json.dumps(buyers_data, indent=2, ensure_ascii=False))
+            pdf_path   = TEASER_DIR / f"{job_id[:8]}_buyers.pdf"
+            thumb_path = TEASER_DIR / f"{job_id[:8]}_buyers_thumb.png"
+            render_cmd = [
+                "node", str(PUPPET / "buyers_renderer.js"),
+                "--script", str(buyers_path),
+                "--output-pdf", str(pdf_path),
+                "--output-thumb", str(thumb_path),
+            ]
+            brand_data = await _brand_lookup(brand_arg)
+            if brand_data:
+                render_cmd += [
+                    "--brand-name", brand_data.get("name", "Rodschinson"),
+                    "--brand-primary", brand_data.get("primaryColor", "#08316F"),
+                    "--brand-accent", brand_data.get("accentColor", "#C8A96E"),
+                ]
+            code, out, err = await _run(render_cmd, cwd=PUPPET, timeout=90, job_id=job_id)
+            if code != 0:
+                raise RuntimeError(f"Buyer shortlist render failed (exit {code})\n{err[-600:]}")
+            output_file = str(pdf_path)
+            script_path = buyers_path
+            job["thumbnail"] = str(thumb_path)
+
         # ── Property Long Teaser (with photos/plans) ────────────────────────
         elif content_type == "property_long_teaser":
             property_data = data.get("property_data", {})
@@ -6977,6 +7054,55 @@ async def _odoo_search_read(uid, model: str, domain: list, fields: list, limit: 
     return await asyncio.to_thread(_fetch)
 
 
+async def _odoo_buyers_for_asset(uid, prop_id: int) -> list[dict]:
+    """Buyer shortlist for an asset: opprt.list lines (list_actif = prop) →
+    their client partners (company + contact + coordinates + stage)."""
+    lines = list(await _odoo_search_read(
+        uid, "opprt.list",
+        [["list_actif", "=", int(prop_id)]],
+        ["x_studio_client", "stage_actif", "type_contrat", "regle_nda"],
+        limit=1000,
+    ))
+    # Dedupe by client, keep the first line seen.
+    cid_to_line: dict[int, dict] = {}
+    for ln in lines:
+        c = ln.get("x_studio_client")
+        if c:
+            cid_to_line.setdefault(c[0], ln)
+    if not cid_to_line:
+        return []
+    parts = list(await _odoo_search_read(
+        uid, "res.partner",
+        [["id", "in", list(cid_to_line)]],
+        ["id", "name", "is_company", "commercial_company_name", "parent_id",
+         "function", "email", "phone", "mobile", "city", "country_id"],
+        limit=2000,
+    ))
+    pmap = {p["id"]: p for p in parts}
+    buyers = []
+    for cid, ln in cid_to_line.items():
+        p = pmap.get(cid, {})
+        is_co = p.get("is_company")
+        company = (p.get("commercial_company_name")
+                   or (p["parent_id"][1] if p.get("parent_id") else "")
+                   or (p.get("name") if is_co else "") or "")
+        contact = "" if (is_co and p.get("name") == company) else (p.get("name") or "")
+        stage = ln.get("stage_actif")
+        buyers.append({
+            "company":  company,
+            "contact":  contact,
+            "function": p.get("function") or "",
+            "email":    p.get("email") or "",
+            "phone":    p.get("phone") or p.get("mobile") or "",
+            "city":     p.get("city") or "",
+            "country":  (p["country_id"][1] if p.get("country_id") else ""),
+            "stage":    (stage[1] if stage else ""),
+            "contract": ln.get("type_contrat") or "",
+        })
+    buyers.sort(key=lambda b: (b["company"] or b["contact"] or "").lower())
+    return buyers
+
+
 @app.post("/api/odoo/sync-properties")
 async def sync_properties_from_odoo():
     """Fetch properties from Odoo (stage = sale) and cache locally."""
@@ -7035,6 +7161,21 @@ async def get_property(odoo_id: int):
     if not prop:
         raise HTTPException(404, "Property not found")
     return prop
+
+
+@app.get("/api/properties/{odoo_id}/buyers")
+async def get_property_buyers(odoo_id: int, request: Request):
+    """Buyer shortlist (applicants) linked to an asset, pulled live from Odoo."""
+    await _get_request_user(request)
+    uid = await _odoo_get_uid()
+    if not uid:
+        raise HTTPException(502, "Failed to authenticate with Odoo — check ODOO_API_KEY")
+    try:
+        buyers = await _odoo_buyers_for_asset(uid, odoo_id)
+    except Exception as e:
+        log.error("Odoo buyers fetch error: %s", e)
+        raise HTTPException(502, f"Failed to fetch buyers from Odoo: {e}")
+    return {"odoo_id": odoo_id, "count": len(buyers), "buyers": buyers}
 
 
 @app.get("/api/odoo/asset-types")

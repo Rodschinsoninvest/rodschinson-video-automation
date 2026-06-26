@@ -62,7 +62,7 @@ const FIELD_OPTIONS = [
 ]
 
 // ── Property card ─────────────────────────────────────────────────────────────
-function PropertyCard({ prop, onGenerate, onEvaluate, onLongTeaser, dark, selected, onToggleSelect }) {
+function PropertyCard({ prop, onGenerate, onEvaluate, onLongTeaser, onBuyers, dark, selected, onToggleSelect }) {
   const icon = ASSET_ICONS[prop.asset_type] || '🏢'
   return (
     <div style={{
@@ -144,6 +144,15 @@ function PropertyCard({ prop, onGenerate, onEvaluate, onLongTeaser, dark, select
         onMouseEnter={e => { e.target.style.background = 'rgba(0,182,255,0.18)' }}
         onMouseLeave={e => { e.target.style.background = 'rgba(0,182,255,0.08)' }}
         >Evaluate</button>
+        <button onClick={() => onBuyers(prop)} title="Buyer shortlist (applicants from Odoo)" style={{
+          flex: 1, padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
+          border: '1px solid rgba(16,150,90,0.4)', background: 'rgba(16,150,90,0.08)',
+          color: '#0a7a43', fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',
+          transition: 'all 0.2s', minWidth: 70,
+        }}
+        onMouseEnter={e => { e.target.style.background = 'rgba(16,150,90,0.18)' }}
+        onMouseLeave={e => { e.target.style.background = 'rgba(16,150,90,0.08)' }}
+        >Buyers</button>
       </div>
     </div>
   )
@@ -1135,6 +1144,116 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
   )
 }
 
+// ── Buyer shortlist modal ────────────────────────────────────────────────────
+function BuyersModal({ prop, brands, onClose, onGenerate, dark }) {
+  const [brand, setBrand] = useState(brands[0]?.id || 'rodschinson')
+  const [language, setLanguage] = useState('FR')
+  const [loading, setLoading] = useState(false)
+  const [fetching, setFetching] = useState(true)
+  const [error, setError] = useState('')
+  const [buyers, setBuyers] = useState([])
+  const [stageFilter, setStageFilter] = useState([])   // selected stages; empty = all
+
+  const bg = dark ? '#1a1a1a' : '#fff'
+  const border = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const text = dark ? '#fff' : '#0D1F3C'
+  const muted = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
+  const inputStyle = { width: '100%', padding: '8px 10px', borderRadius: 6, fontSize: 12, border: `1px solid ${border}`, background: bg, color: text }
+
+  useEffect(() => {
+    let alive = true
+    apiFetch(`/api/properties/${prop.odoo_id}/buyers`)
+      .then(async r => { if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || `Failed (${r.status})`); return r.json() })
+      .then(d => { if (alive) { setBuyers(d.buyers || []) } })
+      .catch(e => { if (alive) setError(e.message) })
+      .finally(() => { if (alive) setFetching(false) })
+    return () => { alive = false }
+  }, [prop.odoo_id])
+
+  const stages = [...new Set(buyers.map(b => b.stage).filter(Boolean))]
+  const shown = stageFilter.length ? buyers.filter(b => stageFilter.includes(b.stage)) : buyers
+  const toggleStage = (s) => setStageFilter(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
+
+  const handleGenerate = async () => {
+    setLoading(true)
+    await onGenerate({ prop, brand, language, stages: stageFilter })
+    setLoading(false)
+    onClose()
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div style={{ background: bg, borderRadius: 16, padding: 24, maxWidth: 720, width: '94%', border: `1px solid ${border}`, maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <span style={{ fontSize: 22 }}>👥</span>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: text }}>{prop.title}</div>
+            <div style={{ fontSize: 11, color: '#0a7a43', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Buyer shortlist — applicants from Odoo</div>
+          </div>
+        </div>
+
+        {fetching && <div style={{ padding: 24, textAlign: 'center', color: muted, fontSize: 13 }}>Loading buyers from Odoo…</div>}
+        {error && <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.25)', color: '#dc2626', fontSize: 13, margin: '8px 0' }}>{error}</div>}
+
+        {!fetching && !error && (
+          <>
+            <div style={{ fontSize: 12, color: muted, margin: '8px 0 10px' }}>
+              <b style={{ color: text }}>{buyers.length}</b> buyer(s) linked to this asset{stageFilter.length ? ` · ${shown.length} shown` : ''}.
+            </div>
+
+            {stages.length > 1 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                <span style={{ fontSize: 11, color: muted, alignSelf: 'center' }}>Filter stage:</span>
+                {stages.map(s => (
+                  <button key={s} onClick={() => toggleStage(s)} style={{
+                    padding: '3px 10px', borderRadius: 12, fontSize: 11, cursor: 'pointer',
+                    border: `1px solid ${stageFilter.includes(s) ? '#0a7a43' : border}`,
+                    background: stageFilter.includes(s) ? 'rgba(16,150,90,0.12)' : 'transparent',
+                    color: stageFilter.includes(s) ? '#0a7a43' : muted, fontWeight: 600,
+                  }}>{s}</button>
+                ))}
+              </div>
+            )}
+
+            <div style={{ border: `1px solid ${border}`, borderRadius: 8, overflow: 'hidden', marginBottom: 16, maxHeight: 280, overflowY: 'auto' }}>
+              {shown.length === 0 ? (
+                <div style={{ padding: 20, textAlign: 'center', fontSize: 12, color: muted }}>No buyers{buyers.length ? ' match this filter' : ' for this asset'}.</div>
+              ) : shown.map((b, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderBottom: i < shown.length - 1 ? `1px solid ${border}` : 'none', fontSize: 12 }}>
+                  <span style={{ color: muted, width: 18, fontSize: 11 }}>{i + 1}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.company || b.contact || '—'}</div>
+                    <div style={{ color: muted, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{[b.contact, b.email].filter(Boolean).join(' · ')}</div>
+                  </div>
+                  {b.stage && <span style={{ fontSize: 10, fontWeight: 600, color: '#0a7a43', background: 'rgba(16,150,90,0.1)', borderRadius: 10, padding: '2px 8px', whiteSpace: 'nowrap' }}>{b.stage}</span>}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Brand</label>
+                <select value={brand} onChange={e => setBrand(e.target.value)} style={inputStyle}>{brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Language</label>
+                <select value={language} onChange={e => setLanguage(e.target.value)} style={inputStyle}>{LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}</select>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '9px 18px', borderRadius: 8, border: `1px solid ${border}`, background: 'transparent', color: muted, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+          <button onClick={handleGenerate} disabled={loading || fetching || shown.length === 0} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', cursor: (loading || fetching || shown.length === 0) ? 'not-allowed' : 'pointer', background: (loading || fetching || shown.length === 0) ? 'rgba(8,49,111,0.35)' : 'linear-gradient(135deg,#08316F,#0a4a9a)', color: '#fff', fontSize: 13, fontWeight: 700 }}>
+            {loading ? 'Starting…' : 'Generate Shortlist PDF'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Valuation modal ──────────────────────────────────────────────────────────
 function ValuationModal({ prop, brands, onClose, onGenerate, dark }) {
   const [brand, setBrand] = useState(brands[0]?.id || 'rodschinson')
@@ -1276,6 +1395,7 @@ export default function Properties() {
   const [showFolderTeaser, setShowFolderTeaser] = useState(false)
   const [valuationProp, setValuationProp] = useState(null)
   const [longTeaserProp, setLongTeaserProp] = useState(null)
+  const [buyersProp, setBuyersProp] = useState(null)
 
   // Load cached properties
   const loadProperties = useCallback(async () => {
@@ -1459,6 +1579,33 @@ export default function Properties() {
       const { job_id } = await res.json()
       trackJob(job_id, { title: `Long Teaser: ${prop.title}`, contentType: 'property_long_teaser' })
       toast('Long teaser generation started', 'success')
+    } catch (e) {
+      toast(e.message, 'error')
+    }
+  }
+
+  // Generate a branded buyer-shortlist PDF for an asset (buyers pulled from Odoo)
+  const handleGenerateBuyers = async ({ prop, brand, language, stages }) => {
+    try {
+      const payload = {
+        subject: `Buyers: ${prop.title || ''}`.trim(),
+        brand,
+        language,
+        contentType: 'property_buyers',
+        platforms: ['email'],
+        property_data: prop,
+        buyer_stages: stages && stages.length ? stages : null,
+      }
+      const fd = new FormData()
+      fd.append('payload', JSON.stringify(payload))
+      const res = await apiFetch('/api/generate', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || 'Buyer shortlist generation failed')
+      }
+      const { job_id } = await res.json()
+      trackJob(job_id, { title: `Buyers: ${prop.title}`, contentType: 'property_buyers' })
+      toast('Buyer shortlist generation started', 'success')
     } catch (e) {
       toast(e.message, 'error')
     }
@@ -1682,6 +1829,7 @@ export default function Properties() {
               onGenerate={() => setModalProp(prop)}
               onEvaluate={() => setValuationProp(prop)}
               onLongTeaser={() => setLongTeaserProp(prop)}
+              onBuyers={() => setBuyersProp(prop)}
             />
           ))}
         </div>
@@ -1729,6 +1877,17 @@ export default function Properties() {
           dark={dark}
           onClose={() => setLongTeaserProp(null)}
           onGenerate={handleGenerateLongTeaser}
+        />
+      )}
+
+      {/* Buyer shortlist modal */}
+      {buyersProp && (
+        <BuyersModal
+          prop={buyersProp}
+          brands={brands}
+          dark={dark}
+          onClose={() => setBuyersProp(null)}
+          onGenerate={handleGenerateBuyers}
         />
       )}
 
