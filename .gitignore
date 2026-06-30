@@ -27,6 +27,9 @@ output/
 *.jpeg
 !puppeteer/templates/**/*.png
 !puppeteer/templates/**/*.jpg
+# Brand logo assets used by the frontend (must ship with the build)
+!frontend/public/rodschinson-mark.png
+!frontend/public/rodschinson-wordmark.png
 
 # OS
 .DS_Store

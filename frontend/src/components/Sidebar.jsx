@@ -31,12 +31,11 @@ const S = {
     position: 'relative',
     overflow: 'hidden',
   },
-  // Aurora accent line at top
+  // Fine gold hairline at top — restrained premium accent
   aurora: {
-    position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-    background: 'linear-gradient(90deg, transparent 0%, #08316F 25%, #00B6FF 60%, #C8A96E 85%, transparent 100%)',
-    opacity: 0.7,
-    animation: 'aurora 4s ease-in-out infinite',
+    position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+    background: 'var(--cs-gold)',
+    opacity: 0.5,
   },
 }
 
@@ -77,7 +76,7 @@ function NavItem({ to, icon: Icon, label, onClick, end }) {
           <span style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: 18, height: 18, flexShrink: 0,
-            color: isActive ? '#00B6FF' : 'inherit',
+            color: isActive ? 'var(--cs-gold)' : 'inherit',
             transition: 'color 0.14s',
           }}>
             <Icon size={15} strokeWidth={isActive ? 2.2 : 1.7} />
@@ -86,8 +85,7 @@ function NavItem({ to, icon: Icon, label, onClick, end }) {
           {isActive && (
             <span style={{
               width: 4, height: 4, borderRadius: '50%',
-              background: '#00B6FF',
-              boxShadow: '0 0 6px #00B6FF',
+              background: 'var(--cs-gold)',
               flexShrink: 0,
             }} />
           )}
@@ -165,26 +163,26 @@ function SidebarContent({ onClose }) {
         flexShrink: 0,
         position: 'relative',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Logo mark */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+          {/* Logo mark — real ROD mark on a clean white tile */}
           <div style={{
-            width: 34, height: 34, borderRadius: 9, flexShrink: 0,
-            background: 'linear-gradient(145deg, #0a3d8f 0%, #00B6FF 100%)',
+            width: 36, height: 36, borderRadius: 9, flexShrink: 0,
+            background: '#ffffff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 0 0 1px rgba(0,182,255,0.3), 0 4px 12px rgba(0,182,255,0.25)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
           }}>
-            <span style={{ color: '#fff', fontWeight: 800, fontSize: 15, letterSpacing: '-0.5px' }}>R</span>
+            <img src="/rodschinson-mark.png" alt="Rodschinson" style={{ width: 28, height: 28, objectFit: 'contain' }} />
           </div>
           <div>
             <div style={{
-              color: 'rgba(255,255,255,0.9)', fontWeight: 700, fontSize: 13.5,
-              letterSpacing: '-0.3px', lineHeight: 1.2,
+              color: 'rgba(255,255,255,0.92)', fontWeight: 700, fontSize: 13.5,
+              letterSpacing: '0.02em', lineHeight: 1.2,
             }}>
               Rodschinson
             </div>
             <div style={{
-              fontSize: 9.5, fontWeight: 600, letterSpacing: '0.12em',
-              color: 'rgba(255,255,255,0.25)', marginTop: 1,
+              fontSize: 9.5, fontWeight: 600, letterSpacing: '0.16em',
+              color: 'var(--cs-gold)', marginTop: 2,
             }}>
               CONTENT STUDIO
             </div>
@@ -219,7 +217,7 @@ function SidebarContent({ onClose }) {
         ))}
 
         <SectionLabel>Integrations</SectionLabel>
-        <ExtItem href="https://app.metricool.com" label="Metricool" accent="#00B6FF" />
+        <ExtItem href="https://app.metricool.com" label="Metricool" accent="var(--cs-gold)" />
       </div>
 
       {/* Bottom */}
@@ -238,9 +236,10 @@ function SidebarContent({ onClose }) {
         }}>
           <div style={{
             width: 26, height: 26, borderRadius: 7, flexShrink: 0,
-            background: 'linear-gradient(135deg, #08316F, #00B6FF)',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 700, fontSize: 10, letterSpacing: '0.5px',
+            color: 'var(--cs-gold)', fontWeight: 700, fontSize: 10, letterSpacing: '0.5px',
           }}>
             {(username || 'A').slice(0, 2).toUpperCase()}
           </div>

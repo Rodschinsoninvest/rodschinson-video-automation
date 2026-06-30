@@ -4,14 +4,26 @@ import { useBrands } from '../contexts/BrandContext'
 import { useGeneration } from '../contexts/GenerationContext'
 import { useToast } from '../contexts/ToastContext'
 import { apiFetch } from '../utils/apiFetch'
+import {
+  Building2, Hotel, Factory, Stethoscope, Pill, Car, GraduationCap,
+  ShoppingBag, HardHat, Dumbbell, Trees, Home, ClipboardList, Sparkles,
+  Info, Phone, Satellite, Map, FileText, FolderOpen, Images, Camera,
+  Users, RefreshCw, Plus, ChevronUp, ChevronDown,
+} from 'lucide-react'
 
 // ── Asset type icons ──────────────────────────────────────────────────────────
 const ASSET_ICONS = {
-  hotel: '🏨', clinic: '🏥', building: '🏢', office: '🏢',
-  warehouse: '🏭', logistics: '🏭', resort: '🏖️', pharmacy: '💊',
-  gym: '🏋️', fitness: '🏋️', parking: '🅿️', student: '🎓',
-  senior: '🏡', retail: '🛍️', residential: '🏠', mixed: '🏢',
-  land: '🏗️', industrial: '🏭',
+  hotel: Hotel, clinic: Stethoscope, building: Building2, office: Building2,
+  warehouse: Factory, logistics: Factory, resort: Trees, pharmacy: Pill,
+  gym: Dumbbell, fitness: Dumbbell, parking: Car, student: GraduationCap,
+  senior: Home, retail: ShoppingBag, residential: Home, mixed: Building2,
+  land: HardHat, industrial: Factory,
+}
+
+// Render an asset-type icon by key, falling back to a generic building.
+function AssetIcon({ type, size = 20, color }) {
+  const Icon = ASSET_ICONS[type] || Building2
+  return <Icon size={size} color={color} />
 }
 
 const ASSET_LABELS = {
@@ -63,15 +75,14 @@ const FIELD_OPTIONS = [
 
 // ── Property card ─────────────────────────────────────────────────────────────
 function PropertyCard({ prop, onGenerate, onEvaluate, onLongTeaser, onBuyers, dark, selected, onToggleSelect }) {
-  const icon = ASSET_ICONS[prop.asset_type] || '🏢'
   return (
     <div style={{
       background: dark ? 'rgba(255,255,255,0.04)' : '#fff',
-      border: `1px solid ${selected ? '#00B6FF' : dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+      border: `1px solid ${selected ? 'var(--cs-accent)' : dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
       borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
       transition: 'border-color 0.2s',
     }}
-    onMouseEnter={e => { if (!selected) e.currentTarget.style.borderColor = '#C8A96E' }}
+    onMouseEnter={e => { if (!selected) e.currentTarget.style.borderColor = 'var(--cs-gold)' }}
     onMouseLeave={e => { if (!selected) e.currentTarget.style.borderColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }}
     >
       {/* Header */}
@@ -81,11 +92,11 @@ function PropertyCard({ prop, onGenerate, onEvaluate, onLongTeaser, onBuyers, da
           checked={selected}
           onChange={() => onToggleSelect(prop.odoo_id)}
           onClick={e => e.stopPropagation()}
-          style={{ accentColor: '#00B6FF', width: 16, height: 16, cursor: 'pointer', flexShrink: 0 }}
+          style={{ accentColor: 'var(--cs-accent)', width: 16, height: 16, cursor: 'pointer', flexShrink: 0 }}
         />
-        <span style={{ fontSize: 28 }}>{icon}</span>
+        <span style={{ display: 'inline-flex', flexShrink: 0, color: 'var(--cs-accent)' }}><AssetIcon type={prop.asset_type} size={28} /></span>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#C8A96E' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--cs-gold)' }}>
             {prop.asset_label || prop.asset_type}
           </div>
           <div style={{ fontSize: 15, fontWeight: 600, color: dark ? '#fff' : '#0D1F3C', lineHeight: 1.3, marginTop: 2 }}>
@@ -103,7 +114,7 @@ function PropertyCard({ prop, onGenerate, onEvaluate, onLongTeaser, onBuyers, da
 
       {/* Details */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, color: dark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.5)' }}>
-        {prop.price && <span style={{ fontWeight: 600, color: '#08316F' }}>{prop.price}</span>}
+        {prop.price && <span style={{ fontWeight: 600, color: 'var(--cs-accent)' }}>{prop.price}</span>}
         {prop.reference && <span>Ref: {prop.reference}</span>}
         {prop.agent && <span>{prop.agent}</span>}
       </div>
@@ -119,30 +130,30 @@ function PropertyCard({ prop, onGenerate, onEvaluate, onLongTeaser, onBuyers, da
       <div style={{ marginTop: 'auto', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <button onClick={() => onGenerate(prop)} style={{
           flex: 1, padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
-          border: '1px solid rgba(200,169,110,0.4)', background: 'rgba(200,169,110,0.08)',
-          color: '#C8A96E', fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',
+          border: '1px solid var(--cs-gold-soft)', background: 'var(--cs-gold-soft)',
+          color: 'var(--cs-gold)', fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',
           transition: 'all 0.2s', minWidth: 70,
         }}
-        onMouseEnter={e => { e.target.style.background = 'rgba(200,169,110,0.18)' }}
-        onMouseLeave={e => { e.target.style.background = 'rgba(200,169,110,0.08)' }}
+        onMouseEnter={e => { e.target.style.background = 'var(--cs-hover)' }}
+        onMouseLeave={e => { e.target.style.background = 'var(--cs-gold-soft)' }}
         >Teaser</button>
         <button onClick={() => onLongTeaser(prop)} style={{
           flex: 1, padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
-          border: '1px solid rgba(8,49,111,0.3)', background: 'rgba(8,49,111,0.06)',
-          color: '#08316F', fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',
+          border: '1px solid var(--cs-accent-line)', background: 'var(--cs-accent-soft)',
+          color: 'var(--cs-accent)', fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',
           transition: 'all 0.2s', minWidth: 70,
         }}
-        onMouseEnter={e => { e.target.style.background = 'rgba(8,49,111,0.12)' }}
-        onMouseLeave={e => { e.target.style.background = 'rgba(8,49,111,0.06)' }}
+        onMouseEnter={e => { e.target.style.background = 'var(--cs-hover)' }}
+        onMouseLeave={e => { e.target.style.background = 'var(--cs-accent-soft)' }}
         >Long Teaser</button>
         <button onClick={() => onEvaluate(prop)} style={{
           flex: 1, padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
-          border: '1px solid rgba(0,182,255,0.4)', background: 'rgba(0,182,255,0.08)',
-          color: '#00B6FF', fontSize: 11, fontWeight: 600, letterSpacing: '0.04em',
+          border: '1px solid var(--cs-accent-line)', background: 'var(--cs-accent-soft)',
+          color: 'var(--cs-accent)', fontSize: 11, fontWeight: 600, letterSpacing: '0.04em',
           transition: 'all 0.2s',
         }}
-        onMouseEnter={e => { e.target.style.background = 'rgba(0,182,255,0.18)' }}
-        onMouseLeave={e => { e.target.style.background = 'rgba(0,182,255,0.08)' }}
+        onMouseEnter={e => { e.target.style.background = 'var(--cs-accent-soft)' }}
+        onMouseLeave={e => { e.target.style.background = 'var(--cs-accent-soft)' }}
         >Evaluate</button>
         <button onClick={() => onBuyers(prop)} title="Buyer shortlist (applicants from Odoo)" style={{
           flex: 1, padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
@@ -198,10 +209,10 @@ function GenerateModal({ prop, brands, onClose, onGenerate, dark }) {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <span style={{ fontSize: 28 }}>{ASSET_ICONS[prop.asset_type] || '🏢'}</span>
+          <span style={{ display: 'inline-flex', color: 'var(--cs-accent)' }}><AssetIcon type={prop.asset_type} size={28} /></span>
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: text }}>{prop.title}</div>
-            <div style={{ fontSize: 12, color: '#C8A96E', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <div style={{ fontSize: 12, color: 'var(--cs-gold)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {prop.asset_label || prop.asset_type} — Generate Teaser
             </div>
           </div>
@@ -217,15 +228,15 @@ function GenerateModal({ prop, brands, onClose, onGenerate, dark }) {
               <label key={f.key} style={{
                 display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
                 borderRadius: 6, cursor: 'pointer', fontSize: 13,
-                background: selectedFields.includes(f.key) ? 'rgba(200,169,110,0.1)' : 'transparent',
-                border: `1px solid ${selectedFields.includes(f.key) ? 'rgba(200,169,110,0.3)' : border}`,
+                background: selectedFields.includes(f.key) ? 'var(--cs-gold-soft)' : 'transparent',
+                border: `1px solid ${selectedFields.includes(f.key) ? 'var(--cs-gold)' : border}`,
                 color: text, transition: 'all 0.15s',
               }}>
                 <input
                   type="checkbox"
                   checked={selectedFields.includes(f.key)}
                   onChange={() => toggle(f.key)}
-                  style={{ accentColor: '#C8A96E' }}
+                  style={{ accentColor: 'var(--cs-gold)' }}
                 />
                 {f.label}
               </label>
@@ -263,7 +274,7 @@ function GenerateModal({ prop, brands, onClose, onGenerate, dark }) {
           }}>Cancel</button>
           <button onClick={handleGenerate} disabled={loading || selectedFields.length === 0} style={{
             padding: '9px 24px', borderRadius: 8, border: 'none', cursor: 'pointer',
-            background: loading ? 'rgba(200,169,110,0.3)' : 'linear-gradient(135deg,#08316F,#0a4a9a)',
+            background: loading ? 'var(--cs-accent-line)' : 'var(--cs-accent)',
             color: '#fff', fontSize: 13, fontWeight: 600, letterSpacing: '0.02em',
             opacity: selectedFields.length === 0 ? 0.4 : 1,
           }}>
@@ -319,10 +330,10 @@ function PortfolioModal({ properties, selectedIds, brands, onClose, onGenerate, 
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <span style={{ fontSize: 28 }}>📋</span>
+          <span style={{ display: 'inline-flex', color: 'var(--cs-accent)' }}><ClipboardList size={28} /></span>
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: text }}>Generate Portfolio</div>
-            <div style={{ fontSize: 12, color: '#00B6FF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <div style={{ fontSize: 12, color: 'var(--cs-accent)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Multi-page PDF — Properties by Asset Type
             </div>
           </div>
@@ -336,17 +347,17 @@ function PortfolioModal({ properties, selectedIds, brands, onClose, onGenerate, 
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => setMode('all')} style={{
               flex: 1, padding: '10px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
-              border: `1px solid ${mode === 'all' ? '#00B6FF' : border}`,
-              background: mode === 'all' ? 'rgba(0,182,255,0.1)' : 'transparent',
-              color: mode === 'all' ? '#00B6FF' : text,
+              border: `1px solid ${mode === 'all' ? 'var(--cs-accent)' : border}`,
+              background: mode === 'all' ? 'var(--cs-accent-soft)' : 'transparent',
+              color: mode === 'all' ? 'var(--cs-accent)' : text,
             }}>
               All Properties ({properties.length})
             </button>
             <button onClick={() => setMode('selected')} disabled={selectedIds.length === 0} style={{
               flex: 1, padding: '10px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
-              border: `1px solid ${mode === 'selected' ? '#00B6FF' : border}`,
-              background: mode === 'selected' ? 'rgba(0,182,255,0.1)' : 'transparent',
-              color: mode === 'selected' ? '#00B6FF' : text,
+              border: `1px solid ${mode === 'selected' ? 'var(--cs-accent)' : border}`,
+              background: mode === 'selected' ? 'var(--cs-accent-soft)' : 'transparent',
+              color: mode === 'selected' ? 'var(--cs-accent)' : text,
               opacity: selectedIds.length === 0 ? 0.4 : 1,
             }}>
               Selected ({selectedIds.length})
@@ -357,7 +368,7 @@ function PortfolioModal({ properties, selectedIds, brands, onClose, onGenerate, 
         {/* Type breakdown preview */}
         <div style={{
           marginBottom: 18, padding: 14, borderRadius: 8,
-          background: dark ? 'rgba(255,255,255,0.03)' : 'rgba(8,49,111,0.02)',
+          background: dark ? 'rgba(255,255,255,0.03)' : 'var(--cs-surface2)',
           border: `1px solid ${border}`,
         }}>
           <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 10 }}>
@@ -369,17 +380,17 @@ function PortfolioModal({ properties, selectedIds, brands, onClose, onGenerate, 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {sortedTypes.map(t => (
                 <span key={t} style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
                   padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
-                  background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(8,49,111,0.05)',
+                  background: dark ? 'rgba(255,255,255,0.06)' : 'var(--cs-accent-soft)',
                   color: text,
                 }}>
-                  {ASSET_ICONS[t] || '🏢'} {ASSET_LABELS[t] || t} ({typeGroups[t].length})
+                  <AssetIcon type={t} size={14} color="var(--cs-accent)" /> {ASSET_LABELS[t] || t} ({typeGroups[t].length})
                 </span>
               ))}
             </div>
           )}
-          <div style={{ marginTop: 10, fontSize: 12, fontWeight: 600, color: '#00B6FF' }}>
+          <div style={{ marginTop: 10, fontSize: 12, fontWeight: 600, color: 'var(--cs-accent)' }}>
             {targetProps.length} properties — ~{Math.ceil(targetProps.length / 4) + 3} pages
           </div>
         </div>
@@ -414,7 +425,7 @@ function PortfolioModal({ properties, selectedIds, brands, onClose, onGenerate, 
           }}>Cancel</button>
           <button onClick={handleGenerate} disabled={loading || targetProps.length === 0} style={{
             padding: '9px 24px', borderRadius: 8, border: 'none', cursor: 'pointer',
-            background: loading ? 'rgba(0,182,255,0.3)' : 'linear-gradient(135deg,#08316F,#0a4a9a)',
+            background: loading ? 'var(--cs-accent-line)' : 'var(--cs-accent)',
             color: '#fff', fontSize: 13, fontWeight: 600, letterSpacing: '0.02em',
             opacity: targetProps.length === 0 ? 0.4 : 1,
           }}>
@@ -585,17 +596,17 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-          <span style={{ fontSize: 24 }}>{ASSET_ICONS[prop.asset_type] || '🏢'}</span>
+          <span style={{ display: 'inline-flex', color: 'var(--cs-accent)' }}><AssetIcon type={prop.asset_type} size={24} /></span>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: text }}>{prop.title}</div>
-            <div style={{ fontSize: 11, color: '#08316F', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Long Teaser — Detailed PDF</div>
+            <div style={{ fontSize: 11, color: 'var(--cs-accent)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Long Teaser — Detailed PDF</div>
           </div>
         </div>
 
         {/* AI edit bar — ask Claude to change any field by describing it */}
-        <div style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 8, border: `1px solid ${dark ? 'rgba(0,182,255,0.35)' : 'rgba(8,49,111,0.25)'}`, background: dark ? 'rgba(0,182,255,0.08)' : 'rgba(8,49,111,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#08316F', marginBottom: 6 }}>
-            <span style={{ fontSize: 12 }}>✨</span> Ask AI to change a field
+        <div style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 8, border: `1px solid ${dark ? 'var(--cs-accent-line)' : 'var(--cs-accent-line)'}`, background: dark ? 'var(--cs-accent-soft)' : 'var(--cs-accent-soft)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cs-accent)', marginBottom: 6 }}>
+            <Sparkles size={12} color="var(--cs-gold)" /> Ask AI to change a field
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <input
@@ -609,7 +620,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
             <button
               onClick={handleAiEdit}
               disabled={aiBusy || !aiPrompt.trim()}
-              style={{ padding: '0 14px', borderRadius: 6, border: 'none', cursor: aiBusy || !aiPrompt.trim() ? 'not-allowed' : 'pointer', background: aiBusy || !aiPrompt.trim() ? 'rgba(8,49,111,0.3)' : 'linear-gradient(135deg,#08316F,#0a4a9a)', color: '#fff', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}
+              style={{ padding: '0 14px', borderRadius: 6, border: 'none', cursor: aiBusy || !aiPrompt.trim() ? 'not-allowed' : 'pointer', background: aiBusy || !aiPrompt.trim() ? 'var(--cs-accent-line)' : 'var(--cs-accent)', color: '#fff', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}
             >
               {aiBusy ? 'Thinking…' : 'Apply'}
             </button>
@@ -622,9 +633,9 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
         </div>
 
         {/* How-to instructions */}
-        <div style={{ marginBottom: 16, padding: '11px 13px', borderRadius: 8, border: `1px solid ${border}`, background: dark ? 'rgba(0,182,255,0.06)' : 'rgba(8,49,111,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#08316F', marginBottom: 6 }}>
-            <span style={{ fontSize: 12 }}>ℹ️</span> How to add photos &amp; request changes
+        <div style={{ marginBottom: 16, padding: '11px 13px', borderRadius: 8, border: `1px solid ${border}`, background: dark ? 'var(--cs-accent-soft)' : 'var(--cs-accent-soft)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cs-accent)', marginBottom: 6 }}>
+            <Info size={12} /> How to add photos &amp; request changes
           </div>
           <ul style={{ margin: 0, paddingLeft: 16, fontSize: 11, lineHeight: 1.55, color: text }}>
             <li><b>Page images:</b> pick the exact picture for the <i>cover</i>, the <i>contact</i> page, the <i>aerial view</i> and the <i>cadastral parcel</i> under <i>Page images</i>. Leave empty to auto-pick from the gallery.</li>
@@ -638,17 +649,17 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
         {/* Page images — choose which picture goes on each key page */}
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>
-            Page images <span style={{ textTransform: 'none', color: '#00B6FF', fontWeight: 500 }}>(optional — pick a picture per page)</span>
+            Page images <span style={{ textTransform: 'none', color: 'var(--cs-accent)', fontWeight: 500 }}>(optional — pick a picture per page)</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {[
-              ['🏠 Cover (first page)', coverImage, setCoverImage],
-              ['📞 Contact (last page)', salesImage, setSalesImage],
-              ['🛰️ Aerial view', aerialImage, setAerialImage],
-              ['🗺️ Cadastral parcel', cadastralImage, setCadastralImage],
-            ].map(([label, val, setter], idx) => (
+              [Home, 'Cover (first page)', coverImage, setCoverImage],
+              [Phone, 'Contact (last page)', salesImage, setSalesImage],
+              [Satellite, 'Aerial view', aerialImage, setAerialImage],
+              [Map, 'Cadastral parcel', cadastralImage, setCadastralImage],
+            ].map(([LabelIcon, label, val, setter], idx) => (
               <div key={idx}>
-                <div style={{ fontSize: 9.5, fontWeight: 600, color: muted, marginBottom: 3 }}>{label}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9.5, fontWeight: 600, color: muted, marginBottom: 3 }}><LabelIcon size={12} /> {label}</div>
                 {val ? (
                   <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 4, overflow: 'hidden', border: `1px solid ${border}` }}>
                     <img src={val} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -668,7 +679,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
         {/* Photos upload — gallery, each tagged exterior / interior / general */}
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>
-            Gallery photos <span style={{ textTransform: 'none', color: '#00B6FF', fontWeight: 500 }}>(tag each as exterior / interior to organise the gallery)</span>
+            Gallery photos <span style={{ textTransform: 'none', color: 'var(--cs-accent)', fontWeight: 500 }}>(tag each as exterior / interior to organise the gallery)</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
             {photos.map((p, i) => (
@@ -692,7 +703,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
         {/* Plans upload (images or PDF — PDF pages auto-extracted) */}
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>
-            Floor Plans <span style={{ textTransform: 'none', color: '#00B6FF', fontWeight: 500 }}>(images or PDF — each page becomes a plan)</span>
+            Floor Plans <span style={{ textTransform: 'none', color: 'var(--cs-accent)', fontWeight: 500 }}>(images or PDF — each page becomes a plan)</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
             {plans.map((p, i) => {
@@ -701,7 +712,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
                 <div key={i} style={{ position: 'relative', width: isPdfPlan ? 110 : 64, height: 48, borderRadius: 4, overflow: 'hidden', border: `1px solid ${border}`, background: isPdfPlan ? 'rgba(220,38,38,0.08)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: isPdfPlan ? '0 8px' : 0 }}>
                   {isPdfPlan ? (
                     <>
-                      <span style={{ fontSize: 18 }}>📄</span>
+                      <FileText size={18} color="#dc2626" />
                       <span style={{ fontSize: 9, color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
                     </>
                   ) : (
@@ -719,22 +730,22 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
         </div>
 
         {/* Source documents upload (optional AI extraction) */}
-        <div style={{ marginBottom: 14, padding: 10, borderRadius: 6, border: `1px dashed ${border}`, background: 'rgba(0,182,255,0.03)' }}>
+        <div style={{ marginBottom: 14, padding: 10, borderRadius: 6, border: `1px dashed ${border}`, background: 'var(--cs-accent-soft)' }}>
           <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>
-            Source Documents <span style={{ textTransform: 'none', color: '#00B6FF', fontWeight: 500 }}>(optional — AI will extract missing info)</span>
+            Source Documents <span style={{ textTransform: 'none', color: 'var(--cs-accent)', fontWeight: 500 }}>(optional — AI will extract missing info)</span>
           </div>
           <div style={{ fontSize: 10, color: muted, marginBottom: 8, lineHeight: 1.5 }}>
             Upload PDFs, Word docs, or images. AI will extract address, surfaces, and other details only for fields you leave empty.
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {documents.map((d, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 4, background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(8,49,111,0.04)', fontSize: 11, color: text, maxWidth: 220 }}>
-                <span style={{ fontSize: 14 }}>📄</span>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 4, background: dark ? 'rgba(255,255,255,0.04)' : 'var(--cs-accent-soft)', fontSize: 11, color: text, maxWidth: 220 }}>
+                <FileText size={14} color="var(--cs-text-sub)" />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{d.name}</span>
                 <button onClick={() => removeFile(setDocuments, i)} style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: 14, cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
               </div>
             ))}
-            <label style={{ padding: '6px 12px', borderRadius: 4, border: `1px dashed ${border}`, cursor: 'pointer', fontSize: 11, color: '#00B6FF', fontWeight: 600 }}>
+            <label style={{ padding: '6px 12px', borderRadius: 4, border: `1px dashed ${border}`, cursor: 'pointer', fontSize: 11, color: 'var(--cs-accent)', fontWeight: 600 }}>
               + Add document
               <input type="file" accept=".pdf,.doc,.docx,.txt,image/*" multiple onChange={handleDocFiles} style={{ display: 'none' }} />
             </label>
@@ -751,7 +762,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
             <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>Surface Details</div>
-            <button onClick={addSurface} style={{ padding: '3px 10px', borderRadius: 4, border: `1px solid ${border}`, background: 'transparent', color: '#00B6FF', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>+ Add Floor</button>
+            <button onClick={addSurface} style={{ padding: '3px 10px', borderRadius: 4, border: `1px solid ${border}`, background: 'transparent', color: 'var(--cs-accent)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>+ Add Floor</button>
           </div>
           {surfaces.map((s, i) => (
             <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
@@ -795,7 +806,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
         {/* Agent — shown on the sales conditions page */}
         <div style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 4 }}>
-            Contact Agent <span style={{ textTransform: 'none', color: '#00B6FF', fontWeight: 500 }}>(appears on the sales conditions page)</span>
+            Contact Agent <span style={{ textTransform: 'none', color: 'var(--cs-accent)', fontWeight: 500 }}>(appears on the sales conditions page)</span>
           </div>
           <select value={agentId} onChange={e => setAgentId(e.target.value)} style={inputStyle}>
             {LONG_TEASER_AGENTS.map(a => (
@@ -807,7 +818,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
         {/* Actions */}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={{ padding: '9px 20px', borderRadius: 8, border: `1px solid ${border}`, background: 'transparent', color: muted, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Cancel</button>
-          <button onClick={handleGenerate} disabled={loading} style={{ padding: '9px 24px', borderRadius: 8, border: 'none', cursor: 'pointer', background: loading ? 'rgba(8,49,111,0.3)' : 'linear-gradient(135deg,#08316F,#0a4a9a)', color: '#fff', fontSize: 13, fontWeight: 600 }}>
+          <button onClick={handleGenerate} disabled={loading} style={{ padding: '9px 24px', borderRadius: 8, border: 'none', cursor: 'pointer', background: loading ? 'var(--cs-accent-line)' : 'var(--cs-accent)', color: '#fff', fontSize: 13, fontWeight: 600 }}>
             {loading ? 'Generating...' : 'Generate Long Teaser'}
           </button>
         </div>
@@ -989,10 +1000,10 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
     return (
       <button onClick={() => setMode(id)} style={{
         flex: 1, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
-        border: `1px solid ${on ? '#08316F' : border}`,
-        background: on ? (dark ? 'rgba(0,182,255,0.12)' : 'rgba(8,49,111,0.06)') : 'transparent',
+        border: `1px solid ${on ? 'var(--cs-accent)' : border}`,
+        background: on ? 'var(--cs-accent-soft)' : 'transparent',
       }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: on ? '#08316F' : text }}>{label}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: on ? 'var(--cs-accent)' : text }}>{label}</div>
         <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>{sub}</div>
       </button>
     )
@@ -1003,10 +1014,10 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
       <div style={{ background: bg, borderRadius: 16, padding: 24, maxWidth: 640, width: '92%', border: `1px solid ${border}`, maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-          <span style={{ fontSize: 24 }}>🗂️</span>
+          <span style={{ display: 'inline-flex', color: 'var(--cs-accent)' }}><FolderOpen size={24} /></span>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: text }}>New Long Teaser</div>
-            <div style={{ fontSize: 11, color: '#08316F', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Single property or multiple assets</div>
+            <div style={{ fontSize: 11, color: 'var(--cs-accent)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Single property or multiple assets</div>
           </div>
         </div>
 
@@ -1021,8 +1032,8 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
             <p style={{ fontSize: 12, color: muted, margin: '0 0 12px', lineHeight: 1.5 }}>
               Pick one folder containing a <b>subfolder per building</b>. Each subfolder’s images become that building’s gallery; give each its address so it gets its own location + aerial view.
             </p>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: '#08316F', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-              📁 {reading ? 'Reading folder…' : 'Choose folder…'}
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: 'var(--cs-accent)', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+              <FolderOpen size={15} /> {reading ? 'Reading folder…' : 'Choose folder…'}
               <input type="file" webkitdirectory="" directory="" multiple style={{ display: 'none' }} onChange={handleFolderPick} />
             </label>
             {assets.length > 0 && (
@@ -1037,10 +1048,10 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
                       <input value={a.name} onChange={e => setAssetField(i, 'name', e.target.value)} placeholder="Building name" style={inputStyle} />
                       <input value={a.address} onChange={e => setAssetField(i, 'address', e.target.value)} placeholder="Address (street, postal code, city) — drives the aerial view" style={inputStyle} />
                     </div>
-                    <span style={{ fontSize: 11, color: muted, whiteSpace: 'nowrap', paddingTop: 8 }}>{a.photos.length} 📷</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: muted, whiteSpace: 'nowrap', paddingTop: 8 }}>{a.photos.length} <Camera size={12} /></span>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 4 }}>
-                      <button onClick={() => moveAsset(i, -1)} disabled={i === 0} style={{ padding: '1px 6px', borderRadius: 3, border: `1px solid ${border}`, background: bg, color: muted, cursor: i === 0 ? 'not-allowed' : 'pointer', fontSize: 10 }}>↑</button>
-                      <button onClick={() => moveAsset(i, 1)} disabled={i === assets.length - 1} style={{ padding: '1px 6px', borderRadius: 3, border: `1px solid ${border}`, background: bg, color: muted, cursor: i === assets.length - 1 ? 'not-allowed' : 'pointer', fontSize: 10 }}>↓</button>
+                      <button onClick={() => moveAsset(i, -1)} disabled={i === 0} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px 6px', borderRadius: 3, border: `1px solid ${border}`, background: bg, color: muted, cursor: i === 0 ? 'not-allowed' : 'pointer' }}><ChevronUp size={12} /></button>
+                      <button onClick={() => moveAsset(i, 1)} disabled={i === assets.length - 1} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px 6px', borderRadius: 3, border: `1px solid ${border}`, background: bg, color: muted, cursor: i === assets.length - 1 ? 'not-allowed' : 'pointer' }}><ChevronDown size={12} /></button>
                     </div>
                     <button onClick={() => removeAsset(i)} style={{ padding: '4px 8px', borderRadius: 4, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer', marginTop: 4 }}>×</button>
                   </div>
@@ -1056,12 +1067,12 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
             </div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 6 }}>Gallery</label>
             <div style={{ display: 'flex', gap: 8, marginBottom: photos.length ? 8 : 16 }}>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: '#08316F', fontSize: 13, fontWeight: 600 }}>
-                🖼️ Add images
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: 'var(--cs-accent)', fontSize: 13, fontWeight: 600 }}>
+                <Images size={15} /> Add images
                 <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handlePhotoPick} />
               </label>
               <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: muted, fontSize: 13, fontWeight: 600 }}>
-                📁 From folder
+                <FolderOpen size={15} /> From folder
                 <input type="file" webkitdirectory="" directory="" multiple style={{ display: 'none' }} onChange={handlePhotoPick} />
               </label>
             </div>
@@ -1084,7 +1095,7 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
             {documents.map((d, i) => (
               <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: text, background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderRadius: 6, padding: '4px 8px' }}>
-                📄 {d.name}
+                <FileText size={13} color="var(--cs-text-sub)" /> {d.name}
                 <button onClick={() => setDocuments(prev => prev.filter((_, idx) => idx !== i))} style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 12, padding: 0 }}>×</button>
               </span>
             ))}
@@ -1149,7 +1160,7 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
         {/* Actions */}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={{ padding: '9px 18px', borderRadius: 8, border: `1px solid ${border}`, background: 'transparent', color: muted, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-          <button onClick={handleSubmit} disabled={!canGenerate} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', cursor: canGenerate ? 'pointer' : 'not-allowed', background: canGenerate ? 'linear-gradient(135deg,#08316F,#0a4a9a)' : 'rgba(8,49,111,0.35)', color: '#fff', fontSize: 13, fontWeight: 700 }}>
+          <button onClick={handleSubmit} disabled={!canGenerate} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', cursor: canGenerate ? 'pointer' : 'not-allowed', background: canGenerate ? 'var(--cs-accent)' : 'var(--cs-accent-line)', color: '#fff', fontSize: 13, fontWeight: 700 }}>
             {loading ? 'Starting…' : (mode === 'multiple' ? 'Generate Portfolio Teaser' : 'Generate Long Teaser')}
           </button>
         </div>
@@ -1199,7 +1210,7 @@ function BuyersModal({ prop, brands, onClose, onGenerate, dark }) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
       <div style={{ background: bg, borderRadius: 16, padding: 24, maxWidth: 720, width: '94%', border: `1px solid ${border}`, maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <span style={{ fontSize: 22 }}>👥</span>
+          <span style={{ display: 'inline-flex', color: '#0a7a43' }}><Users size={22} /></span>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: text }}>{prop.title}</div>
             <div style={{ fontSize: 11, color: '#0a7a43', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Buyer shortlist — applicants from Odoo</div>
@@ -1259,7 +1270,7 @@ function BuyersModal({ prop, brands, onClose, onGenerate, dark }) {
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={{ padding: '9px 18px', borderRadius: 8, border: `1px solid ${border}`, background: 'transparent', color: muted, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-          <button onClick={handleGenerate} disabled={loading || fetching || shown.length === 0} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', cursor: (loading || fetching || shown.length === 0) ? 'not-allowed' : 'pointer', background: (loading || fetching || shown.length === 0) ? 'rgba(8,49,111,0.35)' : 'linear-gradient(135deg,#08316F,#0a4a9a)', color: '#fff', fontSize: 13, fontWeight: 700 }}>
+          <button onClick={handleGenerate} disabled={loading || fetching || shown.length === 0} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', cursor: (loading || fetching || shown.length === 0) ? 'not-allowed' : 'pointer', background: (loading || fetching || shown.length === 0) ? 'var(--cs-accent-line)' : 'var(--cs-accent)', color: '#fff', fontSize: 13, fontWeight: 700 }}>
             {loading ? 'Starting…' : 'Generate Shortlist PDF'}
           </button>
         </div>
@@ -1300,10 +1311,10 @@ function ValuationModal({ prop, brands, onClose, onGenerate, dark }) {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <span style={{ fontSize: 28 }}>{ASSET_ICONS[prop.asset_type] || '🏢'}</span>
+          <span style={{ display: 'inline-flex', color: 'var(--cs-accent)' }}><AssetIcon type={prop.asset_type} size={28} /></span>
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: text }}>{prop.title}</div>
-            <div style={{ fontSize: 12, color: '#00B6FF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <div style={{ fontSize: 12, color: 'var(--cs-accent)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               AI Valuation Report
             </div>
           </div>
@@ -1312,7 +1323,7 @@ function ValuationModal({ prop, brands, onClose, onGenerate, dark }) {
         {/* Property info */}
         <div style={{
           padding: 14, borderRadius: 8, marginBottom: 18,
-          background: dark ? 'rgba(255,255,255,0.03)' : 'rgba(8,49,111,0.02)',
+          background: dark ? 'rgba(255,255,255,0.03)' : 'var(--cs-surface2)',
           border: `1px solid ${border}`,
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -1328,7 +1339,7 @@ function ValuationModal({ prop, brands, onClose, onGenerate, dark }) {
           {prop.reference && (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 12, color: muted }}>Reference</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#00B6FF' }}>{prop.reference}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--cs-accent)' }}>{prop.reference}</span>
             </div>
           )}
         </div>
@@ -1342,8 +1353,8 @@ function ValuationModal({ prop, brands, onClose, onGenerate, dark }) {
             {methods.map(m => (
               <span key={m} style={{
                 padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 500,
-                background: 'rgba(0,182,255,0.08)', border: '1px solid rgba(0,182,255,0.15)',
-                color: '#00B6FF',
+                background: 'var(--cs-accent-soft)', border: '1px solid var(--cs-accent-soft)',
+                color: 'var(--cs-accent)',
               }}>{m}</span>
             ))}
           </div>
@@ -1379,7 +1390,7 @@ function ValuationModal({ prop, brands, onClose, onGenerate, dark }) {
           }}>Cancel</button>
           <button onClick={handleGenerate} disabled={loading} style={{
             padding: '9px 24px', borderRadius: 8, border: 'none', cursor: 'pointer',
-            background: loading ? 'rgba(0,182,255,0.3)' : 'linear-gradient(135deg,#08316F,#0a4a9a)',
+            background: loading ? 'var(--cs-accent-line)' : 'var(--cs-accent)',
             color: '#fff', fontSize: 13, fontWeight: 600, letterSpacing: '0.02em',
           }}>
             {loading ? 'Analyzing...' : 'Generate Valuation'}
@@ -1706,31 +1717,31 @@ export default function Properties() {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button onClick={() => setShowFolderTeaser(true)} style={{
             padding: '9px 20px', borderRadius: 8, cursor: 'pointer',
-            border: '1px solid rgba(8,49,111,0.3)', background: 'rgba(8,49,111,0.06)',
-            color: '#08316F', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
+            border: '1px solid var(--cs-accent-line)', background: 'var(--cs-accent-soft)',
+            color: 'var(--cs-accent)', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
           }} title="Create a long teaser from scratch — single property or multiple assets (one subfolder per building)">
-            ＋ New Long Teaser
+            <Plus size={15} /> New Long Teaser
           </button>
           {properties.length > 0 && (
             <button onClick={() => setShowPortfolio(true)} style={{
               padding: '9px 20px', borderRadius: 8, cursor: 'pointer',
-              border: '1px solid rgba(8,49,111,0.3)', background: 'rgba(8,49,111,0.06)',
-              color: '#08316F', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
+              border: '1px solid var(--cs-accent-line)', background: 'var(--cs-accent-soft)',
+              color: 'var(--cs-accent)', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
             }}>
-              📋 Portfolio {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}
+              <ClipboardList size={15} /> Portfolio {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}
             </button>
           )}
           <button onClick={handleSync} disabled={syncing} style={{
             padding: '9px 20px', borderRadius: 8, cursor: syncing ? 'wait' : 'pointer',
-            border: '1px solid rgba(0,182,255,0.3)', background: 'rgba(0,182,255,0.08)',
-            color: '#00B6FF', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
+            border: '1px solid var(--cs-accent-line)', background: 'var(--cs-accent-soft)',
+            color: 'var(--cs-accent)', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
           }}>
             {syncing ? (
               <>
-                <span style={{ width: 14, height: 14, border: '2px solid rgba(0,182,255,0.3)', borderTopColor: '#00B6FF', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
+                <span style={{ width: 14, height: 14, border: '2px solid var(--cs-accent-line)', borderTopColor: 'var(--cs-accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
                 Syncing...
               </>
-            ) : '🔄 Sync from Odoo'}
+            ) : (<><RefreshCw size={15} /> Sync from Odoo</>)}
           </button>
         </div>
       </div>
@@ -1759,7 +1770,7 @@ export default function Properties() {
         >
           <option value="all">All Types</option>
           {assetTypes.map(t => (
-            <option key={t} value={t}>{ASSET_ICONS[t] || '🏢'} {t}</option>
+            <option key={t} value={t}>{ASSET_LABELS[t] || t}</option>
           ))}
         </select>
         {filtered.length > 0 && (
@@ -1771,7 +1782,7 @@ export default function Properties() {
               type="checkbox"
               checked={filtered.length > 0 && filtered.every(p => selectedIds.includes(p.odoo_id))}
               onChange={selectAll}
-              style={{ accentColor: '#00B6FF' }}
+              style={{ accentColor: 'var(--cs-accent)' }}
             />
             Select all
           </label>
@@ -1800,7 +1811,7 @@ export default function Properties() {
       {/* Loading */}
       {loading && (
         <div style={{ textAlign: 'center', padding: 60, color: muted }}>
-          <span style={{ width: 28, height: 28, border: '3px solid rgba(0,182,255,0.2)', borderTopColor: '#00B6FF', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
+          <span style={{ width: 28, height: 28, border: '3px solid var(--cs-accent-soft)', borderTopColor: 'var(--cs-accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
           <div style={{ marginTop: 12, fontSize: 13 }}>Loading properties...</div>
         </div>
       )}
@@ -1811,17 +1822,17 @@ export default function Properties() {
           textAlign: 'center', padding: '80px 20px',
           border: `2px dashed ${border}`, borderRadius: 16,
         }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🏢</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16, color: 'var(--cs-text-muted)' }}><Building2 size={48} strokeWidth={1.5} /></div>
           <div style={{ fontSize: 16, fontWeight: 600, color: text, marginBottom: 8 }}>No properties yet</div>
           <div style={{ fontSize: 13, color: muted, marginBottom: 20 }}>
             Sync properties from your Odoo CRM to get started
           </div>
           <button onClick={handleSync} disabled={syncing} style={{
             padding: '10px 24px', borderRadius: 8, cursor: 'pointer',
-            border: 'none', background: 'linear-gradient(135deg,#08316F,#0a4a9a)',
-            color: '#fff', fontSize: 14, fontWeight: 600,
+            border: 'none', background: 'var(--cs-accent)',
+            color: '#fff', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 8,
           }}>
-            🔄 Sync from Odoo
+            <RefreshCw size={16} /> Sync from Odoo
           </button>
         </div>
       )}

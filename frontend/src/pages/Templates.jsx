@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
-import { Plus, Trash2, Code2, Info, Check } from 'lucide-react'
+import { Plus, Trash2, Code2, Info, Check, Clapperboard, BarChart3, ClipboardList, TrendingUp, Hash, Scale, MessageSquare, Target, Monitor, Smartphone, Square, Sparkles, Folder, PenLine, Menu, Palette } from 'lucide-react'
 import { apiFetch } from '../utils/apiFetch'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -13,26 +13,26 @@ const FORMATS = [
 ]
 
 const ALL_SCENE_TYPES = [
-  { id: 'title_card',    label: 'Title Card',    icon: '🎬', desc: 'Opening screen — main headline, subtitle, eyebrow label' },
-  { id: 'big_number',    label: 'Big Number',    icon: '📊', desc: 'Large stat/metric — value, unit, one-line context' },
-  { id: 'text_bullets',  label: 'Text Bullets',  icon: '📋', desc: 'Bullet list — heading + 3-4 key points' },
-  { id: 'bar_chart',     label: 'Bar Chart',     icon: '📈', desc: 'Horizontal bars — title, series data, source' },
-  { id: 'process_steps', label: 'Process Steps', icon: '🔢', desc: 'Numbered flow — title + up to 5 steps' },
-  { id: 'split_screen',  label: 'Split Screen',  icon: '⚖️',  desc: 'Two-column layout — comparison or contrast' },
-  { id: 'quote_card',    label: 'Quote Card',    icon: '💬', desc: 'Full quote — text, author, organisation' },
-  { id: 'cta_screen',    label: 'CTA Screen',    icon: '🎯', desc: 'Closing call-to-action — headline, body, button, URL' },
+  { id: 'title_card',    label: 'Title Card',    icon: Clapperboard,  desc: 'Opening screen — main headline, subtitle, eyebrow label' },
+  { id: 'big_number',    label: 'Big Number',    icon: BarChart3,     desc: 'Large stat/metric — value, unit, one-line context' },
+  { id: 'text_bullets',  label: 'Text Bullets',  icon: ClipboardList, desc: 'Bullet list — heading + 3-4 key points' },
+  { id: 'bar_chart',     label: 'Bar Chart',     icon: TrendingUp,    desc: 'Horizontal bars — title, series data, source' },
+  { id: 'process_steps', label: 'Process Steps', icon: Hash,          desc: 'Numbered flow — title + up to 5 steps' },
+  { id: 'split_screen',  label: 'Split Screen',  icon: Scale,         desc: 'Two-column layout — comparison or contrast' },
+  { id: 'quote_card',    label: 'Quote Card',    icon: MessageSquare, desc: 'Full quote — text, author, organisation' },
+  { id: 'cta_screen',    label: 'CTA Screen',    icon: Target,        desc: 'Closing call-to-action — headline, body, button, URL' },
 ]
 
-const FORMAT_ICONS = { '16:9': '🖥️', '9:16': '📱', '1:1': '⬛' }
+const FORMAT_ICONS = { '16:9': Monitor, '9:16': Smartphone, '1:1': Square }
 
 const STYLE_PRESETS = [
   { label: 'Dark Navy + Gold',    accent: '#C8A96E', gradient: 'linear-gradient(135deg,#08316F,#041d45)',  desc: 'Institutional · premium · investment' },
-  { label: 'Dark + Cyan Data',    accent: '#00B6FF', gradient: 'linear-gradient(135deg,#031520,#0a2a3d)',  desc: 'Bloomberg terminal · data-heavy' },
+  { label: 'Dark + Cyan Data',    accent: 'var(--cs-accent)', gradient: 'linear-gradient(135deg,#031520,#0a2a3d)',  desc: 'Bloomberg terminal · data-heavy' },
   { label: 'Black + Red Bold',    accent: '#FF4444', gradient: 'linear-gradient(135deg,#0a0a0a,#1a0000)',  desc: 'Breaking news · high energy · viral' },
   { label: 'Light Editorial',     accent: '#08316F', gradient: 'linear-gradient(135deg,#F8F5F0,#e8e4dc)',  desc: 'Clean whitespace · thought leadership' },
   { label: 'Purple Gradient',     accent: '#9b6dff', gradient: 'linear-gradient(135deg,#1a0a2e,#08316F)',  desc: 'Modern social-native · Gen-Z audience' },
   { label: 'Teal CRE Terminal',   accent: '#00E5C8', gradient: 'linear-gradient(135deg,#080E1A,#0C1628)',  desc: 'CRE & real estate · investor grade' },
-  { label: 'Custom',              accent: '#00B6FF', gradient: 'linear-gradient(135deg,#08316F,#00B6FF)',  desc: 'Choose your own colors' },
+  { label: 'Custom',              accent: 'var(--cs-accent)', gradient: 'linear-gradient(135deg,#08316F,var(--cs-accent))',  desc: 'Choose your own colors' },
 ]
 
 // ─── HTML starter template ────────────────────────────────────────────────────
@@ -227,7 +227,7 @@ function TemplateCard({ tmpl, onDelete }) {
     >
       {/* Visual preview band */}
       <div style={{ height: 72, background: tmpl.gradient, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 28 }}>{FORMAT_ICONS[tmpl.ratio] || '🖥️'}</span>
+        {(() => { const FmtIcon = FORMAT_ICONS[tmpl.ratio] || Monitor; return <FmtIcon size={26} color="rgba(255,255,255,0.85)" /> })()}
         <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 5 }}>
           {tmpl.builtin
             ? <span style={{ padding: '2px 7px', borderRadius: 4, background: 'rgba(0,0,0,0.4)', color: 'rgba(255,255,255,0.6)', fontSize: 9, fontWeight: 600, letterSpacing: '0.08em' }}>BUILT-IN</span>
@@ -252,9 +252,10 @@ function TemplateCard({ tmpl, onDelete }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: isCustom ? 12 : 0 }}>
           {(tmpl.scenes || []).map(s => {
             const st = ALL_SCENE_TYPES.find(x => x.id === s)
+            const StIcon = st?.icon
             return (
-              <span key={s} style={{ padding: '2px 7px', borderRadius: 4, background: `${tmpl.accent}14`, color: tmpl.accent, fontSize: 10, fontWeight: 600 }}>
-                {st?.icon} {st?.label || s}
+              <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px', borderRadius: 4, background: `${tmpl.accent}14`, color: tmpl.accent, fontSize: 10, fontWeight: 600 }}>
+                {StIcon && <StIcon size={11} />} {st?.label || s}
               </span>
             )
           })}
@@ -367,7 +368,7 @@ function AddTemplateModal({ onClose, onSaved }) {
           {/* Step indicator */}
           <div style={{ display: 'flex', gap: 6 }}>
             {[1, 2].map(s => (
-              <div key={s} onClick={() => setStep(s)} style={{ width: 28, height: 28, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, border: `1px solid ${step === s ? '#00B6FF' : 'var(--cs-border)'}`, background: step === s ? 'rgba(0,182,255,0.12)' : 'transparent', color: step === s ? '#00B6FF' : 'var(--cs-text-muted)' }}>{s}</div>
+              <div key={s} onClick={() => setStep(s)} style={{ width: 28, height: 28, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, border: `1px solid ${step === s ? 'var(--cs-accent)' : 'var(--cs-border)'}`, background: step === s ? 'var(--cs-accent-soft)' : 'transparent', color: step === s ? 'var(--cs-accent)' : 'var(--cs-text-muted)' }}>{s}</div>
             ))}
           </div>
         </div>
@@ -386,15 +387,18 @@ function AddTemplateModal({ onClose, onSaved }) {
             <div>
               <label style={{ color: 'var(--cs-text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 8 }}>Canvas format</label>
               <div style={{ display: 'flex', gap: 8 }}>
-                {FORMATS.map(f => (
-                  <div key={f.id} onClick={() => set('ratio', f.id)} style={{ flex: 1, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', border: `1px solid ${form.ratio === f.id ? '#00B6FF' : 'var(--cs-border)'}`, background: form.ratio === f.id ? 'rgba(0,182,255,0.08)' : 'var(--cs-hover)', transition: 'all 0.12s', textAlign: 'center' }}>
-                    <div style={{ fontSize: 20, marginBottom: 4 }}>{FORMAT_ICONS[f.id]}</div>
-                    <div style={{ color: form.ratio === f.id ? '#00B6FF' : 'var(--cs-text)', fontWeight: 600, fontSize: 12 }}>{f.id}</div>
+                {FORMATS.map(f => {
+                  const FmtIcon = FORMAT_ICONS[f.id]
+                  return (
+                  <div key={f.id} onClick={() => set('ratio', f.id)} style={{ flex: 1, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', border: `1px solid ${form.ratio === f.id ? 'var(--cs-accent)' : 'var(--cs-border)'}`, background: form.ratio === f.id ? 'var(--cs-accent-soft)' : 'var(--cs-hover)', transition: 'all 0.12s', textAlign: 'center' }}>
+                    <div style={{ marginBottom: 4, display: 'flex', justifyContent: 'center' }}>{FmtIcon && <FmtIcon size={20} color={form.ratio === f.id ? 'var(--cs-accent)' : 'var(--cs-text-sub)'} />}</div>
+                    <div style={{ color: form.ratio === f.id ? 'var(--cs-accent)' : 'var(--cs-text)', fontWeight: 600, fontSize: 12 }}>{f.id}</div>
                     <div style={{ color: 'var(--cs-text-muted)', fontSize: 10, marginTop: 2 }}>{f.w}×{f.h}</div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
-              <div style={{ color: 'var(--cs-text-muted)', fontSize: 11, marginTop: 6 }}>{FORMAT_ICONS[form.ratio]} {fmt?.sub}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--cs-text-muted)', fontSize: 11, marginTop: 6 }}>{(() => { const FmtIcon = FORMAT_ICONS[form.ratio]; return FmtIcon ? <FmtIcon size={13} /> : null })()} {fmt?.sub}</div>
             </div>
 
             {/* Scene types */}
@@ -404,12 +408,12 @@ function AddTemplateModal({ onClose, onSaved }) {
                 {ALL_SCENE_TYPES.map(st => {
                   const on = form.scenes.includes(st.id)
                   return (
-                    <div key={st.id} onClick={() => toggleScene(st.id)} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '9px 12px', borderRadius: 7, cursor: 'pointer', border: `1px solid ${on ? '#00B6FF40' : 'var(--cs-border)'}`, background: on ? 'rgba(0,182,255,0.06)' : 'var(--cs-hover)', transition: 'all 0.12s' }}>
-                      <div style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, marginTop: 1, border: `1px solid ${on ? '#00B6FF' : 'var(--cs-border)'}`, background: on ? '#00B6FF' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div key={st.id} onClick={() => toggleScene(st.id)} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '9px 12px', borderRadius: 7, cursor: 'pointer', border: `1px solid ${on ? 'var(--cs-accent)40' : 'var(--cs-border)'}`, background: on ? 'var(--cs-accent-soft)' : 'var(--cs-hover)', transition: 'all 0.12s' }}>
+                      <div style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, marginTop: 1, border: `1px solid ${on ? 'var(--cs-accent)' : 'var(--cs-border)'}`, background: on ? 'var(--cs-accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {on && <Check size={10} color="#fff" />}
                       </div>
                       <div>
-                        <div style={{ color: 'var(--cs-text)', fontSize: 12, fontWeight: 600 }}>{st.icon} {st.label}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--cs-text)', fontSize: 12, fontWeight: 600 }}><st.icon size={13} style={{ color: 'var(--cs-text-sub)' }} /> {st.label}</div>
                         <div style={{ color: 'var(--cs-text-muted)', fontSize: 10, marginTop: 1 }}>{st.desc}</div>
                       </div>
                     </div>
@@ -455,8 +459,8 @@ function AddTemplateModal({ onClose, onSaved }) {
 
         {step === 2 && (
           <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ padding: '12px 14px', borderRadius: 8, background: 'rgba(0,182,255,0.06)', border: '1px solid rgba(0,182,255,0.2)' }}>
-              <div style={{ color: '#00B6FF', fontWeight: 600, fontSize: 12, marginBottom: 4 }}>How templates work</div>
+            <div style={{ padding: '12px 14px', borderRadius: 8, background: 'var(--cs-accent-soft)', border: '1px solid var(--cs-accent-soft)' }}>
+              <div style={{ color: 'var(--cs-accent)', fontWeight: 600, fontSize: 12, marginBottom: 4 }}>How templates work</div>
               <div style={{ color: 'var(--cs-text-sub)', fontSize: 12, lineHeight: 1.5 }}>
                 The template HTML must have a <code style={{ background: 'var(--cs-hover)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace' }}>{'<div id="scene-container">'}</code> and expose <code style={{ background: 'var(--cs-hover)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace' }}>window.loadScene(sceneData)</code> returning <code style={{ background: 'var(--cs-hover)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace' }}>true</code> on success. Define a <code style={{ background: 'var(--cs-hover)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace' }}>SCENE_BUILDERS</code> object with a function per scene type — auto-generate creates this for you.
               </div>
@@ -464,9 +468,9 @@ function AddTemplateModal({ onClose, onSaved }) {
 
             {/* Mode selector */}
             <div style={{ display: 'flex', gap: 6 }}>
-              {[['generate','✨ Auto-generate starter'], ['upload','📁 Upload HTML file'], ['paste','✏️ Paste HTML code']].map(([id, lbl]) => (
-                <button key={id} onClick={() => setHtmlMode(id)} style={{ flex: 1, padding: '7px 0', borderRadius: 7, border: `1px solid ${htmlMode === id ? '#00B6FF' : 'var(--cs-border)'}`, background: htmlMode === id ? 'rgba(0,182,255,0.08)' : 'var(--cs-hover)', color: htmlMode === id ? '#00B6FF' : 'var(--cs-text-sub)', fontSize: 11, fontWeight: htmlMode === id ? 600 : 400, cursor: 'pointer' }}>
-                  {lbl}
+              {[['generate', Sparkles, 'Auto-generate starter'], ['upload', Folder, 'Upload HTML file'], ['paste', PenLine, 'Paste HTML code']].map(([id, ModeIcon, lbl]) => (
+                <button key={id} onClick={() => setHtmlMode(id)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '7px 0', borderRadius: 7, border: `1px solid ${htmlMode === id ? 'var(--cs-accent)' : 'var(--cs-border)'}`, background: htmlMode === id ? 'var(--cs-accent-soft)' : 'var(--cs-hover)', color: htmlMode === id ? 'var(--cs-accent)' : 'var(--cs-text-sub)', fontSize: 11, fontWeight: htmlMode === id ? 600 : 400, cursor: 'pointer' }}>
+                  <ModeIcon size={13} /> {lbl}
                 </button>
               ))}
             </div>
@@ -477,7 +481,8 @@ function AddTemplateModal({ onClose, onSaved }) {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                   {form.scenes.map(s => {
                     const st = ALL_SCENE_TYPES.find(x => x.id === s)
-                    return <span key={s} style={{ padding: '3px 9px', borderRadius: 5, background: `${form.accent}18`, color: form.accent, fontSize: 11, fontWeight: 600 }}>{st?.icon} {st?.label || s}</span>
+                    const StIcon = st?.icon
+                    return <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 5, background: `${form.accent}18`, color: form.accent, fontSize: 11, fontWeight: 600 }}>{StIcon && <StIcon size={12} />} {st?.label || s}</span>
                   })}
                 </div>
                 <div style={{ color: 'var(--cs-text-muted)', fontSize: 11, marginTop: 10, lineHeight: 1.5 }}>
@@ -516,8 +521,8 @@ function AddTemplateModal({ onClose, onSaved }) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={onClose} style={{ padding: '7px 14px', borderRadius: 7, border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 12, cursor: 'pointer' }}>Cancel</button>
             {step === 1
-              ? <button onClick={() => setStep(2)} disabled={!form.label || form.scenes.length === 0} style={{ padding: '7px 18px', borderRadius: 7, border: 'none', cursor: !form.label || form.scenes.length === 0 ? 'not-allowed' : 'pointer', background: !form.label || form.scenes.length === 0 ? 'var(--cs-hover)' : 'linear-gradient(135deg,#08316F,#00B6FF)', color: !form.label || form.scenes.length === 0 ? 'var(--cs-text-muted)' : '#fff', fontSize: 12, fontWeight: 600 }}>Next: HTML →</button>
-              : <button onClick={handleSave} disabled={saving} style={{ padding: '7px 18px', borderRadius: 7, border: 'none', cursor: saving ? 'not-allowed' : 'pointer', background: saving ? 'var(--cs-hover)' : 'linear-gradient(135deg,#08316F,#00B6FF)', color: saving ? 'var(--cs-text-muted)' : '#fff', fontSize: 12, fontWeight: 600, opacity: saving ? 0.6 : 1 }}>
+              ? <button onClick={() => setStep(2)} disabled={!form.label || form.scenes.length === 0} style={{ padding: '7px 18px', borderRadius: 7, border: 'none', cursor: !form.label || form.scenes.length === 0 ? 'not-allowed' : 'pointer', background: !form.label || form.scenes.length === 0 ? 'var(--cs-hover)' : 'var(--cs-accent)', color: !form.label || form.scenes.length === 0 ? 'var(--cs-text-muted)' : '#fff', fontSize: 12, fontWeight: 600 }}>Next: HTML →</button>
+              : <button onClick={handleSave} disabled={saving} style={{ padding: '7px 18px', borderRadius: 7, border: 'none', cursor: saving ? 'not-allowed' : 'pointer', background: saving ? 'var(--cs-hover)' : 'var(--cs-accent)', color: saving ? 'var(--cs-text-muted)' : '#fff', fontSize: 12, fontWeight: 600, opacity: saving ? 0.6 : 1 }}>
                   {saving ? 'Creating…' : 'Create template'}
                 </button>
             }
@@ -572,7 +577,7 @@ export default function Templates() {
             {templates.filter(t => t.builtin).length} built-in · {templates.filter(t => !t.builtin).length} custom
           </p>
         </div>
-        <button onClick={() => setShowAdd(true)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#08316F,#00B6FF)', color: '#fff', fontSize: 13, fontWeight: 600, boxShadow: '0 2px 12px rgba(0,182,255,0.25)' }}>
+        <button onClick={() => setShowAdd(true)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--cs-accent)', color: '#fff', fontSize: 13, fontWeight: 600, boxShadow: 'var(--cs-shadow-sm)' }}>
           <Plus size={15} /> New template
         </button>
       </div>
@@ -581,7 +586,7 @@ export default function Templates() {
       <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 10, background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
         {ALL_SCENE_TYPES.map(st => (
           <div key={st.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-            <span style={{ fontSize: 16, flexShrink: 0 }}>{st.icon}</span>
+            <st.icon size={16} style={{ flexShrink: 0, marginTop: 1, color: 'var(--cs-accent)' }} />
             <div>
               <div style={{ color: 'var(--cs-text)', fontSize: 12, fontWeight: 600 }}>{st.label}</div>
               <div style={{ color: 'var(--cs-text-muted)', fontSize: 11, lineHeight: 1.4 }}>{st.desc}</div>
@@ -592,8 +597,8 @@ export default function Templates() {
 
       {/* Format tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 16, background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 8, padding: 4, width: 'fit-content' }}>
-        {[['all', '☰ All'], ...Object.keys(RATIO_LABELS).map(r => [r, `${FORMAT_ICONS[r]} ${RATIO_LABELS[r]}`])].map(([id, lbl]) => (
-          <button key={id} onClick={() => setActiveTab(id)} style={{ padding: '5px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, background: activeTab === id ? 'rgba(0,182,255,0.1)' : 'transparent', color: activeTab === id ? '#00B6FF' : 'var(--cs-text-sub)', fontWeight: activeTab === id ? 600 : 400, transition: 'all 0.12s' }}>{lbl}</button>
+        {[['all', Menu, 'All'], ...Object.keys(RATIO_LABELS).map(r => [r, FORMAT_ICONS[r], RATIO_LABELS[r]])].map(([id, TabIcon, lbl]) => (
+          <button key={id} onClick={() => setActiveTab(id)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, background: activeTab === id ? 'var(--cs-accent-soft)' : 'transparent', color: activeTab === id ? 'var(--cs-accent)' : 'var(--cs-text-sub)', fontWeight: activeTab === id ? 600 : 400, transition: 'all 0.12s' }}>{TabIcon && <TabIcon size={13} />} {lbl}</button>
         ))}
       </div>
 
@@ -604,7 +609,7 @@ export default function Templates() {
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--cs-text-muted)' }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>🎨</div>
+          <Palette size={36} style={{ marginBottom: 12, color: 'var(--cs-text-muted)' }} />
           <div>No templates in this format yet</div>
         </div>
       ) : (

@@ -6,7 +6,7 @@ const BrandContext = createContext()
 
 const DEFAULT_BRANDS = [
   { id: 'rodschinson', name: 'Rodschinson Investment', shortName: 'RI', primaryColor: '#08316F', accentColor: '#C8A96E', textColor: '#FFFFFF', logoUrl: null },
-  { id: 'rachid',      name: 'Rachid Chikhi',          shortName: 'RC', primaryColor: '#1a1a2e', accentColor: '#00B6FF', textColor: '#FFFFFF', logoUrl: null },
+  { id: 'rachid',      name: 'Rachid Chikhi',          shortName: 'RC', primaryColor: '#1a1a2e', accentColor: 'var(--cs-accent)', textColor: '#FFFFFF', logoUrl: null },
 ]
 
 export function BrandProvider({ children }) {

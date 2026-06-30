@@ -3,7 +3,7 @@ import { useBrands } from '../contexts/BrandContext'
 import { useToast } from '../contexts/ToastContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { apiFetch } from '../utils/apiFetch'
-import { Plus, Pencil, Trash2, Upload, Globe, Tag } from 'lucide-react'
+import { Plus, Pencil, Trash2, Upload, Globe, Tag, Building2 } from 'lucide-react'
 
 // ─── Font options ─────────────────────────────────────────────────────────────
 const FONT_OPTIONS = [
@@ -84,7 +84,7 @@ function SizeField({ label, value, onChange, min = 8, max = 120 }) {
       </label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <input type="range" min={min} max={max} value={value} onChange={e => onChange(e.target.value)}
-          style={{ flex: 1, accentColor: '#00B6FF', cursor: 'pointer' }} />
+          style={{ flex: 1, accentColor: 'var(--cs-accent)', cursor: 'pointer' }} />
         <input type="number" min={min} max={max} value={value} onChange={e => onChange(e.target.value)}
           style={{ width: 52, background: 'var(--cs-input-bg)', border: '1px solid var(--cs-border)', borderRadius: 6, padding: '5px 8px', color: 'var(--cs-text)', fontSize: 12, fontVariantNumeric: 'tabular-nums', outline: 'none', textAlign: 'center', fontFamily: 'inherit' }} />
       </div>
@@ -116,8 +116,8 @@ function LogoUploader({ currentLogoUrl, shortName, primaryColor, onUploaded }) {
         onDrop={e => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]) }}
         style={{
           width: 96, height: 96, borderRadius: 12, cursor: 'pointer',
-          border: `2px dashed ${dragging ? '#00B6FF' : 'var(--cs-border)'}`,
-          background: dragging ? 'rgba(0,182,255,0.06)' : 'var(--cs-hover)',
+          border: `2px dashed ${dragging ? 'var(--cs-accent)' : 'var(--cs-border)'}`,
+          background: dragging ? 'var(--cs-accent-soft)' : 'var(--cs-hover)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', transition: 'all 0.15s', position: 'relative',
         }}
@@ -308,7 +308,7 @@ function BrandModal({ brand, onClose, onSaved }) {
 
           {/* Context for AI */}
           <div>
-            <label style={{ color: 'var(--cs-text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 5 }}>AI context <span style={{ color: 'rgba(0,182,255,0.7)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>— used in content generation prompts</span></label>
+            <label style={{ color: 'var(--cs-text-muted)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 5 }}>AI context <span style={{ color: 'var(--cs-accent-line)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>— used in content generation prompts</span></label>
             <textarea value={form.context} onChange={e => set('context', e.target.value)} rows={2}
               placeholder="e.g. Premium CRE & M&A advisory firm based in Brussels, Dubai and Casablanca. Targets HNW investors and family offices."
               style={{ width: '100%', boxSizing: 'border-box', background: 'var(--cs-input-bg)', border: '1px solid var(--cs-border)', borderRadius: 7, padding: '8px 12px', color: 'var(--cs-text)', fontSize: 12, resize: 'vertical', outline: 'none', fontFamily: 'inherit', lineHeight: 1.5 }} />
@@ -316,7 +316,7 @@ function BrandModal({ brand, onClose, onSaved }) {
 
           {/* ICP — Ideal Customer Profile */}
           <div style={{ padding: '14px', borderRadius: 9, background: 'var(--cs-surface2)', border: '1px solid var(--cs-border)' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(0,182,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--cs-accent-line)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
               Ideal Customer Profile <span style={{ color: 'var(--cs-text-muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>— injected into every generation prompt</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
@@ -353,7 +353,7 @@ function BrandModal({ brand, onClose, onSaved }) {
         {/* Footer */}
         <div style={{ padding: '14px 24px', borderTop: '1px solid var(--cs-border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button onClick={onClose} style={{ padding: '8px 16px', borderRadius: 7, border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 12, cursor: 'pointer' }}>Cancel</button>
-          <button onClick={handleSave} disabled={saving} style={{ padding: '8px 20px', borderRadius: 7, border: 'none', cursor: saving ? 'not-allowed' : 'pointer', background: saving ? 'var(--cs-hover)' : 'linear-gradient(135deg,#08316F,#00B6FF)', color: saving ? 'var(--cs-text-muted)' : '#fff', fontSize: 12, fontWeight: 600, transition: 'opacity 0.15s', opacity: saving ? 0.6 : 1 }}>
+          <button onClick={handleSave} disabled={saving} style={{ padding: '8px 20px', borderRadius: 7, border: 'none', cursor: saving ? 'not-allowed' : 'pointer', background: saving ? 'var(--cs-hover)' : 'var(--cs-accent)', color: saving ? 'var(--cs-text-muted)' : '#fff', fontSize: 12, fontWeight: 600, transition: 'opacity 0.15s', opacity: saving ? 0.6 : 1 }}>
             {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create brand'}
           </button>
         </div>
@@ -431,7 +431,7 @@ function BrandCard({ brand, onEdit, onDelete }) {
             </div>
           )}
           {brand.context && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 5, background: 'rgba(0,182,255,0.07)', color: '#00B6FF', fontSize: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 5, background: 'var(--cs-accent-soft)', color: 'var(--cs-accent)', fontSize: 10 }}>
               <Tag size={9} /> AI context set
             </div>
           )}
@@ -474,7 +474,7 @@ function DeleteConfirm({ brand, onClose, onDeleted }) {
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 110, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--cs-surface)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 12, width: 360, padding: '24px', animation: 'scalein 0.15s ease' }}>
-        <div style={{ fontSize: 28, marginBottom: 12 }}>🗑️</div>
+        <div style={{ marginBottom: 12, color: '#f87171' }}><Trash2 size={28} /></div>
         <div style={{ color: 'var(--cs-text)', fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Delete "{brand.name}"?</div>
         <div style={{ color: 'var(--cs-text-sub)', fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>This will remove the brand and its logo. Content already generated won't be affected.</div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -505,7 +505,7 @@ export default function Brands() {
             Manage your brand identities — logo, colors, and AI context used during content generation.
           </p>
         </div>
-        <button onClick={() => setModal({ type: 'create' })} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#08316F,#00B6FF)', color: '#fff', fontSize: 13, fontWeight: 600, boxShadow: '0 2px 12px rgba(0,182,255,0.25)' }}>
+        <button onClick={() => setModal({ type: 'create' })} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--cs-accent)', color: '#fff', fontSize: 13, fontWeight: 600, boxShadow: 'var(--cs-shadow-sm)' }}>
           <Plus size={15} /> New brand
         </button>
       </div>
@@ -513,7 +513,7 @@ export default function Brands() {
       {/* Grid */}
       {brands.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--cs-text-muted)' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🏢</div>
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center', color: 'var(--cs-text-muted)' }}><Building2 size={40} /></div>
           <div style={{ fontSize: 14 }}>No brands yet — create your first one</div>
         </div>
       ) : (

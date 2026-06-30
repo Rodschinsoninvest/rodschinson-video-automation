@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts'
+import { Eye, MessageSquare, Film, Target, ArrowUp, ArrowDown, ArrowRight } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -82,10 +83,10 @@ function BrandFilter({ active, onChange }) {
           return (
             <button key={b.id} onClick={() => onChange(b.id)} style={{
               padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
-              background: on ? 'rgba(0,182,255,0.12)' : 'var(--cs-hover)',
-              color: on ? '#00B6FF' : 'var(--cs-text-sub)',
+              background: on ? 'var(--cs-accent-soft)' : 'var(--cs-hover)',
+              color: on ? 'var(--cs-accent)' : 'var(--cs-text-sub)',
               fontSize: 12, fontWeight: on ? 600 : 400,
-              outline: on ? '1px solid rgba(0,182,255,0.3)' : '1px solid var(--cs-border)',
+              outline: on ? '1px solid var(--cs-accent-line)' : '1px solid var(--cs-border)',
               transition: 'all 0.12s',
             }}>
               {b.label}
@@ -101,24 +102,25 @@ function BrandFilter({ active, onChange }) {
 function StatCard({ label, value, delta, deltaLabel, icon, accent, drilldownLabel, onDrilldown }) {
   const positive = delta > 0
   const [hov, setHov] = useState(false)
+  const tileTint = `color-mix(in srgb, ${accent} 12%, transparent)`
   return (
     <div
       onClick={onDrilldown}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        background: 'var(--cs-surface)', border: `1px solid ${hov && onDrilldown ? accent + '40' : 'var(--cs-border)'}`,
+        background: 'var(--cs-surface)', border: `1px solid ${hov && onDrilldown ? `color-mix(in srgb, ${accent} 35%, transparent)` : 'var(--cs-border)'}`,
         borderRadius: 10, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 10,
         cursor: onDrilldown ? 'pointer' : 'default',
         transition: 'border-color 0.15s, box-shadow 0.15s',
-        boxShadow: hov && onDrilldown ? `0 4px 20px ${accent}18` : 'none',
+        boxShadow: hov && onDrilldown ? 'var(--cs-shadow-md)' : 'none',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ color: 'var(--cs-text-muted)', fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase' }}>
           {label}
         </span>
-        <span style={{ width: 32, height: 32, borderRadius: 8, fontSize: 16, background: `${accent}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ width: 32, height: 32, borderRadius: 8, background: tileTint, color: accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {icon}
         </span>
       </div>
@@ -128,17 +130,18 @@ function StatCard({ label, value, delta, deltaLabel, icon, accent, drilldownLabe
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 2,
             fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 10,
             color: positive ? '#4ade80' : '#f87171',
             background: positive ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)',
           }}>
-            {positive ? '↑' : '↓'} {Math.abs(delta)}
+            {positive ? <ArrowUp size={12} /> : <ArrowDown size={12} />} {Math.abs(delta)}
           </span>
           <span style={{ color: 'var(--cs-text-muted)', fontSize: 11 }}>{deltaLabel}</span>
         </div>
         {onDrilldown && (
-          <span style={{ color: hov ? accent : 'var(--cs-text-muted)', fontSize: 10, transition: 'color 0.15s' }}>
-            {drilldownLabel} →
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: hov ? accent : 'var(--cs-text-muted)', fontSize: 10, transition: 'color 0.15s' }}>
+            {drilldownLabel} <ArrowRight size={11} />
           </span>
         )}
       </div>
@@ -185,11 +188,11 @@ function ViewsChart({ data, brand }) {
         <Tooltip content={<CustomTooltip />} />
         {showBoth ? (
           <>
-            <Line type="monotone" dataKey="rodschinson" name="Rodschinson" stroke="#C8A96E" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-            <Line type="monotone" dataKey="rachid" name="Rachid" stroke="#00B6FF" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+            <Line type="monotone" dataKey="rodschinson" name="Rodschinson" stroke="var(--cs-gold)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+            <Line type="monotone" dataKey="rachid" name="Rachid" stroke="var(--cs-accent)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
           </>
         ) : (
-          <Line type="monotone" dataKey="views" name="Views" stroke="#00B6FF" strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: '#00B6FF' }} />
+          <Line type="monotone" dataKey="views" name="Views" stroke="var(--cs-accent)" strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: 'var(--cs-accent)' }} />
         )}
       </LineChart>
     </ResponsiveContainer>
@@ -201,7 +204,7 @@ function PlatformBars({ data, onPlatformClick }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {data.map(({ platform, views }) => {
-        const color = PLATFORM_COLORS[platform] || '#00B6FF'
+        const color = PLATFORM_COLORS[platform] || 'var(--cs-accent)'
         const pct   = (views / maxVal) * 100
         return (
           <div key={platform} style={{ cursor: onPlatformClick ? 'pointer' : 'default' }} onClick={() => onPlatformClick?.(platform)}>
@@ -276,15 +279,15 @@ export default function Analytics() {
           <p style={{ color: 'var(--cs-text-muted)', fontSize: 13, margin: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             Last {rangeLabel} · updated hourly
             {data?.source === 'metricool' && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(0,182,255,0.08)', border: '1px solid rgba(0,182,255,0.2)', borderRadius: 10, padding: '1px 8px', fontSize: 11, color: '#00B6FF', fontWeight: 600 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00B6FF', display: 'inline-block' }} />
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--cs-accent-soft)', border: '1px solid var(--cs-accent-soft)', borderRadius: 10, padding: '1px 8px', fontSize: 11, color: 'var(--cs-accent)', fontWeight: 600 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--cs-accent)', display: 'inline-block' }} />
                 Metricool
               </span>
             )}
             {data?.source === 'internal' && (
-              <span style={{ color: 'rgba(200,169,110,0.6)', fontSize: 11 }}>· demo data — connect Metricool to see real stats</span>
+              <span style={{ color: 'var(--cs-gold)', fontSize: 11 }}>· demo data — connect Metricool to see real stats</span>
             )}
-            {apiError && <span style={{ color: 'rgba(200,169,110,0.6)', fontSize: 11 }}>· API offline</span>}
+            {apiError && <span style={{ color: 'var(--cs-gold)', fontSize: 11 }}>· API offline</span>}
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
@@ -293,8 +296,8 @@ export default function Analytics() {
             {DATE_RANGES.map(({ id, label }) => (
               <button key={id} onClick={() => setRange(id)} style={{
                 padding: '5px 14px', border: 'none', cursor: 'pointer', fontSize: 12,
-                background: range === id ? 'rgba(0,182,255,0.1)' : 'transparent',
-                color: range === id ? '#00B6FF' : 'var(--cs-text-sub)',
+                background: range === id ? 'var(--cs-accent-soft)' : 'transparent',
+                color: range === id ? 'var(--cs-accent)' : 'var(--cs-text-sub)',
                 fontWeight: range === id ? 600 : 400,
                 borderRight: id !== '90d' ? '1px solid var(--cs-border)' : 'none',
                 transition: 'all 0.12s',
@@ -307,13 +310,13 @@ export default function Analytics() {
 
       {/* Metricool setup banner */}
       {!loading && data?.source === 'internal' && (
-        <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 10, background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 10, background: 'var(--cs-gold-soft)', border: '1px solid var(--cs-gold-soft)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <div style={{ color: 'var(--cs-text)', fontSize: 13, fontWeight: 600, marginBottom: 2 }}>Connect Metricool for real analytics</div>
             <div style={{ color: 'var(--cs-text-muted)', fontSize: 12 }}>Add <code style={{ background: 'var(--cs-hover)', padding: '1px 5px', borderRadius: 3 }}>METRICOOL_TOKEN</code>, <code style={{ background: 'var(--cs-hover)', padding: '1px 5px', borderRadius: 3 }}>METRICOOL_USER_ID</code> and <code style={{ background: 'var(--cs-hover)', padding: '1px 5px', borderRadius: 3 }}>METRICOOL_BLOG_ID</code> to your .env</div>
           </div>
-          <a href="https://app.metricool.com/en/profile/integrations" target="_blank" rel="noreferrer" style={{ padding: '7px 16px', borderRadius: 7, background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.3)', color: '#C8A96E', fontSize: 12, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-            Get API token →
+          <a href="https://app.metricool.com/en/profile/integrations" target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 16px', borderRadius: 7, background: 'var(--cs-gold-soft)', border: '1px solid var(--cs-gold)', color: 'var(--cs-gold)', fontSize: 12, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            Get API token <ArrowRight size={13} />
           </a>
         </div>
       )}
@@ -327,22 +330,22 @@ export default function Analytics() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 14 }}>
             <StatCard
               label="Total Views" value={fmt(data.totalViews)} delta={data.viewsDelta} deltaLabel="vs last month"
-              icon="👁️" accent="#00B6FF"
+              icon={<Eye size={16} />} accent="var(--cs-accent)"
               drilldownLabel="View published" onDrilldown={() => goLibrary('published')}
             />
             <StatCard
               label="Engagement Rate" value={`${data.engagement}%`} delta={data.engDelta} deltaLabel="vs last month"
-              icon="💬" accent="#C8A96E"
+              icon={<MessageSquare size={16} />} accent="var(--cs-gold)"
               drilldownLabel={null} onDrilldown={null}
             />
             <StatCard
               label="Videos Generated" value={data.videosGen} delta={data.videosDelta} deltaLabel="this month"
-              icon="🎬" accent="#4ade80"
+              icon={<Film size={16} />} accent="var(--cs-accent)"
               drilldownLabel="Open Library" onDrilldown={() => goLibrary('all')}
             />
             <StatCard
               label="Leads" value={data.leads} delta={data.leadsDelta} deltaLabel="this month"
-              icon="🎯" accent="#a855f7"
+              icon={<Target size={16} />} accent="var(--cs-gold)"
               drilldownLabel="Scheduled content" onDrilldown={() => goLibrary('pending')}
             />
           </div>
@@ -354,7 +357,7 @@ export default function Analytics() {
               title={`Views — Last ${rangeLabel}`}
               action={brand === 'both' ? (
                 <div style={{ display: 'flex', gap: 12 }}>
-                  {[['Rodschinson', '#C8A96E'], ['Rachid', '#00B6FF']].map(([l, c]) => (
+                  {[['Rodschinson', 'var(--cs-gold)'], ['Rachid', 'var(--cs-accent)']].map(([l, c]) => (
                     <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <span style={{ width: 20, height: 2, background: c, borderRadius: 1, display: 'inline-block' }} />
                       <span style={{ color: 'var(--cs-text-muted)', fontSize: 11 }}>{l}</span>

@@ -3,39 +3,40 @@
  * Shared carousel slide preview components.
  * Used in both NewContent (step-3 preview) and Library (modal preview).
  */
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 export const CAROUSEL_THEMES = {
   carousel_bold: {
     bg: 'linear-gradient(135deg,#08316F 0%,#0a3d8a 100%)',
     ctaBg: 'linear-gradient(145deg,#08316F 0%,#0d4db5 55%,#082a62 100%)',
-    accent: '#C8A96E', sky: '#00B6FF', text: '#fff',
+    accent: '#C8A96E', sky: 'var(--cs-accent)', text: '#fff',
     textMuted: 'rgba(255,255,255,0.65)',
-    statBg: 'rgba(0,182,255,0.1)', statBorder: '#00B6FF',
-    tagColor: '#00B6FF', numBg: 'rgba(0,182,255,0.12)',
+    statBg: 'var(--cs-accent-soft)', statBorder: 'var(--cs-accent)',
+    tagColor: 'var(--cs-accent)', numBg: 'var(--cs-accent-soft)',
   },
   carousel_clean: {
     bg: 'linear-gradient(135deg,#F4F7FB 0%,#e8edf5 100%)',
     ctaBg: 'linear-gradient(135deg,#08316F,#0a4ba0)',
-    accent: '#C8A96E', sky: '#00B6FF', text: '#08316F',
+    accent: '#C8A96E', sky: 'var(--cs-accent)', text: '#08316F',
     textMuted: 'rgba(8,49,111,0.65)',
     statBg: 'rgba(8,49,111,0.08)', statBorder: '#08316F',
-    tagColor: '#00B6FF', numBg: 'rgba(0,182,255,0.1)',
+    tagColor: 'var(--cs-accent)', numBg: 'var(--cs-accent-soft)',
   },
   carousel_minimal: {
     bg: 'linear-gradient(135deg,#0C0C0E 0%,#141417 100%)',
     ctaBg: 'radial-gradient(ellipse at center,#141f2e 0%,#0C0C0E 70%)',
-    accent: '#C8A96E', sky: '#00B6FF', text: '#fff',
+    accent: '#C8A96E', sky: 'var(--cs-accent)', text: '#fff',
     textMuted: 'rgba(255,255,255,0.5)',
     statBg: 'rgba(200,169,110,0.08)', statBorder: '#C8A96E',
-    tagColor: '#00B6FF', numBg: 'rgba(255,255,255,0.06)',
+    tagColor: 'var(--cs-accent)', numBg: 'rgba(255,255,255,0.06)',
   },
   carousel_data: {
     bg: 'linear-gradient(135deg,#031520 0%,#061e2e 100%)',
     ctaBg: 'linear-gradient(135deg,#031520,#041a2a)',
-    accent: '#00E5A0', sky: '#00B6FF', text: '#fff',
+    accent: '#00E5A0', sky: 'var(--cs-accent)', text: '#fff',
     textMuted: 'rgba(255,255,255,0.5)',
-    statBg: 'rgba(0,182,255,0.08)', statBorder: '#00B6FF',
-    tagColor: '#00E5A0', numBg: 'rgba(0,182,255,0.1)',
+    statBg: 'var(--cs-accent-soft)', statBorder: 'var(--cs-accent)',
+    tagColor: '#00E5A0', numBg: 'var(--cs-accent-soft)',
   },
 }
 
@@ -178,7 +179,7 @@ export function CarouselSlideCard({ slide, template, compact }) {
                   {slide.hashtags.map((h, i) => (
                     <span key={i} style={{
                       padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                      background: 'rgba(0,182,255,0.1)', border: `1px solid rgba(0,182,255,0.25)`,
+                      background: 'var(--cs-accent-soft)', border: `1px solid var(--cs-accent-line)`,
                       color: t.sky,
                     }}>{h}</span>
                   ))}
@@ -216,21 +217,21 @@ export function CarouselSlidePreview({ slides, template, activeSlide, onSlideCha
           background: 'var(--cs-surface)', cursor: activeSlide === 0 ? 'not-allowed' : 'pointer',
           color: activeSlide === 0 ? 'var(--cs-text-muted)' : 'var(--cs-text)', fontSize: 14,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>‹</button>
+        }}><ChevronLeft size={16} /></button>
         <button onClick={() => onSlideChange(Math.min(slides.length - 1, activeSlide + 1))} disabled={activeSlide === slides.length - 1} style={{
           position: 'absolute', right: -14, top: '50%', transform: 'translateY(-50%)',
           width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--cs-border)',
           background: 'var(--cs-surface)', cursor: activeSlide === slides.length - 1 ? 'not-allowed' : 'pointer',
           color: activeSlide === slides.length - 1 ? 'var(--cs-text-muted)' : 'var(--cs-text)', fontSize: 14,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>›</button>
+        }}><ChevronRight size={16} /></button>
       </div>
 
       {/* Thumbnail strip */}
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, paddingTop: 2 }}>
         {slides.map((s, i) => (
           <div key={i} onClick={() => onSlideChange(i)} style={{
-            outline: i === activeSlide ? '2px solid #00B6FF' : '2px solid transparent',
+            outline: i === activeSlide ? '2px solid var(--cs-accent)' : '2px solid transparent',
             borderRadius: 7, overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
             transition: 'all 0.15s',
             transform: i === activeSlide ? 'scale(1.06)' : 'scale(1)',
