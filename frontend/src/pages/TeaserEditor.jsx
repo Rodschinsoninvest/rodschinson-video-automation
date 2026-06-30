@@ -138,6 +138,28 @@ const PORTFOLIO_COMPANY_ROWGROUPS = [
   { key: 'financial_summary_rows', label: 'Financial summary',  cols: [['label','Label'],['value','Value']] },
   { key: 'company_specs_rows',     label: 'Company specs',      cols: [['label','Label'],['value','Value']] },
 ]
+// Shared (portfolio-level) pages whose visibility can be toggled. Keys must match
+// `currentSection` in teaser_long.html (overview = the building list, company =
+// the shared financials page).
+const PORTFOLIO_PAGES = [
+  ['cover',        '⬛ Cover'],
+  ['overview',     '📋 Portfolio overview'],
+  ['company',      '📊 Company financials'],
+  ['localisation', '📍 Location'],
+  ['plans',        '📐 Plans'],
+  ['sales',        '🤝 Sales & contact'],
+]
+// Per-building sub-pages that can be hidden individually (keys read by the
+// renderer from each asset's section_visibility).
+const PORTFOLIO_ASSET_SUBSECTIONS = [
+  ['presentation', 'Presentation'],
+  ['details',      'Details'],
+  ['aerial',       'Aerial'],
+  ['gallery',      'Gallery'],
+]
+// "Photos per page" choices — Auto keeps the adaptive grid; a fixed N renders a
+// clean uniform grid so wide photos aren't cropped by a denser auto layout.
+const PHOTO_LAYOUT_OPTIONS = [['', 'Auto'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4']]
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function fileUrlToFilename(url) {
@@ -252,6 +274,17 @@ export default function TeaserEditor() {
       const j = idx + dir
       if (j < 0 || j >= assets.length) return prev
       ;[assets[idx], assets[j]] = [assets[j], assets[idx]]
+      return { ...prev, assets }
+    })
+    setDirty(true)
+  }
+  // Toggle a per-building sub-page (presentation / details / aerial / gallery).
+  const setAssetVis = (idx, key, on) => {
+    setData(prev => {
+      const assets = [...(prev.assets || [])]
+      const a = { ...assets[idx] }
+      a.section_visibility = { ...(a.section_visibility || {}), [key]: !!on }
+      assets[idx] = a
       return { ...prev, assets }
     })
     setDirty(true)
@@ -550,7 +583,7 @@ export default function TeaserEditor() {
         <>
           {/* Portfolio rail: Cover · Company · one entry per building · Sales */}
           <div style={{ borderRight: `1px solid ${border}`, background: panel, overflowY: 'auto' }}>
-            {[['cover', '⬛ Cover'], ['company', '🏢 Company']].map(([id, label]) => (
+            {[['pages', '📄 Pages'], ['cover', '⬛ Cover'], ['company', '🏢 Company']].map(([id, label]) => (
               <button key={id} onClick={() => setActiveId(id)} style={{ width: '100%', padding: '12px 14px', border: 'none', borderBottom: `1px solid ${border}`, background: activeId === id ? (dark ? 'rgba(0,182,255,0.12)' : 'rgba(8,49,111,0.07)') : 'transparent', color: activeId === id ? '#00B6FF' : text, fontSize: 13, fontWeight: activeId === id ? 700 : 500, cursor: 'pointer', textAlign: 'left' }}>{label}</button>
             ))}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px 6px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>
@@ -577,6 +610,23 @@ export default function TeaserEditor() {
 
           {/* Portfolio editor pane */}
           <div style={{ overflowY: 'auto', padding: 24 }}>
+            {activeId === 'pages' && (
+              <div>
+                <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: text }}>📄 Pages</h2>
+                <p style={{ fontSize: 12, color: muted, margin: '0 0 16px' }}>Show or hide the shared pages of this dossier. Unchecked pages are dropped from the PDF. (Each building's own pages are toggled inside that building.)</p>
+                <div style={{ border: `1px solid ${border}`, borderRadius: 8, overflow: 'hidden' }}>
+                  {PORTFOLIO_PAGES.map(([id, label]) => {
+                    const on = data.section_visibility?.[id] !== false
+                    return (
+                      <label key={id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: `1px solid ${border}`, cursor: 'pointer', background: panel }}>
+                        <input type="checkbox" checked={on} onChange={e => setVis(id, e.target.checked)} style={{ accentColor: '#00B6FF' }} />
+                        <span style={{ fontSize: 13, color: text, opacity: on ? 1 : 0.5, textDecoration: on ? 'none' : 'line-through' }}>{label}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
             {activeId === 'cover' && (
               <div>
                 <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: text }}>⬛ Cover</h2>
@@ -610,13 +660,35 @@ export default function TeaserEditor() {
               const photos = Array.isArray(a.photos) ? a.photos : []
               return (
                 <div>
-                  <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: text }}>🏠 {a.name || `Asset ${idx + 1}`}</h2>
+                  <h2 style={{ margin: '0 0 12px', fontSize: 18, fontWeight: 700, color: text }}>🏠 {a.name || `Asset ${idx + 1}`}</h2>
+
+                  {/* Per-building page toggles */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14, padding: '10px 12px', marginBottom: 18, border: `1px solid ${border}`, borderRadius: 8, background: panel }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>Pages</span>
+                    {PORTFOLIO_ASSET_SUBSECTIONS.map(([key, label]) => {
+                      const on = a.section_visibility?.[key] !== false
+                      return (
+                        <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: text, opacity: on ? 1 : 0.5, cursor: 'pointer' }}>
+                          <input type="checkbox" checked={on} onChange={e => setAssetVis(idx, key, e.target.checked)} style={{ accentColor: '#00B6FF' }} />
+                          {label}
+                        </label>
+                      )
+                    })}
+                  </div>
 
                   {/* Building gallery */}
                   <div style={{ marginBottom: 22 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 10 }}>
                       <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>Gallery ({photos.length})</div>
-                      <button onClick={() => triggerAssetGallery(idx)} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: '#00B6FF', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add images</button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: muted }} title="How many photos per page (Auto avoids cropping by adapting the grid)">
+                          Photos / page
+                          <select value={a.photo_layout || ''} onChange={e => setAssetField(idx, 'photo_layout', e.target.value)} style={{ ...inputStyle, width: 'auto', padding: '4px 8px' }}>
+                            {PHOTO_LAYOUT_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                          </select>
+                        </label>
+                        <button onClick={() => triggerAssetGallery(idx)} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: '#00B6FF', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add images</button>
+                      </div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
                       {photos.map((url, pi) => (
@@ -655,6 +727,9 @@ export default function TeaserEditor() {
                   {PORTFOLIO_ASSET_ROWGROUPS.map(group => (
                     <RowGroupEditor key={group.key} group={group} rows={a[group.key] || []} onChange={rows => setAssetField(idx, group.key, rows)} theme={{ panel, border, text, muted, inputStyle }} />
                   ))}
+
+                  {/* Custom multi-column table (e.g. sale price per unit) */}
+                  <UnitTableEditor value={a.unit_table} onChange={t => setAssetField(idx, 'unit_table', t)} theme={{ panel, border, text, muted, inputStyle }} />
                 </div>
               )
             })()}
@@ -865,6 +940,81 @@ function RowGroupEditor({ group, rows, onChange, theme }) {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Custom multi-column table editor (e.g. sale price per unit) ──────────────
+// Saves to `asset.unit_table = { head, columns:[...], rows:[[...], ...] }`, which
+// the renderer already lays out as a dense table. When present it replaces the
+// standard rental-income rows on the building's details page.
+function UnitTableEditor({ value, onChange, theme }) {
+  const { border, text, muted, inputStyle, panel } = theme
+  const t = value && typeof value === 'object' ? value : null
+  const cols = t && Array.isArray(t.columns) ? t.columns : []
+  const rows = t && Array.isArray(t.rows) ? t.rows : []
+
+  const enable    = () => onChange({ head: 'Prix de vente par unité', columns: ['Unité', 'Surface', 'Prix de vente'], rows: [['', '', '']] })
+  const disable   = () => onChange(null)
+  const setHead   = (v) => onChange({ ...t, head: v })
+  const setColName= (ci, v) => { const c = [...cols]; c[ci] = v; onChange({ ...t, columns: c }) }
+  const addCol    = () => onChange({ ...t, columns: [...cols, `Colonne ${cols.length + 1}`], rows: rows.map(r => [...r, '']) })
+  const removeCol = (ci) => onChange({ ...t, columns: cols.filter((_, i) => i !== ci), rows: rows.map(r => r.filter((_, i) => i !== ci)) })
+  const setCell   = (ri, ci, v) => { const r = rows.map(x => [...x]); while (r[ri].length < cols.length) r[ri].push(''); r[ri][ci] = v; onChange({ ...t, rows: r }) }
+  const addRow    = () => onChange({ ...t, rows: [...rows, cols.map(() => '')] })
+  const removeRow = (ri) => onChange({ ...t, rows: rows.filter((_, i) => i !== ri) })
+  const moveRow   = (ri, dir) => { const j = ri + dir; if (j < 0 || j >= rows.length) return; const r = [...rows]; [r[ri], r[j]] = [r[j], r[ri]]; onChange({ ...t, rows: r }) }
+
+  if (!t) {
+    return (
+      <div style={{ marginBottom: 20, border: `1px dashed ${border}`, borderRadius: 8, padding: 14, background: panel }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>Custom table (price per unit, rent roll…)</div>
+        <div style={{ fontSize: 11, color: muted, marginBottom: 10, lineHeight: 1.5 }}>Define your own columns (e.g. Unit · Surface · Sale price). It replaces the standard rental-income rows on this building's details page — for special cases that previously needed Canva.</div>
+        <button onClick={enable} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: '#00B6FF', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add custom table</button>
+      </div>
+    )
+  }
+
+  const cellStyle = { ...inputStyle, padding: '6px 8px', fontSize: 11 }
+  return (
+    <div style={{ marginBottom: 20, border: `1px solid ${border}`, borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'rgba(0,0,0,0.02)', borderBottom: `1px solid ${border}` }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: text }}>Custom table <span style={{ color: muted, fontWeight: 500 }}>({rows.length} row{rows.length === 1 ? '' : 's'})</span></div>
+        <button onClick={disable} style={{ padding: '4px 10px', borderRadius: 4, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>Remove table</button>
+      </div>
+      <div style={{ padding: 10 }}>
+        <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Table title</label>
+        <input value={t.head || ''} onChange={e => setHead(e.target.value)} placeholder="e.g. Sale price per unit" style={{ ...inputStyle, marginBottom: 12 }} />
+
+        {/* Column headers */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: muted }}>Columns</span>
+          <button onClick={addCol} style={{ padding: '3px 9px', borderRadius: 4, border: `1px solid ${border}`, background: panel, color: '#00B6FF', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Column</button>
+        </div>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+          {cols.map((c, ci) => (
+            <div key={ci} style={{ flex: 1, display: 'flex', gap: 2, alignItems: 'center' }}>
+              <input value={c} onChange={e => setColName(ci, e.target.value)} placeholder={`Col ${ci + 1}`} style={{ ...cellStyle, fontWeight: 700 }} />
+              {cols.length > 1 && <button onClick={() => removeCol(ci)} title="Remove column" style={{ border: 'none', background: 'transparent', color: '#dc2626', cursor: 'pointer', fontSize: 12, padding: '0 2px' }}>×</button>}
+            </div>
+          ))}
+        </div>
+
+        {/* Rows */}
+        {rows.map((row, ri) => (
+          <div key={ri} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+            {cols.map((_, ci) => (
+              <input key={ci} value={String(row?.[ci] ?? '')} onChange={e => setCell(ri, ci, e.target.value)} style={{ ...cellStyle, flex: 1 }} />
+            ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <button onClick={() => moveRow(ri, -1)} disabled={ri === 0} style={{ padding: '2px 6px', borderRadius: 3, border: `1px solid ${border}`, background: panel, color: muted, cursor: ri === 0 ? 'not-allowed' : 'pointer', fontSize: 10 }}>↑</button>
+              <button onClick={() => moveRow(ri, 1)} disabled={ri === rows.length - 1} style={{ padding: '2px 6px', borderRadius: 3, border: `1px solid ${border}`, background: panel, color: muted, cursor: ri === rows.length - 1 ? 'not-allowed' : 'pointer', fontSize: 10 }}>↓</button>
+            </div>
+            <button onClick={() => removeRow(ri)} style={{ padding: '4px 8px', borderRadius: 4, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>×</button>
+          </div>
+        ))}
+        <button onClick={addRow} style={{ marginTop: 4, padding: '5px 12px', borderRadius: 4, border: `1px solid ${border}`, background: panel, color: '#00B6FF', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add row</button>
+      </div>
     </div>
   )
 }

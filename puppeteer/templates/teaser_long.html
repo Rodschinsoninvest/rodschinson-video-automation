@@ -772,7 +772,7 @@ window.loadLongTeaser = function(data, brandName){
           </div></div>`);
       });
     }
-    function pushGallery(sectionKey, anchor, photoList, metaText){
+    function pushGallery(sectionKey, anchor, photoList, metaText, layout){
       const ph = (photoList||[]).filter(Boolean);
       if (!ph.length) return;
       let first = true, i = 0;
@@ -785,6 +785,13 @@ window.loadLongTeaser = function(data, brandName){
             ${slice.map(p=>`<div class="photo-tile"><img class="fill-img" src="${esc(fileUrl(p))}" alt=""></div>`).join('')}
           </div></div>`);
       };
+      // Fixed layout override ("Photos per page" in the editor): N tiles per page
+      // in a clean uniform grid, so wide photos aren't cropped by a denser auto grid.
+      const N = parseInt(layout, 10);
+      if (N >= 1 && N <= 4){
+        while (i < ph.length){ const take = Math.min(N, ph.length - i); page(ph.slice(i, i+take), 'photos-'+take); i += take; }
+        return;
+      }
       if (ph.length >= 3){ page(ph.slice(0,3),'photos-3'); i = 3; }
       while (i < ph.length){
         const rem = ph.length - i; let take, cls;
@@ -846,7 +853,9 @@ window.loadLongTeaser = function(data, brandName){
       </div>`);
 
     // ── 2) PORTFOLIO OVERVIEW (Activa) ──
-    currentSection = 'activa';
+    // Distinct 'overview' key so this shared page can be hidden independently of
+    // the per-building presentation pages (which stay on 'activa').
+    currentSection = 'overview';
     sectionAnchor = A.activa;
     const ov = data.portfolio_overview || {};
     const pfItems = assets.map((a,i)=>`
@@ -884,7 +893,9 @@ window.loadLongTeaser = function(data, brandName){
     const companyTables = (Array.isArray(data.company_tables)?data.company_tables:[]).map(t=>({head:t.head,columns:t.columns,rows2d:t.rows}));
     const companySingles = (data.company_singles && Array.isArray(data.company_singles.rows) && data.company_singles.rows.length)
       ? [{head:data.company_singles.head||DL.financials, rows:data.company_singles.rows}] : [];
-    pushDetail('details', A.details, 'a', SL.details, DL.details, '', [
+    // 'company' key → the shared financials page toggles separately from each
+    // building's own details page (which stays on 'details').
+    pushDetail('company', A.details, 'a', SL.details, DL.details, '', [
       ...companyTables,
       ...companySingles,
       ...(companyTables.length||companySingles.length ? [] : [{head:DL.financials, rows:(data.financial_summary_rows||[])}]),
@@ -930,58 +941,67 @@ window.loadLongTeaser = function(data, brandName){
     assets.forEach((a, idx)=>{
       const aName = a.name || a.short || `${L.asset} ${idx+1}`;
       const meta  = a.short || aName;
-      // 5a) building divider
-      currentSection = 'activa';
-      const chips = (a.metrics||[]).slice(0,4).map(m=>`<div class="ad-chip"><div class="k">${esc(m.k||'')}</div><div class="v">${esc(m.v||'')}</div></div>`).join('');
-      pushPage(`<div class="asset-divider">
-          <div class="ad-index">${String(idx+1).padStart(2,'0')}</div>
-          <div class="ad-eyebrow">${esc(data.asset_eyebrow || L.asset)} ${idx+1} / ${assets.length}</div>
-          <div class="ad-title">${esc(aName)}</div>
-          ${a.address?`<div class="ad-addr">${esc(a.address)}</div>`:''}
-          ${chips?`<div class="ad-chips">${chips}</div>`:''}
-        </div>`);
-      // 5b) presentation (Activa)
-      const aBullets = Array.isArray(a.bullets) ? a.bullets.filter(Boolean) : [];
-      const aPhoto = a.activa_photo || (a.photos||[])[0] || '';
-      currentSection = 'activa';
-      pushPage(`
-        ${headerP('a', SL.activa, meta)}
-        <div class="pg-body"><div class="activa">
-          <div class="left">
-            <div class="a-asset-eyebrow">${esc(data.asset_eyebrow || L.asset)} ${idx+1} / ${assets.length}</div>
-            <div class="a-title">${esc(aName)}</div>
-            ${a.address?`<div class="a-label">${esc(addrLbl)}</div><div class="a-val">${esc(a.address)}</div>`:''}
-            <div class="a-label">${esc(descLbl)}</div>
-            <ul class="a-bullets${aBullets.length>8?' cols-2':''}">${aBullets.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>
-            ${a.annual_income?`<div class="a-price"><span>${esc(data.income_label||'Opbrengst/jaar')}</span><span class="val">${esc(a.annual_income)}</span></div>`:''}
-          </div>
-          <div class="right">${aPhoto?`<img class="a-photo" src="${esc(fileUrl(aPhoto))}" alt="">`:''}</div>
-        </div></div>`);
+      // Per-building page visibility (editor toggles) + photo-layout override.
+      const av = (a.section_visibility && typeof a.section_visibility === 'object') ? a.section_visibility : {};
+      const aVis = k => av[k] !== false;
+      const aLayout = a.photo_layout || data.photo_layout;
+      // 5a/5b) building divider + presentation (Activa)
+      if (aVis('presentation')){
+        currentSection = 'activa';
+        const chips = (a.metrics||[]).slice(0,4).map(m=>`<div class="ad-chip"><div class="k">${esc(m.k||'')}</div><div class="v">${esc(m.v||'')}</div></div>`).join('');
+        pushPage(`<div class="asset-divider">
+            <div class="ad-index">${String(idx+1).padStart(2,'0')}</div>
+            <div class="ad-eyebrow">${esc(data.asset_eyebrow || L.asset)} ${idx+1} / ${assets.length}</div>
+            <div class="ad-title">${esc(aName)}</div>
+            ${a.address?`<div class="ad-addr">${esc(a.address)}</div>`:''}
+            ${chips?`<div class="ad-chips">${chips}</div>`:''}
+          </div>`);
+        const aBullets = Array.isArray(a.bullets) ? a.bullets.filter(Boolean) : [];
+        const aPhoto = a.activa_photo || (a.photos||[])[0] || '';
+        currentSection = 'activa';
+        pushPage(`
+          ${headerP('a', SL.activa, meta)}
+          <div class="pg-body"><div class="activa">
+            <div class="left">
+              <div class="a-asset-eyebrow">${esc(data.asset_eyebrow || L.asset)} ${idx+1} / ${assets.length}</div>
+              <div class="a-title">${esc(aName)}</div>
+              ${a.address?`<div class="a-label">${esc(addrLbl)}</div><div class="a-val">${esc(a.address)}</div>`:''}
+              <div class="a-label">${esc(descLbl)}</div>
+              <ul class="a-bullets${aBullets.length>8?' cols-2':''}">${aBullets.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>
+              ${a.annual_income?`<div class="a-price"><span>${esc(data.income_label||'Opbrengst/jaar')}</span><span class="val">${esc(a.annual_income)}</span></div>`:''}
+            </div>
+            <div class="right">${aPhoto?`<img class="a-photo" src="${esc(fileUrl(aPhoto))}" alt="">`:''}</div>
+          </div></div>`);
+      }
       // 5c) per-building details — a multi-column rent roll (when supplied)
       // leads, so every unit's surface / EPC / rent reads in one organised table.
-      const hasUnitTable = a.unit_table && Array.isArray(a.unit_table.rows) && a.unit_table.rows.length;
-      pushDetail('details', '', 'a', SL.details, `${DL.details} — ${meta}`, meta, [
-        ...(hasUnitTable ? [{head:a.unit_table.head||DL.income, columns:a.unit_table.columns, rows2d:a.unit_table.rows}] : []),
-        {head:DL.surfaces, rows:(a.surfaces||[]).map(s=>({label:String(s.floor||s.label||''),value:String(s.area||s.value||'')})).filter(r=>r.label||r.value)},
-        ...(hasUnitTable ? [] : [{head:DL.income, rows:(a.rental_income_rows||[])}]),
-        // optional per-asset extra tables (e.g. certificates, acquisition) — let
-        // each building carry as much real, organised data as it has.
-        ...((Array.isArray(a.extra_tables)?a.extra_tables:[]).filter(t=>t&&Array.isArray(t.rows)&&t.rows.length).map(t=>({head:t.head, rows:t.rows}))),
-        {head:DL.specs,    rows:(a.technical_specs_rows||[])},
-        {head:DL.leases,   rows:(a.lease_terms_rows||[])},
-        {head:DL.amenities, bullets:(a.amenities_bullets||[])},
-      ], '');
+      if (aVis('details')){
+        const hasUnitTable = a.unit_table && Array.isArray(a.unit_table.rows) && a.unit_table.rows.length;
+        pushDetail('details', '', 'a', SL.details, `${DL.details} — ${meta}`, meta, [
+          ...(hasUnitTable ? [{head:a.unit_table.head||DL.income, columns:a.unit_table.columns, rows2d:a.unit_table.rows}] : []),
+          {head:DL.surfaces, rows:(a.surfaces||[]).map(s=>({label:String(s.floor||s.label||''),value:String(s.area||s.value||'')})).filter(r=>r.label||r.value)},
+          ...(hasUnitTable ? [] : [{head:DL.income, rows:(a.rental_income_rows||[])}]),
+          // optional per-asset extra tables (e.g. certificates, acquisition) — let
+          // each building carry as much real, organised data as it has.
+          ...((Array.isArray(a.extra_tables)?a.extra_tables:[]).filter(t=>t&&Array.isArray(t.rows)&&t.rows.length).map(t=>({head:t.head, rows:t.rows}))),
+          {head:DL.specs,    rows:(a.technical_specs_rows||[])},
+          {head:DL.leases,   rows:(a.lease_terms_rows||[])},
+          {head:DL.amenities, bullets:(a.amenities_bullets||[])},
+        ], '');
+      }
       // 5d) building aerial with red outline
-      pushAerial('aerial', '', a, meta);
+      if (aVis('aerial')) pushAerial('aerial', '', a, meta);
       // 5e) THIS building's own photo gallery (its subfolder of images), shown
       // under the building name so each asset keeps its own reportage.
-      const aGallery = [];
-      (a.photos||[]).forEach(p => {
-        if (p && !locExclude.has(String(p)) && aGallery.indexOf(p) === -1) aGallery.push(p);
-      });
-      if (aGallery.length){
-        pushGallery('gallery', galleryAnchorSet ? '' : A.photos, aGallery, meta);
-        galleryAnchorSet = true;
+      if (aVis('gallery')){
+        const aGallery = [];
+        (a.photos||[]).forEach(p => {
+          if (p && !locExclude.has(String(p)) && aGallery.indexOf(p) === -1) aGallery.push(p);
+        });
+        if (aGallery.length){
+          pushGallery('gallery', galleryAnchorSet ? '' : A.photos, aGallery, meta, aLayout);
+          galleryAnchorSet = true;
+        }
       }
     });
 
@@ -989,7 +1009,7 @@ window.loadLongTeaser = function(data, brandName){
     if (photos.length){
       const extra = [];
       photos.forEach(p => { if (p && !locExclude.has(String(p)) && extra.indexOf(p) === -1) extra.push(p); });
-      if (extra.length){ pushGallery('gallery', galleryAnchorSet ? '' : A.photos, extra, ''); galleryAnchorSet = true; }
+      if (extra.length){ pushGallery('gallery', galleryAnchorSet ? '' : A.photos, extra, '', data.photo_layout); galleryAnchorSet = true; }
     }
 
     // ── 6) PLANS (shared, if any) ──
@@ -1463,6 +1483,12 @@ window.loadLongTeaser = function(data, brandName){
     const paginate = (list, label)=>{
       let i = 0, first = true;
       const head = ()=>{ const h = !label ? '' : (first ? label : `${label} ${L.dl.continued||''}`); first = false; return h; };
+      // Fixed layout override ("Photos per page" in the editor) — uniform grid.
+      const N = parseInt(data.photo_layout, 10);
+      if (N >= 1 && N <= 4){
+        while(i < list.length){ const take = Math.min(N, list.length - i); galPage(list.slice(i, i+take), 'photos-'+take, head()); i += take; }
+        return;
+      }
       if(list.length >= 3){ galPage(list.slice(0,3), 'photos-3', head()); i = 3; }
       while(i < list.length){
         const rem = list.length - i; let take, cls;
