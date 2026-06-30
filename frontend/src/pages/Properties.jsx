@@ -822,8 +822,9 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
 // become that building's gallery, and each building gets its own address (→ its
 // own aerial view + cadastral parcel) and location page. Optional shared
 // documents feed the AI extraction that fills financials per building.
-const IMG_RE = /\.(jpe?g|png|webp|gif|bmp|tiff?)$/i
+const IMG_RE = /\.(jpe?g|png|webp|gif|bmp|tiff?|heic|heif|avif)$/i
 function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, dark }) {
+  const { toast } = useToast()
   const [mode, setMode] = useState('single')      // 'single' | 'multiple'
   const [brand, setBrand] = useState(brands[0]?.id || 'rodschinson')
   const [language, setLanguage] = useState('FR')
@@ -854,6 +855,29 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
     r.readAsDataURL(file)
   })
 
+  // Downscale a photo in the browser (longest edge 2000px, JPEG) BEFORE upload.
+  // Keeps payloads small/reliable and normalises format. Returns null if the
+  // browser can't decode the file (e.g. HEIC in Chrome) so we can flag it.
+  const downscaleToDataUrl = (file, maxEdge = 2000, quality = 0.82) => new Promise((resolve) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      try {
+        const scale = Math.min(1, maxEdge / Math.max(img.width, img.height))
+        const w = Math.max(1, Math.round(img.width * scale))
+        const h = Math.max(1, Math.round(img.height * scale))
+        const canvas = document.createElement('canvas')
+        canvas.width = w; canvas.height = h
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+        const out = canvas.toDataURL('image/jpeg', quality)
+        URL.revokeObjectURL(url)
+        resolve(out && out.length > 40 ? out : null)
+      } catch { URL.revokeObjectURL(url); resolve(null) }
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null) }
+    img.src = url
+  })
+
   // A folder pick gives files with webkitRelativePath like "Root/Building A/img.jpg".
   // Group by the FIRST subfolder under the root → one asset per subfolder.
   const handleFolderPick = async (e) => {
@@ -873,13 +897,18 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
         groups.get(sub).push(f)
       }
       const next = []
+      let skipped = 0
       for (const [name, groupFiles] of groups) {
         groupFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
-        const ph = (await Promise.all(groupFiles.map(readAsDataUrl))).filter(Boolean)
+        const results = await Promise.all(groupFiles.map(f => downscaleToDataUrl(f)))
+        const ph = results.filter(Boolean)
+        skipped += results.length - ph.length
         if (ph.length) next.push({ name, address: '', photos: ph })
       }
       next.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
       setAssets(next)
+      if (skipped) toast(`${skipped} photo(s) couldn't be read (e.g. HEIC). Export them as JPEG/PNG and re-add.`, 'error')
+      if (!next.length) toast('No readable images found in that folder.', 'error')
     } finally {
       setReading(false)
     }
@@ -893,8 +922,11 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
     setReading(true)
     try {
       files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
-      const ph = (await Promise.all(files.map(readAsDataUrl))).filter(Boolean)
+      const results = await Promise.all(files.map(f => downscaleToDataUrl(f)))
+      const ph = results.filter(Boolean)
       setPhotos(prev => [...prev, ...ph])
+      const skipped = results.length - ph.length
+      if (skipped) toast(`${skipped} photo(s) couldn't be read (e.g. HEIC). Export them as JPEG/PNG.`, 'error')
     } finally {
       setReading(false)
     }
