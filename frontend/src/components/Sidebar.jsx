@@ -41,7 +41,8 @@ const S = {
 }
 
 // ── Nav item ───────────────────────────────────────────────────────────────────
-function NavItem({ to, label, onClick, end }) {
+// eslint-disable-next-line no-unused-vars -- Icon is rendered as <Icon/> in the JSX below
+function NavItem({ to, icon: Icon, label, onClick, end }) {
   const [hov, setHov] = useState(false)
   return (
     <NavLink
