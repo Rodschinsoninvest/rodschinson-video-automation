@@ -1,18 +1,19 @@
+# Netlify config (repo root) — Git-based builds read this.
+# `base` is RELATIVE to the repo root; never an absolute/local path.
 [build]
   base    = "frontend"
-  publish = "dist"
+  publish = "dist"          # relative to base → frontend/dist
   command = "npm run build"
 
 [build.environment]
   NODE_VERSION = "20"
 
-# Proxy /api/* → Railway backend (set VITE_API_BASE in Netlify UI)
+# Proxy /api/* → Railway backend (keeps the browser same-origin)
 [[redirects]]
   from   = "/api/*"
   to     = "https://content-studio-production-84de.up.railway.app/api/:splat"
   status = 200
   force  = true
-  headers = { X-From = "Netlify" }
 
 # SPA fallback — all non-file routes → index.html
 [[redirects]]
@@ -21,7 +22,4 @@
   status = 200
 
 [context.production.environment]
-  NODE_ENV = "production"
-
-[context.deploy-preview.environment]
   NODE_ENV = "production"
