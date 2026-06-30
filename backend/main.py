@@ -377,10 +377,29 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# ── Atomic JSON writes ──────────────────────────────────────────────────────────
+# Plain open(path,"w") truncates first, so a crash/restart or two concurrent
+# writers leave an empty/partial file → corrupt JSON (e.g. library.json). Write to
+# a temp file, fsync, then os.replace() (atomic on POSIX); a lock serialises writers.
+_io_lock = asyncio.Lock()
+
+def _atomic_write_text(path, text: str) -> None:
+    target = str(path)
+    tmp = f"{target}.tmp.{os.getpid()}"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(text)
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(tmp, target)
+
+async def _write_json_atomic(path, data) -> None:
+    text = json.dumps(data, indent=2, default=str, ensure_ascii=False)
+    async with _io_lock:
+        await asyncio.to_thread(_atomic_write_text, path, text)
+
+
 async def _save_job(job: dict) -> None:
-    path = JOBS_DIR / f"{job['job_id']}.json"
-    async with aiofiles.open(path, "w") as f:
-        await f.write(json.dumps(job, indent=2, default=str))
+    await _write_json_atomic(JOBS_DIR / f"{job['job_id']}.json", job)
 
 
 def _job_update(job: dict, **kwargs) -> dict:
@@ -447,8 +466,7 @@ async def _library_load() -> list[dict]:
 
 
 async def _library_save(entries: list[dict]) -> None:
-    async with aiofiles.open(LIBRARY_FILE, "w") as f:
-        await f.write(json.dumps(entries, indent=2, default=str))
+    await _write_json_atomic(LIBRARY_FILE, entries)
 
 
 async def _library_append(entry: dict) -> None:
@@ -465,8 +483,7 @@ async def _schedule_load() -> list[dict]:
 
 
 async def _schedule_save(entries: list[dict]) -> None:
-    async with aiofiles.open(SCHEDULE_FILE, "w") as f:
-        await f.write(json.dumps(entries, indent=2, default=str))
+    await _write_json_atomic(SCHEDULE_FILE, entries)
 
 
 async def _templates_load() -> list[dict]:
@@ -476,8 +493,7 @@ async def _templates_load() -> list[dict]:
 
 
 async def _templates_save(entries: list[dict]) -> None:
-    async with aiofiles.open(TEMPLATES_FILE, "w") as f:
-        await f.write(json.dumps(entries, indent=2, default=str))
+    await _write_json_atomic(TEMPLATES_FILE, entries)
 
 
 # ── Users (roles) storage ──────────────────────────────────────────────────────
@@ -502,8 +518,7 @@ async def _users_load() -> list[dict]:
         return json.loads(await f.read())
 
 async def _users_save(entries: list[dict]) -> None:
-    async with aiofiles.open(USERS_FILE, "w") as f:
-        await f.write(json.dumps(entries, indent=2, default=str))
+    await _write_json_atomic(USERS_FILE, entries)
 
 async def _get_user(username: str) -> dict | None:
     users = await _users_load()
@@ -547,8 +562,7 @@ async def _comments_load() -> list[dict]:
         return json.loads(await f.read())
 
 async def _comments_save(entries: list[dict]) -> None:
-    async with aiofiles.open(COMMENTS_FILE, "w") as f:
-        await f.write(json.dumps(entries, indent=2, default=str))
+    await _write_json_atomic(COMMENTS_FILE, entries)
 
 
 # ── Recurring series storage ───────────────────────────────────────────────────
@@ -559,8 +573,7 @@ async def _series_load() -> list[dict]:
         return json.loads(await f.read())
 
 async def _series_save(entries: list[dict]) -> None:
-    async with aiofiles.open(SERIES_FILE, "w") as f:
-        await f.write(json.dumps(entries, indent=2, default=str))
+    await _write_json_atomic(SERIES_FILE, entries)
 
 
 # ── Brands storage ─────────────────────────────────────────────────────────────
@@ -622,8 +635,7 @@ async def _brands_load() -> list[dict]:
 
 
 async def _brands_save(entries: list[dict]) -> None:
-    async with aiofiles.open(BRANDS_FILE, "w") as f:
-        await f.write(json.dumps(entries, indent=2, default=str))
+    await _write_json_atomic(BRANDS_FILE, entries)
 
 
 async def _brand_lookup(brand_id: str) -> dict | None:
@@ -640,8 +652,7 @@ async def _custom_templates_load() -> list[dict]:
 
 
 async def _custom_templates_save(entries: list[dict]) -> None:
-    async with aiofiles.open(CUSTOM_TEMPLATES_FILE, "w") as f:
-        await f.write(json.dumps(entries, indent=2, default=str))
+    await _write_json_atomic(CUSTOM_TEMPLATES_FILE, entries)
 
 
 async def _rebuild_template_registry() -> None:
@@ -653,8 +664,7 @@ async def _rebuild_template_registry() -> None:
         html_key = f"custom/{t['id']}"   # relative to templates/ dir
         registry["templates"][key]     = f"{html_key}.html"
         registry["allowed_types"][key] = t.get("scenes", [])
-    async with aiofiles.open(TEMPLATE_REGISTRY, "w") as f:
-        await f.write(json.dumps(registry, indent=2))
+    await _write_json_atomic(TEMPLATE_REGISTRY, registry)
 
 
 # Built-in template metadata (mirrors VIDEO_TEMPLATES but format-agnostic for the list endpoint)
@@ -1936,8 +1946,7 @@ Rules:
 
             # Write teaser JSON
             teaser_path = TEASER_DIR / f"{job_id[:8]}_teaser.json"
-            async with aiofiles.open(teaser_path, "w") as f:
-                await f.write(json.dumps(teaser_json, indent=2, ensure_ascii=False))
+            await _write_json_atomic(teaser_path, teaser_json)
 
             _job_update(job, status="running", step="Rendering PDF", progress=50)
             await _save_job(job)
@@ -2090,8 +2099,7 @@ Rules:
 
             # Write portfolio JSON
             portfolio_path = TEASER_DIR / f"{job_id[:8]}_portfolio.json"
-            async with aiofiles.open(portfolio_path, "w") as f:
-                await f.write(json.dumps(portfolio_json, indent=2, ensure_ascii=False))
+            await _write_json_atomic(portfolio_path, portfolio_json)
 
             _job_update(job, status="running", step="Rendering PDF", progress=50)
             await _save_job(job)
@@ -2290,8 +2298,7 @@ RULES:
 
             # Write valuation JSON
             val_path = TEASER_DIR / f"{job_id[:8]}_valuation.json"
-            async with aiofiles.open(val_path, "w") as f:
-                await f.write(json.dumps(valuation_json, indent=2, ensure_ascii=False))
+            await _write_json_atomic(val_path, valuation_json)
 
             _job_update(job, status="running", step="Rendering PDF", progress=60)
             await _save_job(job)
@@ -2375,8 +2382,7 @@ RULES:
             _job_update(job, status="running", step="Rendering PDF", progress=55)
             await _save_job(job)
             buyers_path = TEASER_DIR / f"{job_id[:8]}_buyers.json"
-            async with aiofiles.open(buyers_path, "w") as f:
-                await f.write(json.dumps(buyers_data, indent=2, ensure_ascii=False))
+            await _write_json_atomic(buyers_path, buyers_data)
             pdf_path   = TEASER_DIR / f"{job_id[:8]}_buyers.pdf"
             thumb_path = TEASER_DIR / f"{job_id[:8]}_buyers_thumb.png"
             render_cmd = [
@@ -3211,8 +3217,7 @@ EXTRACTION RULES:
 
             # Write teaser JSON
             teaser_path = TEASER_DIR / f"{job_id[:8]}_long_teaser.json"
-            async with aiofiles.open(teaser_path, "w") as f:
-                await f.write(json.dumps(teaser_data, indent=2, ensure_ascii=False))
+            await _write_json_atomic(teaser_path, teaser_data)
 
             # Render PDF
             pdf_path   = TEASER_DIR / f"{job_id[:8]}_long_teaser.pdf"
@@ -4930,8 +4935,7 @@ async def _canva_load() -> list[dict]:
 
 
 async def _canva_save(entries: list[dict]) -> None:
-    async with aiofiles.open(CANVA_TEMPLATES_FILE, "w") as f:
-        await f.write(json.dumps(entries, indent=2, default=str))
+    await _write_json_atomic(CANVA_TEMPLATES_FILE, entries)
 
 
 class CanvaTemplateCreate(BaseModel):
@@ -6482,8 +6486,7 @@ async def _strategy_load() -> list[dict]:
         return json.loads(await f.read())
 
 async def _strategy_save(data: list[dict]) -> None:
-    async with aiofiles.open(STRATEGY_FILE, "w") as f:
-        await f.write(json.dumps(data, indent=2, default=str))
+    await _write_json_atomic(STRATEGY_FILE, data)
 
 async def _ab_tests_load() -> list[dict]:
     if not AB_TESTS_FILE.exists():
@@ -6492,8 +6495,7 @@ async def _ab_tests_load() -> list[dict]:
         return json.loads(await f.read())
 
 async def _ab_tests_save(data: list[dict]) -> None:
-    async with aiofiles.open(AB_TESTS_FILE, "w") as f:
-        await f.write(json.dumps(data, indent=2, default=str))
+    await _write_json_atomic(AB_TESTS_FILE, data)
 
 async def _assets_load() -> list[dict]:
     if not ASSETS_FILE.exists():
@@ -6502,8 +6504,7 @@ async def _assets_load() -> list[dict]:
         return json.loads(await f.read())
 
 async def _assets_save(data: list[dict]) -> None:
-    async with aiofiles.open(ASSETS_FILE, "w") as f:
-        await f.write(json.dumps(data, indent=2, default=str))
+    await _write_json_atomic(ASSETS_FILE, data)
 
 # ── Shared Claude call helper ──────────────────────────────────────────────────
 async def _claude_strategy(prompt: str, model: str = "claude-haiku-4-5-20251001") -> str:
@@ -7140,8 +7141,7 @@ async def _properties_load() -> list[dict]:
 
 
 async def _properties_save(entries: list[dict]) -> None:
-    async with aiofiles.open(PROPERTIES_FILE, "w") as f:
-        await f.write(json.dumps(entries, indent=2, default=str))
+    await _write_json_atomic(PROPERTIES_FILE, entries)
 
 
 def _map_odoo_property(raw: dict, type_names: dict[int, str] | None = None) -> dict:
@@ -7556,8 +7556,7 @@ async def long_teaser_put(job_id: str, body: LongTeaserPutRequest, request: Requ
         raise HTTPException(404, "Teaser JSON not found")
     if not isinstance(body.data, dict):
         raise HTTPException(422, "data must be an object")
-    async with aiofiles.open(paths["json"], "w") as f:
-        await f.write(json.dumps(body.data, indent=2, ensure_ascii=False))
+    await _write_json_atomic(paths["json"], body.data)
     return {"ok": True, "short_id": paths["short_id"]}
 
 
