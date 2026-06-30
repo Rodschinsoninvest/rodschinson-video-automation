@@ -289,6 +289,21 @@ export default function TeaserEditor() {
     })
     setDirty(true)
   }
+  // Per-photo crop focus (object-position), keyed by the photo url. [x,y] 0..100.
+  const setAssetPhotoFocus = (idx, url, xy) => {
+    setData(prev => {
+      const assets = [...(prev.assets || [])]
+      const a = { ...assets[idx] }
+      a.photo_focus = { ...(a.photo_focus || {}), [url]: xy }
+      assets[idx] = a
+      return { ...prev, assets }
+    })
+    setDirty(true)
+  }
+  const setPhotoFocus = (url, xy) => {
+    setData(prev => ({ ...prev, photo_focus: { ...(prev.photo_focus || {}), [url]: xy } }))
+    setDirty(true)
+  }
 
   // ── Save ────────────────────────────────────────────────────────────────
   const handleSave = async ({ thenRegenerate = true } = {}) => {
@@ -792,11 +807,12 @@ export default function TeaserEditor() {
                         <button onClick={() => triggerAssetGallery(idx)} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: '#00B6FF', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add images</button>
                       </div>
                     </div>
+                    <div style={{ fontSize: 10, color: muted, marginBottom: 6 }}>Tip: click a photo to set its crop focus (the blue dot) so it isn't cut off badly.</div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
                       {photos.map((url, pi) => (
                         <div key={`${url}-${pi}`} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', border: `1px solid ${border}`, background: panel }}>
                           <div style={{ width: '100%', height: 100, background: 'rgba(0,0,0,0.05)' }}>
-                            {typeof url === 'string' && <AuthImg url={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                            {typeof url === 'string' && <FocusThumb url={url} focus={a.photo_focus?.[url]} onFocus={xy => setAssetPhotoFocus(idx, url, xy)} AuthImg={AuthImg} />}
                           </div>
                           <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 4 }}>
                             <button onClick={() => { if (pi === 0) return; const arr = [...photos];[arr[pi - 1], arr[pi]] = [arr[pi], arr[pi - 1]]; setAssetField(idx, 'photos', arr) }} disabled={pi === 0} title="Move left" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: pi === 0 ? 'not-allowed' : 'pointer', opacity: pi === 0 ? 0.35 : 1, fontSize: 11 }}>↑</button>
@@ -927,7 +943,9 @@ export default function TeaserEditor() {
                   return (
                     <div key={`${url}-${i}`} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', border: `1px solid ${border}`, background: panel }}>
                       <div style={{ width: '100%', height: 100, background: 'rgba(0,0,0,0.05)' }}>
-                        {typeof url === 'string' && <AuthImg url={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                        {typeof url === 'string' && (galleryListKey === 'photos'
+                          ? <FocusThumb url={url} focus={data.photo_focus?.[url]} onFocus={xy => setPhotoFocus(url, xy)} AuthImg={AuthImg} />
+                          : <AuthImg url={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />)}
                       </div>
                       <div style={{ padding: '4px 6px', fontSize: 9, color: muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
                       <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 4 }}>
@@ -1063,6 +1081,27 @@ function RowGroupEditor({ group, rows, onChange, theme }) {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Per-photo crop-focus thumbnail ──────────────────────────────────────────
+// Click anywhere on the photo to set what stays centred when it's cropped to
+// fill a teaser cell. Stores [x,y] in 0..100; the thumb previews the crop live.
+function FocusThumb({ url, focus, onFocus, AuthImg }) {
+  const ref = useRef(null)
+  const f = Array.isArray(focus) && focus.length >= 2 ? focus : [50, 50]
+  const set = (e) => {
+    if (!ref.current) return
+    const r = ref.current.getBoundingClientRect()
+    const x = Math.round(Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100)))
+    const y = Math.round(Math.max(0, Math.min(100, ((e.clientY - r.top) / r.height) * 100)))
+    onFocus([x, y])
+  }
+  return (
+    <div ref={ref} onClick={set} title="Click to set the crop focus" style={{ width: '100%', height: '100%', position: 'relative', cursor: 'crosshair' }}>
+      <AuthImg url={url} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${f[0]}% ${f[1]}%` }} />
+      <div style={{ position: 'absolute', left: `${f[0]}%`, top: `${f[1]}%`, width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: '50%', border: '2px solid #00B6FF', background: 'rgba(255,255,255,0.85)', boxShadow: '0 0 0 1px rgba(0,0,0,0.35)', pointerEvents: 'none' }} />
     </div>
   )
 }

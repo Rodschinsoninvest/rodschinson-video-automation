@@ -474,6 +474,15 @@ function boundarySvg(points, dashed){
   return `<svg class="a-svg" viewBox="0 0 100 100" preserveAspectRatio="none">`
        + `<polygon class="a-poly${dashed?' dashed':''}" points="${esc(pts)}"></polygon></svg>`;
 }
+// Per-photo focal point → CSS object-position (editor "crop focus"). focusMap is
+// keyed by the photo's url; value is [x,y] in 0..100. Default center when unset.
+function objPos(focusMap, key){
+  const f = focusMap && focusMap[key];
+  if (!Array.isArray(f) || f.length < 2) return '';
+  const x = Number(f[0]), y = Number(f[1]);
+  if (isNaN(x) || isNaN(y)) return '';
+  return ` style="object-position:${x}% ${y}%"`;
+}
 
 window.loadLongTeaser = function(data, brandName){
   data = data || {};
@@ -772,7 +781,7 @@ window.loadLongTeaser = function(data, brandName){
           </div></div>`);
       });
     }
-    function pushGallery(sectionKey, anchor, photoList, metaText, layout){
+    function pushGallery(sectionKey, anchor, photoList, metaText, layout, focusMap){
       const ph = (photoList||[]).filter(Boolean);
       if (!ph.length) return;
       let first = true, i = 0;
@@ -782,7 +791,7 @@ window.loadLongTeaser = function(data, brandName){
         pushPage(`
           ${headerP('p', SL.photos, metaText)}
           <div class="pg-body"><div class="${cls}">
-            ${slice.map(p=>`<div class="photo-tile"><img class="fill-img" src="${esc(fileUrl(p))}" alt=""></div>`).join('')}
+            ${slice.map(p=>`<div class="photo-tile"><img class="fill-img"${objPos(focusMap, p)} src="${esc(fileUrl(p))}" alt=""></div>`).join('')}
           </div></div>`);
       };
       // Fixed layout override ("Photos per page" in the editor): N tiles per page
@@ -999,7 +1008,7 @@ window.loadLongTeaser = function(data, brandName){
           if (p && !locExclude.has(String(p)) && aGallery.indexOf(p) === -1) aGallery.push(p);
         });
         if (aGallery.length){
-          pushGallery('gallery', galleryAnchorSet ? '' : A.photos, aGallery, meta, aLayout);
+          pushGallery('gallery', galleryAnchorSet ? '' : A.photos, aGallery, meta, aLayout, a.photo_focus);
           galleryAnchorSet = true;
         }
       }
@@ -1009,7 +1018,7 @@ window.loadLongTeaser = function(data, brandName){
     if (photos.length){
       const extra = [];
       photos.forEach(p => { if (p && !locExclude.has(String(p)) && extra.indexOf(p) === -1) extra.push(p); });
-      if (extra.length){ pushGallery('gallery', galleryAnchorSet ? '' : A.photos, extra, '', data.photo_layout); galleryAnchorSet = true; }
+      if (extra.length){ pushGallery('gallery', galleryAnchorSet ? '' : A.photos, extra, '', data.photo_layout, data.photo_focus); galleryAnchorSet = true; }
     }
 
     // ── 6) PLANS (shared, if any) ──
@@ -1471,7 +1480,7 @@ window.loadLongTeaser = function(data, brandName){
   if(photos.length){
     currentSection = 'gallery';
     sectionAnchor = A.photos;
-    const galTile = p=>`<div class="photo-tile"><img class="fill-img" src="${esc(fileUrl(p))}" alt=""></div>`;
+    const galTile = p=>`<div class="photo-tile"><img class="fill-img"${objPos(data.photo_focus, p)} src="${esc(fileUrl(p))}" alt=""></div>`;
     const galPage = (slice, gridClass, heading)=>{
       const grid = `<div class="${gridClass}">${slice.map(galTile).join('')}</div>`;
       const body = heading
