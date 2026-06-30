@@ -162,7 +162,7 @@ export default function Settings() {
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         {/* Sidebar nav */}
         <div className="cs-card" style={{ width: 200, flexShrink: 0, padding: '8px 0', overflow: 'hidden' }}>
-          {/* eslint-disable-next-line no-unused-vars -- Icon is rendered as <Icon/> below */}
+          {/* `Icon` (uppercase) is rendered as <Icon/> below. */}
           {GROUPS.map(({ id, label, icon: Icon }) => {
             const isActive = activeGroup === id
             // Count configured fields in this group

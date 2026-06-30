@@ -108,7 +108,6 @@ const PORTFOLIO_ASSET_TEXT = [
 ]
 const PORTFOLIO_ASSET_IMAGES = [
   ['activa_photo', 'Presentation photo'],
-  ['aerial_view',  'Aerial image (overrides auto)'],
 ]
 const PORTFOLIO_ASSET_ROWGROUPS = [
   { key: 'metrics',             label: 'Header metrics (chips)', cols: [['k','Label'],['v','Value']] },
@@ -197,6 +196,7 @@ export default function TeaserEditor() {
   const uploadRef = useRef(null)
   const galleryUploadRef = useRef(null)
   const assetGalleryRef = useRef(null)
+  const locationUploadRef = useRef(null)
   const [assetUploadIdx, setAssetUploadIdx] = useState(null)  // which asset's gallery is receiving a multi-upload
 
   // ── Load ────────────────────────────────────────────────────────────────
@@ -375,7 +375,17 @@ export default function TeaserEditor() {
       }
       const asset = await res.json()
       setAssets(prev => [...prev, { name: asset.name, size: asset.size, url: asset.url }])
-      if (uploadTarget.assetIndex != null) {
+      if (uploadTarget.locIndex != null) {
+        // Replace one cadastral / location image in-place (keeps its caption etc.)
+        setData(prev => {
+          const arr = Array.isArray(prev.location_images) ? [...prev.location_images] : []
+          const cur = typeof arr[uploadTarget.locIndex] === 'string' ? { url: arr[uploadTarget.locIndex] } : { ...(arr[uploadTarget.locIndex] || {}) }
+          cur.url = asset.url
+          arr[uploadTarget.locIndex] = cur
+          return { ...prev, location_images: arr }
+        })
+        setDirty(true)
+      } else if (uploadTarget.assetIndex != null) {
         // Per-asset target (portfolio mode)
         setData(prev => {
           const arr = [...(prev.assets || [])]
@@ -458,6 +468,45 @@ export default function TeaserEditor() {
       })
       setDirty(true)
       toast(`Added ${urls.length} photo(s)`, 'success')
+    }
+  }
+
+  // ── Cadastral / location images (shared Location page, portfolio mode) ──────
+  // Stored as data.location_images = [{ url, caption, address, maps }, ...].
+  const locImages = Array.isArray(data?.location_images) ? data.location_images : []
+  const normLoc = (it) => (typeof it === 'string' ? { url: it } : (it && typeof it === 'object' ? it : { url: '' }))
+  const setLocImages = (arr) => setField('location_images', arr)
+  const setLocField = (i, key, val) => {
+    const arr = locImages.map((it, j) => (j === i ? { ...normLoc(it), [key]: val } : it))
+    setLocImages(arr)
+  }
+  const removeLocImage = (i) => setLocImages(locImages.filter((_, j) => j !== i))
+  const moveLocImage = (i, dir) => {
+    const j = i + dir
+    if (j < 0 || j >= locImages.length) return
+    const arr = [...locImages]
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    setLocImages(arr)
+  }
+  const handleLocationUpload = async (e) => {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ''
+    if (!files.length) return
+    const added = []
+    for (const file of files) {
+      try {
+        const fd = new FormData()
+        fd.append('file', file)
+        const res = await apiFetch(`/api/long-teaser/${jobId}/assets`, { method: 'POST', body: fd })
+        if (!res.ok) continue
+        const asset = await res.json()
+        setAssets(prev => [...prev, { name: asset.name, size: asset.size, url: asset.url }])
+        added.push({ url: asset.url })
+      } catch {/* noop, continue */}
+    }
+    if (added.length) {
+      setLocImages([...locImages, ...added])
+      toast(`Added ${added.length} cadastral image(s)`, 'success')
     }
   }
 
@@ -576,6 +625,8 @@ export default function TeaserEditor() {
 
       {/* Hidden multi-uploader for a building's gallery (portfolio mode) */}
       <input ref={assetGalleryRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleAssetGalleryUpload} />
+      {/* Hidden multi-uploader for the shared cadastral / location images */}
+      <input ref={locationUploadRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleLocationUpload} />
 
       {/* Main 3-pane */}
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '220px 1fr 460px', minHeight: 0 }}>
@@ -583,7 +634,7 @@ export default function TeaserEditor() {
         <>
           {/* Portfolio rail: Cover · Company · one entry per building · Sales */}
           <div style={{ borderRight: `1px solid ${border}`, background: panel, overflowY: 'auto' }}>
-            {[['pages', '📄 Pages'], ['cover', '⬛ Cover'], ['company', '🏢 Company']].map(([id, label]) => (
+            {[['pages', '📄 Pages'], ['cover', '⬛ Cover'], ['company', '🏢 Company'], ['location', '📍 Location']].map(([id, label]) => (
               <button key={id} onClick={() => setActiveId(id)} style={{ width: '100%', padding: '12px 14px', border: 'none', borderBottom: `1px solid ${border}`, background: activeId === id ? (dark ? 'rgba(0,182,255,0.12)' : 'rgba(8,49,111,0.07)') : 'transparent', color: activeId === id ? '#00B6FF' : text, fontSize: 13, fontWeight: activeId === id ? 700 : 500, cursor: 'pointer', textAlign: 'left' }}>{label}</button>
             ))}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px 6px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>
@@ -643,6 +694,57 @@ export default function TeaserEditor() {
                 {PORTFOLIO_COMPANY_ROWGROUPS.map(group => (
                   <RowGroupEditor key={group.key} group={group} rows={data[group.key] || []} onChange={rows => setField(group.key, rows)} theme={{ panel, border, text, muted, inputStyle }} />
                 ))}
+              </div>
+            )}
+            {activeId === 'location' && (
+              <div>
+                <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: text }}>📍 Location (shared)</h2>
+                <p style={{ fontSize: 12, color: muted, margin: '0 0 16px' }}>Cadastral / location photos shown on the shared Location page. These are auto-derived from each building's address — replace, add, reorder or recaption them here.</p>
+
+                {/* Cadastral / location images */}
+                <div style={{ marginBottom: 22 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>Cadastral images ({locImages.length})</div>
+                    <button onClick={() => locationUploadRef.current?.click()} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: '#00B6FF', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add images</button>
+                  </div>
+                  {locImages.length === 0 && (
+                    <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: muted, border: `1px dashed ${border}`, borderRadius: 6 }}>No cadastral images. Click "+ Add images".</div>
+                  )}
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {locImages.map((it, i) => {
+                      const item = normLoc(it)
+                      return (
+                        <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', border: `1px solid ${border}`, borderRadius: 8, padding: 10, background: panel }}>
+                          <div style={{ width: 120, height: 90, flex: '0 0 auto', borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.05)' }}>
+                            {item.url ? <AuthImg url={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%' }} />}
+                          </div>
+                          <div style={{ flex: 1, display: 'grid', gap: 6 }}>
+                            <input value={item.caption || ''} onChange={e => setLocField(i, 'caption', e.target.value)} placeholder="Caption (optional)" style={inputStyle} />
+                            <input value={item.address || ''} onChange={e => setLocField(i, 'address', e.target.value)} placeholder="Address (used for the Maps link)" style={inputStyle} />
+                            <input value={item.maps || ''} onChange={e => setLocField(i, 'maps', e.target.value)} placeholder="Google Maps URL (optional — overrides address)" style={inputStyle} />
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button onClick={() => triggerUpload({ key: '__loc__', locIndex: i })} style={{ padding: '5px 10px', borderRadius: 5, border: `1px solid ${border}`, background: 'transparent', color: '#00B6FF', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>↑ Replace</button>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <button onClick={() => moveLocImage(i, -1)} disabled={i === 0} style={{ padding: '2px 8px', borderRadius: 3, border: `1px solid ${border}`, background: panel, color: muted, cursor: i === 0 ? 'not-allowed' : 'pointer', fontSize: 11 }}>↑</button>
+                            <button onClick={() => moveLocImage(i, 1)} disabled={i === locImages.length - 1} style={{ padding: '2px 8px', borderRadius: 3, border: `1px solid ${border}`, background: panel, color: muted, cursor: i === locImages.length - 1 ? 'not-allowed' : 'pointer', fontSize: 11 }}>↓</button>
+                            <button onClick={() => removeLocImage(i)} style={{ padding: '2px 8px', borderRadius: 3, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', cursor: 'pointer', fontSize: 12 }}>×</button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Fallback street map + map link settings */}
+                <div style={{ marginBottom: 22 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 8 }}>Map fallback &amp; link</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12, marginBottom: 12 }}>
+                    {imgCard('Street map photo (used if no cadastral images)', data.street_map || '', () => triggerUpload({ key: 'street_map' }), () => setField('street_map', ''))}
+                  </div>
+                  {textBlock([['google_maps_url', 'Google Maps link (https://)'], ['map_link_text', '"View on Maps" link text'], ['boundary_caption', 'Boundary caption']], k => data[k], (k, v) => setField(k, v))}
+                </div>
               </div>
             )}
             {activeId === 'sales' && (
@@ -717,6 +819,19 @@ export default function TeaserEditor() {
                     </div>
                   </div>
 
+                  {/* Aerial view + editable red parcel outline */}
+                  <div style={{ marginBottom: 22 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 8 }}>Aerial view &amp; parcel outline</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12, marginBottom: 12 }}>
+                      {imgCard('Aerial image (overrides auto)', a.aerial_view || '', () => triggerUpload({ assetIndex: idx, key: 'aerial_view' }), () => setAssetField(idx, 'aerial_view', ''))}
+                    </div>
+                    <BoundaryEditor imgUrl={a.aerial_view || ''} points={a.boundary} onChange={pts => setAssetField(idx, 'boundary', pts)} AuthImg={AuthImg} theme={{ border, text, muted, panel }} />
+                    <div style={{ marginTop: 12 }}>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Google Maps link (aerial)</label>
+                      <input value={a.google_maps_url || ''} onChange={e => setAssetField(idx, 'google_maps_url', e.target.value)} placeholder="https://… (defaults to a search on the address)" style={inputStyle} />
+                    </div>
+                  </div>
+
                   {/* Per-building text */}
                   <div style={{ marginBottom: 22 }}>
                     <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 8 }}>Details</div>
@@ -788,6 +903,14 @@ export default function TeaserEditor() {
                   )
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Aerial parcel-outline editor (single-asset aerial section) */}
+          {activeId === 'aerial' && (
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 8 }}>Parcel outline (red)</div>
+              <BoundaryEditor imgUrl={data.aerial_view || ''} points={data.boundary} onChange={pts => setField('boundary', pts)} AuthImg={AuthImg} theme={{ border, text, muted, panel }} />
             </div>
           )}
 
@@ -940,6 +1063,80 @@ function RowGroupEditor({ group, rows, onChange, theme }) {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Aerial parcel-outline editor ────────────────────────────────────────────
+// Points are [x,y] in a 0..100 viewBox (top-left origin), exactly what the
+// renderer draws. The editing box matches the render frame's aspect (≈723/584)
+// with object-fit:cover, so the outline lines up with the final PDF.
+function BoundaryEditor({ imgUrl, points, onChange, AuthImg, theme }) {
+  const { border, muted, panel } = theme
+  const pts = Array.isArray(points)
+    ? points.filter(p => Array.isArray(p) && p.length >= 2).map(p => [Number(p[0]) || 0, Number(p[1]) || 0])
+    : []
+  const boxRef = useRef(null)
+  const dragRef = useRef(-1)
+
+  const toPct = (clientX, clientY) => {
+    const r = boxRef.current.getBoundingClientRect()
+    const x = Math.max(0, Math.min(100, ((clientX - r.left) / r.width) * 100))
+    const y = Math.max(0, Math.min(100, ((clientY - r.top) / r.height) * 100))
+    return [Math.round(x * 100) / 100, Math.round(y * 100) / 100]
+  }
+
+  // Re-bind each render so the move handler closes over fresh pts/onChange.
+  useEffect(() => {
+    const onMove = (e) => {
+      if (dragRef.current < 0 || !boxRef.current) return
+      const [x, y] = toPct(e.clientX, e.clientY)
+      onChange(pts.map((p, i) => (i === dragRef.current ? [x, y] : p)))
+    }
+    const onUp = () => { dragRef.current = -1 }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+  })
+
+  const addPoint = (e) => {
+    if (dragRef.current >= 0) return
+    const [x, y] = toPct(e.clientX, e.clientY)
+    onChange([...pts, [x, y]])
+  }
+  const startDrag = (i, e) => { e.stopPropagation(); e.preventDefault(); dragRef.current = i }
+  const delPoint  = (i, e) => { e.stopPropagation(); e.preventDefault(); onChange(pts.filter((_, j) => j !== i)) }
+  const polyStr = pts.map(p => `${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(' ')
+
+  return (
+    <div>
+      <div
+        ref={boxRef}
+        onMouseDown={addPoint}
+        style={{ position: 'relative', width: '100%', maxWidth: 560, aspectRatio: '723 / 584', borderRadius: 8, overflow: 'hidden', border: `1px solid ${border}`, background: '#101820', cursor: 'crosshair', userSelect: 'none' }}
+      >
+        {imgUrl
+          ? <AuthImg url={imgUrl} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
+          : <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Upload an aerial image first</div>}
+        {pts.length >= 3 && (
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+            <polygon points={polyStr} fill="rgba(220,38,38,0.12)" stroke="#dc2626" strokeWidth="0.7" strokeDasharray="2.2 1.6" />
+          </svg>
+        )}
+        {pts.map((p, i) => (
+          <div
+            key={i}
+            onMouseDown={(e) => startDrag(i, e)}
+            onDoubleClick={(e) => delPoint(i, e)}
+            title={`Point ${i + 1} — drag to move, double-click to delete`}
+            style={{ position: 'absolute', left: `${p[0]}%`, top: `${p[1]}%`, width: 14, height: 14, marginLeft: -7, marginTop: -7, borderRadius: '50%', background: '#fff', border: '2px solid #dc2626', boxShadow: '0 1px 3px rgba(0,0,0,0.5)', cursor: 'move' }}
+          />
+        ))}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+        <span style={{ fontSize: 11, color: muted }}>{pts.length} point{pts.length === 1 ? '' : 's'} · click image to add · drag to move · double-click a point to delete{pts.length > 0 && pts.length < 3 ? ' · need ≥3 to show' : ''}</span>
+        {pts.length > 0 && <button onClick={() => onChange([])} style={{ padding: '4px 10px', borderRadius: 4, border: `1px solid rgba(220,38,38,0.3)`, background: panel, color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>Clear outline</button>}
+      </div>
     </div>
   )
 }

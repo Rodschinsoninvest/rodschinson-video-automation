@@ -41,7 +41,7 @@ const S = {
 }
 
 // ── Nav item ───────────────────────────────────────────────────────────────────
-// eslint-disable-next-line no-unused-vars -- Icon is rendered as <Icon/> in the JSX below
+// `Icon` (uppercase) is rendered as <Icon/> in the JSX below.
 function NavItem({ to, icon: Icon, label, onClick, end }) {
   const [hov, setHov] = useState(false)
   return (

@@ -23,7 +23,10 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // Uppercase/underscore names are components or intentional placeholders;
+      // ignore them for both variables and args (JSX-only usage isn't tracked
+      // here since the react plugin is not enabled).
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]' }],
     },
   },
 ])
