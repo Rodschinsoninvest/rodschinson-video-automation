@@ -21,5 +21,16 @@
   to     = "/index.html"
   status = 200
 
+# Always revalidate index.html so users get the latest build (hashed assets are
+# immutable). Prevents stale cached app shells (blank page / old code).
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
 [context.production.environment]
   NODE_ENV = "production"
