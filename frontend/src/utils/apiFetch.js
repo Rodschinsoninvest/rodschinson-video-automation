@@ -2,9 +2,19 @@
  * Central fetch wrapper — automatically attaches the auth token from localStorage.
  * Drop-in replacement for fetch(): same signature, same return value.
  */
+// Large uploads (generation) bypass the Netlify proxy — Netlify caps proxied
+// request bodies (~125MB → HTTP 400) — and go straight to the backend, which
+// accepts them. CORS allows this origin; the Bearer header authenticates it.
+const BACKEND_DIRECT = 'https://content-studio-production-84de.up.railway.app'
+const _isLocal = typeof location !== 'undefined'
+  && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+
 export function apiFetch(url, opts = {}) {
   const token = localStorage.getItem('cs_auth_token')
-  return fetch(url, {
+  // Send /api/generate direct to the backend in production (skip Netlify's body
+  // limit); in local dev keep it relative so the Vite proxy hits the local API.
+  const finalUrl = (!_isLocal && url === '/api/generate') ? BACKEND_DIRECT + url : url
+  return fetch(finalUrl, {
     ...opts,
     headers: {
       ...(opts.headers || {}),
