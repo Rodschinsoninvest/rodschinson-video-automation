@@ -62,6 +62,14 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
 .pg-nav .tab.active{color:var(--navy);font-weight:700;letter-spacing:-0.01em}
 .loc-over .lo-tile span.map-cta{pointer-events:none}
 .pg-nav .div{color:#cbd5e1;font-weight:300}
+/* Documents (SharePoint) button — pinned to the right of the nav on every page
+   except the contact page (which keeps its own CTA). */
+.pg-nav .nav-docs{
+  margin-left:auto;display:inline-flex;align-items:center;gap:6px;
+  padding:5px 14px;border-radius:16px;background:var(--navy);color:#fff !important;
+  font-size:11px;font-weight:700;letter-spacing:0.02em;white-space:nowrap;
+}
+.pg-nav .nav-docs::after{content:'↗';font-weight:400;font-size:12px}
 
 /* ── BODY AREA (hard-clamped) ── */
 .pg-body{position:absolute;top:170px;left:48px;right:48px;height:584px;overflow:hidden}
@@ -405,6 +413,10 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'DM Sans','Montser
   max-width:560px;   /* becomes visible height after rotation */
   max-height:1000px; /* becomes visible width after rotation */
 }
+/* Manual rotation from the editor (overrides the auto portrait rotation). */
+.plan-wrap img.rot-90 { transform:translate(-50%,-50%) rotate(90deg);  max-width:560px; max-height:1000px; }
+.plan-wrap img.rot-270{ transform:translate(-50%,-50%) rotate(270deg); max-width:560px; max-height:1000px; }
+.plan-wrap img.rot-180{ transform:translate(-50%,-50%) rotate(180deg); }
 
 /* ─────── SALES ─────── */
 .sales{display:flex;gap:0;height:100%;max-height:584px;border:1px solid var(--border);border-radius:4px;overflow:hidden}
@@ -560,6 +572,9 @@ window.loadLongTeaser = function(data, brandName){
   const docsUrl    = data.sharepoint_url || data.expertise_url || '#';
   const docsLabel  = data.docs_label   || 'Aanvullende documenten';
   const docsHelper = data.docs_helper  || 'Klik hier om de bestandsdocumenten te downloaden';
+  // Short label for the docs button shown in the nav on every page (kept concise).
+  const docsNavLabel = data.docs_nav_label || ({FR:'Documents',NL:'Documenten',EN:'Documents'}[LANG] || 'Documents');
+  const hasDocs    = !!docsUrl && docsUrl !== '#';
 
   // Location / name split from title "LOCATION: Name"
   let loc = '', name = title;
@@ -601,7 +616,7 @@ window.loadLongTeaser = function(data, brandName){
   // full title on every page.
   const shortLoc = (loc || (title.split(/[\:–—]/)[0] || '').trim()).slice(0, 50);
 
-  function header(activeTab, sectionLabel){
+  function header(activeTab, sectionLabel, showTitle){
     const tab = (key, label) => {
       const active = activeTab === key;
       const href = key==='a'?A.activa : key==='l'?A.loc : key==='ae'?A.aerial : key==='p'?A.photos : key==='pl'?A.plans : A.sales;
@@ -610,10 +625,14 @@ window.loadLongTeaser = function(data, brandName){
     const navInner = navTabs
       .map((t,i)=> (i>0 ? '<span class="div">|</span>' : '') + tab(t.key, t.label))
       .join('');
+    // Title (shortLoc) only on the first content page; ref stays on every page.
     const metaBits = [];
-    if (shortLoc) metaBits.push(`<span>${esc(shortLoc)}</span>`);
+    if (showTitle && shortLoc) metaBits.push(`<span>${esc(shortLoc)}</span>`);
     if (ref)      metaBits.push(`<span class="ref">${esc(ref)}</span>`);
     const meta = metaBits.join('<span class="dot"></span>');
+    // Docs button on every page except the contact page (which keeps its own CTA).
+    const docsBtn = (hasDocs && activeTab !== 's')
+      ? `<a class="nav-docs" href="${esc(docsUrl)}" target="_blank">${esc(docsNavLabel)}</a>` : '';
     return `
       <div class="pg-header">
         <div class="logo">
@@ -630,6 +649,7 @@ window.loadLongTeaser = function(data, brandName){
       <div class="pg-nav">
         <div class="mark"></div>
         ${navInner}
+        ${docsBtn}
       </div>`;
   }
 
@@ -642,6 +662,20 @@ window.loadLongTeaser = function(data, brandName){
     const id = sectionAnchor ? ` id="${sectionAnchor}"` : '';
     sectionAnchor = '';
     pages.push(`<div class="page${extraClass?' '+extraClass:''}"${id}>${inner}</div>`);
+  };
+
+  // Plan image with optional MANUAL rotation from the editor (data.plan_rotation
+  // keyed by url, degrees 0/90/180/270). When set it overrides the auto portrait
+  // rotation (the .plan-manual marker tells rotatePortraitPlans to skip it).
+  const _planRot = (data.plan_rotation && typeof data.plan_rotation === 'object') ? data.plan_rotation : {};
+  const planImgHtml = (pl) => {
+    const raw = _planRot[pl];
+    const manual = (raw !== undefined && raw !== null && raw !== '');
+    const deg = manual ? ((((parseInt(raw, 10) || 0) % 360) + 360) % 360) : 0;
+    const cls = ['plan-img'];
+    if (manual) cls.push('plan-manual');
+    if (deg === 90) cls.push('rot-90'); else if (deg === 180) cls.push('rot-180'); else if (deg === 270) cls.push('rot-270');
+    return `<img class="${cls.join(' ')}" src="${esc(fileUrl(pl))}" alt="plan">`;
   };
 
   // ══════════════════════════════════════════════════════════════════════
@@ -669,16 +703,20 @@ window.loadLongTeaser = function(data, brandName){
       {key:'s',  label:T.sales,  show:true},
     ].filter(t => t.show);
 
-    function headerP(activeKey, sectionLabel, metaText){
+    function headerP(activeKey, sectionLabel, metaText, showTitle){
       const hrefFor = k => k==='a'?A.activa : k==='l'?A.loc : k==='ae'?A.aerial : k==='p'?A.photos : k==='pl'?A.plans : A.sales;
       const navInner = navTabsP.map((t,i)=>{
         const a = activeKey===t.key;
         return (i>0?'<span class="div">|</span>':'') + `<a href="#${hrefFor(t.key)}"><span class="tab${a?' active':''}">${esc(t.label)}</span></a>`;
       }).join('');
+      // Per-building pages pass their building name as metaText; otherwise the
+      // portfolio title (shortLoc) shows only on the first content page. ref stays.
       const metaBits = [];
       if (metaText) metaBits.push(`<span>${esc(metaText)}</span>`);
-      else if (shortLoc) metaBits.push(`<span>${esc(shortLoc)}</span>`);
+      else if (showTitle && shortLoc) metaBits.push(`<span>${esc(shortLoc)}</span>`);
       if (ref) metaBits.push(`<span class="ref">${esc(ref)}</span>`);
+      const docsBtn = (hasDocs && activeKey !== 's')
+        ? `<a class="nav-docs" href="${esc(docsUrl)}" target="_blank">${esc(docsNavLabel)}</a>` : '';
       return `
         <div class="pg-header">
           <div class="logo"><div class="l1">RODSCHINSON</div><div class="l2">INVESTMENT</div></div>
@@ -686,7 +724,7 @@ window.loadLongTeaser = function(data, brandName){
           <div class="title-block"><div class="sec">${esc(sectionLabel||'')}</div><div class="meta">${metaBits.join('<span class="dot"></span>')}</div></div>
           <div class="disc">${esc(disclaimer)}</div>
         </div>
-        <div class="pg-nav"><div class="mark"></div>${navInner}</div>`;
+        <div class="pg-nav"><div class="mark"></div>${navInner}${docsBtn}</div>`;
     }
 
     // ── generic table/bullets pagination (1 wide OR 2 half cards per page) ──
@@ -887,7 +925,7 @@ window.loadLongTeaser = function(data, brandName){
         </div>
       </div>` : '';
     pushPage(`
-      ${headerP('a', SL.activa)}
+      ${headerP('a', SL.activa, '', true)}
       <div class="pg-body"><div class="pf">
         <div class="pf-head">${esc(title)}</div>
         ${ov.sub?`<div class="pf-sub">${esc(ov.sub)}</div>`:''}
@@ -1026,7 +1064,7 @@ window.loadLongTeaser = function(data, brandName){
       currentSection = 'plans';
       sectionAnchor = A.plans;
       plans.forEach(pl=>{
-        pushPage(`${headerP('pl', SL.plans)}<div class="pg-body"><div class="plan-wrap"><img class="plan-img" src="${esc(fileUrl(pl))}" alt="plan"></div></div>`);
+        pushPage(`${headerP('pl', SL.plans)}<div class="pg-body"><div class="plan-wrap">${planImgHtml(pl)}</div></div>`);
       });
     }
 
@@ -1055,6 +1093,7 @@ window.loadLongTeaser = function(data, brandName){
     document.getElementById('doc').innerHTML = pages.join('');
     window.rotatePortraitPlans = function(){
       document.querySelectorAll('.plan-img').forEach(img=>{
+        if(img.classList.contains('plan-manual')) return;  // respect manual rotation
         if(!img.complete || !img.naturalWidth) return;
         if(img.naturalHeight > img.naturalWidth * 1.05) img.classList.add('rotated');
       });
@@ -1083,7 +1122,7 @@ window.loadLongTeaser = function(data, brandName){
   currentSection = 'activa';
   sectionAnchor = A.activa;
   pushPage(`
-    ${header('a', SL.activa)}
+    ${header('a', SL.activa, true)}
     <div class="pg-body">
       <div class="activa">
         <div class="left">
@@ -1527,7 +1566,7 @@ window.loadLongTeaser = function(data, brandName){
       pushPage(`
         ${header('pl', SL.plans)}
         <div class="pg-body">
-          <div class="plan-wrap"><img class="plan-img" src="${esc(fileUrl(pl))}" alt="plan"></div>
+          <div class="plan-wrap">${planImgHtml(pl)}</div>
         </div>`);
     });
   }
@@ -1564,6 +1603,7 @@ window.loadLongTeaser = function(data, brandName){
   // Auto-rotate portrait plan images (called again after images finish loading by the renderer)
   window.rotatePortraitPlans = function(){
     document.querySelectorAll('.plan-img').forEach(img=>{
+      if(img.classList.contains('plan-manual')) return;  // respect manual rotation
       if(!img.complete || !img.naturalWidth) return;
       if(img.naturalHeight > img.naturalWidth * 1.05){
         img.classList.add('rotated');

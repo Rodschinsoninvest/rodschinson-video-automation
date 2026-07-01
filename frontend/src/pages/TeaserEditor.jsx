@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Square, FileText, BarChart3, MapPin, Satellite, Images, Ruler, Handshake,
-  Building2, Home, Plus, ArrowUp, ArrowDown, X, ArrowLeft, Download,
+  Building2, Home, Plus, ArrowUp, ArrowDown, X, ArrowLeft, Download, RotateCw,
 } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
@@ -201,6 +201,7 @@ export default function TeaserEditor() {
   const galleryUploadRef = useRef(null)
   const assetGalleryRef = useRef(null)
   const locationUploadRef = useRef(null)
+  const plansUploadRef = useRef(null)
   const [assetUploadIdx, setAssetUploadIdx] = useState(null)  // which asset's gallery is receiving a multi-upload
 
   // ── Load ────────────────────────────────────────────────────────────────
@@ -307,6 +308,11 @@ export default function TeaserEditor() {
   const setPhotoFocus = (url, xy) => {
     setData(prev => ({ ...prev, photo_focus: { ...(prev.photo_focus || {}), [url]: xy } }))
     setDirty(true)
+  }
+  // Cycle a plan's manual rotation 0→90→180→270→0 (overrides auto portrait rotate).
+  const cyclePlanRotation = (url) => {
+    const cur = ((Number(data.plan_rotation?.[url]) || 0) % 360 + 360) % 360
+    setField('plan_rotation', { ...(data.plan_rotation || {}), [url]: (cur + 90) % 360 })
   }
 
   // ── Save ────────────────────────────────────────────────────────────────
@@ -529,6 +535,39 @@ export default function TeaserEditor() {
     }
   }
 
+  // ── Shared plans (portfolio mode) ──────────────────────────────────────────
+  const plansList = Array.isArray(data?.plans) ? data.plans : []
+  const setPlans = (arr) => setField('plans', arr)
+  const movePlan = (i, dir) => {
+    const j = i + dir
+    if (j < 0 || j >= plansList.length) return
+    const arr = [...plansList]
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    setPlans(arr)
+  }
+  const removePlan = (i) => setPlans(plansList.filter((_, j) => j !== i))
+  const handlePlansUpload = async (e) => {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ''
+    if (!files.length) return
+    const urls = []
+    for (const file of files) {
+      try {
+        const fd = new FormData()
+        fd.append('file', file)
+        const res = await apiFetch(`/api/long-teaser/${jobId}/assets`, { method: 'POST', body: fd })
+        if (!res.ok) continue
+        const asset = await res.json()
+        setAssets(prev => [...prev, { name: asset.name, size: asset.size, url: asset.url }])
+        urls.push(asset.url)
+      } catch {/* noop, continue */}
+    }
+    if (urls.length) {
+      setPlans([...plansList, ...urls])
+      toast(`Added ${urls.length} plan(s)`, 'success')
+    }
+  }
+
   // Token-aware image: small wrapper that fetches the blob with Authorization header.
   const AuthImg = ({ url, ...rest }) => {
     const [src, setSrc] = useState('')
@@ -646,6 +685,8 @@ export default function TeaserEditor() {
       <input ref={assetGalleryRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleAssetGalleryUpload} />
       {/* Hidden multi-uploader for the shared cadastral / location images */}
       <input ref={locationUploadRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleLocationUpload} />
+      {/* Hidden multi-uploader for the shared plans */}
+      <input ref={plansUploadRef} type="file" accept="image/*,application/pdf" multiple style={{ display: 'none' }} onChange={handlePlansUpload} />
 
       {/* Main 3-pane */}
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '220px 1fr 460px', minHeight: 0 }}>
@@ -653,7 +694,7 @@ export default function TeaserEditor() {
         <>
           {/* Portfolio rail: Cover · Company · one entry per building · Sales */}
           <div style={{ borderRight: `1px solid ${border}`, background: panel, overflowY: 'auto' }}>
-            {[['pages', 'Pages', FileText], ['cover', 'Cover', Square], ['company', 'Company', Building2], ['location', 'Location', MapPin]].map(([id, label, Icon]) => (
+            {[['pages', 'Pages', FileText], ['cover', 'Cover', Square], ['company', 'Company', Building2], ['location', 'Location', MapPin], ['plans', 'Plans', Ruler]].map(([id, label, Icon]) => (
               <button key={id} onClick={() => setActiveId(id)} style={{ width: '100%', padding: '12px 14px', border: 'none', borderBottom: `1px solid ${border}`, background: activeId === id ? 'var(--cs-accent-soft)' : 'transparent', color: activeId === id ? 'var(--cs-accent)' : text, fontSize: 13, fontWeight: activeId === id ? 700 : 500, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}><Icon size={15} style={{ color: activeId === id ? 'var(--cs-accent)' : 'var(--cs-text-sub)' }} /> {label}</button>
             ))}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px 6px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>
@@ -763,6 +804,34 @@ export default function TeaserEditor() {
                     {imgCard('Street map photo (used if no cadastral images)', data.street_map || '', () => triggerUpload({ key: 'street_map' }), () => setField('street_map', ''))}
                   </div>
                   {textBlock([['google_maps_url', 'Google Maps link (https://)'], ['map_link_text', '"View on Maps" link text'], ['boundary_caption', 'Boundary caption']], k => data[k], (k, v) => setField(k, v))}
+                </div>
+              </div>
+            )}
+            {activeId === 'plans' && (
+              <div>
+                <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: text, display: 'flex', alignItems: 'center', gap: 8 }}><Ruler size={18} style={{ color: 'var(--cs-accent)' }} /> Plans (shared)</h2>
+                <p style={{ fontSize: 12, color: muted, margin: '0 0 16px' }}>Floor plans / drawings shown on their own pages. Portrait plans auto-rotate to fit; use the ⟳ button to override the rotation manually.</p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>Plans ({plansList.length})</div>
+                  <button onClick={() => plansUploadRef.current?.click()} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: 'var(--cs-accent)', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add plans</button>
+                </div>
+                {plansList.length === 0 && (
+                  <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: muted, border: `1px dashed ${border}`, borderRadius: 6 }}>No plans. Click "+ Add plans".</div>
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
+                  {plansList.map((url, i) => (
+                    <div key={`${url}-${i}`} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', border: `1px solid ${border}`, background: panel }}>
+                      <div style={{ width: '100%', height: 110, background: 'rgba(0,0,0,0.05)' }}>
+                        {typeof url === 'string' && <AuthImg url={url} style={{ width: '100%', height: '100%', objectFit: 'contain', transform: `rotate(${((Number(data.plan_rotation?.[url]) || 0) % 360 + 360) % 360}deg)`, transition: 'transform 0.15s' }} />}
+                      </div>
+                      <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 4 }}>
+                        <button onClick={() => cyclePlanRotation(url)} title="Rotate 90°" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><RotateCw size={12} /></button>
+                        <button onClick={() => movePlan(i, -1)} disabled={i === 0} title="Move up" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: i === 0 ? 'not-allowed' : 'pointer', opacity: i === 0 ? 0.35 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><ArrowUp size={12} /></button>
+                        <button onClick={() => movePlan(i, 1)} disabled={i >= plansList.length - 1} title="Move down" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: i >= plansList.length - 1 ? 'not-allowed' : 'pointer', opacity: i >= plansList.length - 1 ? 0.35 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><ArrowDown size={12} /></button>
+                        <button onClick={() => removePlan(i)} title="Remove" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(220,38,38,0.85)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><X size={12} /></button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -949,10 +1018,13 @@ export default function TeaserEditor() {
                       <div style={{ width: '100%', height: 100, background: 'rgba(0,0,0,0.05)' }}>
                         {typeof url === 'string' && (galleryListKey === 'photos'
                           ? <FocusThumb url={url} focus={data.photo_focus?.[url]} onFocus={xy => setPhotoFocus(url, xy)} AuthImg={AuthImg} />
-                          : <AuthImg url={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />)}
+                          : <AuthImg url={url} style={{ width: '100%', height: '100%', objectFit: 'contain', transform: `rotate(${((Number(data.plan_rotation?.[url]) || 0) % 360 + 360) % 360}deg)`, transition: 'transform 0.15s' }} />)}
                       </div>
                       <div style={{ padding: '4px 6px', fontSize: 9, color: muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
                       <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 4 }}>
+                        {galleryListKey === 'plans' && (
+                          <button onClick={() => cyclePlanRotation(url)} title="Rotate 90°" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><RotateCw size={12} /></button>
+                        )}
                         <button onClick={() => { if (i === 0) return; const arr = [...data[galleryListKey]]; [arr[i-1], arr[i]] = [arr[i], arr[i-1]]; setField(galleryListKey, arr) }} disabled={i === 0} title="Move left" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: i === 0 ? 'not-allowed' : 'pointer', opacity: i === 0 ? 0.35 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><ArrowUp size={12} /></button>
                         <button onClick={() => { const arr = data[galleryListKey] || []; if (i >= arr.length - 1) return; const n = [...arr]; [n[i+1], n[i]] = [n[i], n[i+1]]; setField(galleryListKey, n) }} disabled={i >= (data[galleryListKey]?.length || 0) - 1} title="Move right" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: i >= (data[galleryListKey]?.length || 0) - 1 ? 'not-allowed' : 'pointer', opacity: i >= (data[galleryListKey]?.length || 0) - 1 ? 0.35 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><ArrowDown size={12} /></button>
                         <button onClick={() => { const arr = data[galleryListKey].filter((_, idx) => idx !== i); setField(galleryListKey, arr) }} title="Remove from list" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(220,38,38,0.85)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><X size={12} /></button>
