@@ -7,6 +7,10 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Install devDependencies (vite, plugins) during the build. Without this a
+  # production NODE_ENV makes npm skip devDeps → "vite: not found".
+  NPM_FLAGS = "--include=dev"
+  NPM_CONFIG_PRODUCTION = "false"
 
 # Proxy /api/* → Railway backend (keeps the browser same-origin)
 [[redirects]]
@@ -32,5 +36,6 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-[context.production.environment]
-  NODE_ENV = "production"
+# NOTE: do NOT set NODE_ENV=production here — it makes npm skip devDependencies
+# (vite, @vitejs/plugin-react) at install time, breaking the build. Vite always
+# builds in production mode regardless.
