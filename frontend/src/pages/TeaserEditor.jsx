@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import {
+  Square, FileText, BarChart3, MapPin, Satellite, Images, Ruler, Handshake,
+  Building2, Home, Plus, ArrowUp, ArrowDown, X, ArrowLeft, Download,
+} from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
 import { apiFetch, downloadAsset } from '../utils/apiFetch'
@@ -8,14 +12,14 @@ import { apiFetch, downloadAsset } from '../utils/apiFetch'
 // Each section defines: id (must match `currentSection` in teaser_long.html),
 // label (for the rail + visibility toggle), and the field groups it owns.
 const SECTIONS = [
-  { id: 'cover',        label: 'Cover',          icon: '⬛' },
-  { id: 'activa',       label: 'Description',    icon: '📝' },
-  { id: 'details',      label: 'Financial & Specs', icon: '📊' },
-  { id: 'localisation', label: 'Localisation',   icon: '📍' },
-  { id: 'aerial',       label: 'Aerial view',    icon: '🛰️' },
-  { id: 'gallery',      label: 'Gallery',        icon: '🖼️' },
-  { id: 'plans',        label: 'Plans',          icon: '📐' },
-  { id: 'sales',        label: 'Sales & Contact',icon: '🤝' },
+  { id: 'cover',        label: 'Cover',          icon: Square },
+  { id: 'activa',       label: 'Description',    icon: FileText },
+  { id: 'details',      label: 'Financial & Specs', icon: BarChart3 },
+  { id: 'localisation', label: 'Localisation',   icon: MapPin },
+  { id: 'aerial',       label: 'Aerial view',    icon: Satellite },
+  { id: 'gallery',      label: 'Gallery',        icon: Images },
+  { id: 'plans',        label: 'Plans',          icon: Ruler },
+  { id: 'sales',        label: 'Sales & Contact',icon: Handshake },
 ]
 
 const TEXT_FIELDS_BY_SECTION = {
@@ -584,7 +588,7 @@ export default function TeaserEditor() {
         {url ? <AuthImg url={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 11, color: muted }}>No image</span>}
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
-        <button onClick={onReplace} style={{ flex: 1, padding: '6px 8px', borderRadius: 5, border: `1px solid ${border}`, background: 'transparent', color: '#00B6FF', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>↑ Replace</button>
+        <button onClick={onReplace} style={{ flex: 1, padding: '6px 8px', borderRadius: 5, border: `1px solid ${border}`, background: 'transparent', color: 'var(--cs-accent)', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}><ArrowUp size={12} /> Replace</button>
         {url && <button onClick={onClear} style={{ padding: '6px 10px', borderRadius: 5, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>Clear</button>}
       </div>
     </div>
@@ -614,7 +618,7 @@ export default function TeaserEditor() {
 
       {/* Top bar */}
       <div style={{ padding: '10px 20px', borderBottom: `1px solid ${border}`, background: panel, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate('/library')} style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${border}`, background: 'transparent', color: muted, cursor: 'pointer', fontSize: 12 }}>← Library</button>
+        <button onClick={() => navigate('/library')} style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${border}`, background: 'transparent', color: muted, cursor: 'pointer', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}><ArrowLeft size={13} /> Library</button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{library?.title || data.title || 'Long Teaser'}</div>
           <div style={{ fontSize: 10, color: muted, marginTop: 2 }}>ID {shortId} · {library?.language || data.language || ''} · {library?.brand || ''}{dirty ? ' · unsaved changes' : ''}</div>
@@ -623,14 +627,14 @@ export default function TeaserEditor() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: muted }}>
             <span>Rendering… {renderProgress}%</span>
             <div style={{ width: 80, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.1)', overflow: 'hidden' }}>
-              <div style={{ width: `${renderProgress}%`, height: '100%', background: '#00B6FF', transition: 'width 0.3s' }} />
+              <div style={{ width: `${renderProgress}%`, height: '100%', background: 'var(--cs-accent)', transition: 'width 0.3s' }} />
             </div>
           </div>
         )}
         <button onClick={() => handleSave({ thenRegenerate: false })} disabled={saving || rendering || !dirty} style={{ padding: '8px 14px', borderRadius: 6, border: `1px solid ${border}`, background: panel, color: muted, fontSize: 12, fontWeight: 600, cursor: saving || rendering || !dirty ? 'not-allowed' : 'pointer' }}>
           {saving ? 'Saving…' : 'Save'}
         </button>
-        <button onClick={() => handleSave({ thenRegenerate: true })} disabled={saving || rendering} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: saving || rendering ? 'rgba(8,49,111,0.4)' : 'linear-gradient(135deg,#08316F,#0a4a9a)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: saving || rendering ? 'not-allowed' : 'pointer' }}>
+        <button onClick={() => handleSave({ thenRegenerate: true })} disabled={saving || rendering} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--cs-accent)', opacity: saving || rendering ? 0.5 : 1, color: '#fff', fontSize: 12, fontWeight: 700, cursor: saving || rendering ? 'not-allowed' : 'pointer' }}>
           {saving || rendering ? 'Working…' : 'Save & Regenerate'}
         </button>
         <button onClick={() => handleRegenerate({ regenerate_pptx: true })} disabled={saving || rendering} style={{ padding: '8px 14px', borderRadius: 6, border: `1px solid ${border}`, background: 'transparent', color: muted, fontSize: 11, cursor: saving || rendering ? 'not-allowed' : 'pointer' }} title="Re-render PDF and PPTX from current saved JSON">
@@ -649,29 +653,29 @@ export default function TeaserEditor() {
         <>
           {/* Portfolio rail: Cover · Company · one entry per building · Sales */}
           <div style={{ borderRight: `1px solid ${border}`, background: panel, overflowY: 'auto' }}>
-            {[['pages', '📄 Pages'], ['cover', '⬛ Cover'], ['company', '🏢 Company'], ['location', '📍 Location']].map(([id, label]) => (
-              <button key={id} onClick={() => setActiveId(id)} style={{ width: '100%', padding: '12px 14px', border: 'none', borderBottom: `1px solid ${border}`, background: activeId === id ? (dark ? 'rgba(0,182,255,0.12)' : 'rgba(8,49,111,0.07)') : 'transparent', color: activeId === id ? '#00B6FF' : text, fontSize: 13, fontWeight: activeId === id ? 700 : 500, cursor: 'pointer', textAlign: 'left' }}>{label}</button>
+            {[['pages', 'Pages', FileText], ['cover', 'Cover', Square], ['company', 'Company', Building2], ['location', 'Location', MapPin]].map(([id, label, Icon]) => (
+              <button key={id} onClick={() => setActiveId(id)} style={{ width: '100%', padding: '12px 14px', border: 'none', borderBottom: `1px solid ${border}`, background: activeId === id ? 'var(--cs-accent-soft)' : 'transparent', color: activeId === id ? 'var(--cs-accent)' : text, fontSize: 13, fontWeight: activeId === id ? 700 : 500, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}><Icon size={15} style={{ color: activeId === id ? 'var(--cs-accent)' : 'var(--cs-text-sub)' }} /> {label}</button>
             ))}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px 6px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>
               <span>Assets ({data.assets.length})</span>
-              <button onClick={() => { addAsset(); setActiveId(`asset:${data.assets.length}`) }} title="Add building" style={{ border: `1px solid ${border}`, background: 'transparent', color: '#00B6FF', borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: '0 6px' }}>＋</button>
+              <button onClick={() => { addAsset(); setActiveId(`asset:${data.assets.length}`) }} title="Add building" style={{ border: `1px solid ${border}`, background: 'transparent', color: 'var(--cs-accent)', borderRadius: 4, cursor: 'pointer', padding: '2px 6px', display: 'inline-flex', alignItems: 'center' }}><Plus size={13} /></button>
             </div>
             {data.assets.map((a, i) => {
               const on = activeId === `asset:${i}`
               return (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${border}`, background: on ? (dark ? 'rgba(0,182,255,0.12)' : 'rgba(8,49,111,0.07)') : 'transparent' }}>
-                  <button onClick={() => setActiveId(`asset:${i}`)} style={{ flex: 1, minWidth: 0, padding: '10px 12px', border: 'none', background: 'transparent', color: on ? '#00B6FF' : text, fontSize: 12, fontWeight: on ? 700 : 500, cursor: 'pointer', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${border}`, background: on ? 'var(--cs-accent-soft)' : 'transparent' }}>
+                  <button onClick={() => setActiveId(`asset:${i}`)} style={{ flex: 1, minWidth: 0, padding: '10px 12px', border: 'none', background: 'transparent', color: on ? 'var(--cs-accent)' : text, fontSize: 12, fontWeight: on ? 700 : 500, cursor: 'pointer', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {i + 1}. {a.name || `Asset ${i + 1}`}
                   </button>
                   <div style={{ display: 'flex', gap: 1, paddingRight: 4 }}>
-                    <button onClick={() => moveAsset(i, -1)} disabled={i === 0} title="Up" style={{ border: 'none', background: 'transparent', color: muted, cursor: i === 0 ? 'not-allowed' : 'pointer', fontSize: 11, padding: '2px 3px' }}>↑</button>
-                    <button onClick={() => moveAsset(i, 1)} disabled={i === data.assets.length - 1} title="Down" style={{ border: 'none', background: 'transparent', color: muted, cursor: i === data.assets.length - 1 ? 'not-allowed' : 'pointer', fontSize: 11, padding: '2px 3px' }}>↓</button>
-                    <button onClick={() => { if (confirm(`Remove ${a.name || 'this building'}?`)) { removeAsset(i); setActiveId('cover') } }} title="Remove" style={{ border: 'none', background: 'transparent', color: '#dc2626', cursor: 'pointer', fontSize: 12, padding: '2px 3px' }}>×</button>
+                    <button onClick={() => moveAsset(i, -1)} disabled={i === 0} title="Up" style={{ border: 'none', background: 'transparent', color: muted, cursor: i === 0 ? 'not-allowed' : 'pointer', padding: '2px 3px', display: 'inline-flex', alignItems: 'center' }}><ArrowUp size={13} /></button>
+                    <button onClick={() => moveAsset(i, 1)} disabled={i === data.assets.length - 1} title="Down" style={{ border: 'none', background: 'transparent', color: muted, cursor: i === data.assets.length - 1 ? 'not-allowed' : 'pointer', padding: '2px 3px', display: 'inline-flex', alignItems: 'center' }}><ArrowDown size={13} /></button>
+                    <button onClick={() => { if (confirm(`Remove ${a.name || 'this building'}?`)) { removeAsset(i); setActiveId('cover') } }} title="Remove" style={{ border: 'none', background: 'transparent', color: '#dc2626', cursor: 'pointer', padding: '2px 3px', display: 'inline-flex', alignItems: 'center' }}><X size={13} /></button>
                   </div>
                 </div>
               )
             })}
-            <button onClick={() => setActiveId('sales')} style={{ width: '100%', padding: '12px 14px', border: 'none', borderTop: `1px solid ${border}`, background: activeId === 'sales' ? (dark ? 'rgba(0,182,255,0.12)' : 'rgba(8,49,111,0.07)') : 'transparent', color: activeId === 'sales' ? '#00B6FF' : text, fontSize: 13, fontWeight: activeId === 'sales' ? 700 : 500, cursor: 'pointer', textAlign: 'left' }}>🤝 Sales &amp; Contact</button>
+            <button onClick={() => setActiveId('sales')} style={{ width: '100%', padding: '12px 14px', border: 'none', borderTop: `1px solid ${border}`, background: activeId === 'sales' ? 'var(--cs-accent-soft)' : 'transparent', color: activeId === 'sales' ? 'var(--cs-accent)' : text, fontSize: 13, fontWeight: activeId === 'sales' ? 700 : 500, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}><Handshake size={15} style={{ color: activeId === 'sales' ? 'var(--cs-accent)' : 'var(--cs-text-sub)' }} /> Sales &amp; Contact</button>
           </div>
 
           {/* Portfolio editor pane */}
@@ -685,7 +689,7 @@ export default function TeaserEditor() {
                     const on = data.section_visibility?.[id] !== false
                     return (
                       <label key={id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: `1px solid ${border}`, cursor: 'pointer', background: panel }}>
-                        <input type="checkbox" checked={on} onChange={e => setVis(id, e.target.checked)} style={{ accentColor: '#00B6FF' }} />
+                        <input type="checkbox" checked={on} onChange={e => setVis(id, e.target.checked)} style={{ accentColor: 'var(--cs-accent)' }} />
                         <span style={{ fontSize: 13, color: text, opacity: on ? 1 : 0.5, textDecoration: on ? 'none' : 'line-through' }}>{label}</span>
                       </label>
                     )
@@ -695,7 +699,7 @@ export default function TeaserEditor() {
             )}
             {activeId === 'cover' && (
               <div>
-                <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: text }}>⬛ Cover</h2>
+                <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: text, display: 'flex', alignItems: 'center', gap: 8 }}><Square size={18} style={{ color: 'var(--cs-accent)' }} /> Cover</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12, marginBottom: 22 }}>
                   {imgCard('Cover photo', data.cover_photo || '', () => triggerUpload({ key: 'cover_photo' }), () => setField('cover_photo', ''))}
                 </div>
@@ -704,7 +708,7 @@ export default function TeaserEditor() {
             )}
             {activeId === 'company' && (
               <div>
-                <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: text }}>🏢 Company (shared)</h2>
+                <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: text, display: 'flex', alignItems: 'center', gap: 8 }}><Building2 size={18} style={{ color: 'var(--cs-accent)' }} /> Company (shared)</h2>
                 <p style={{ fontSize: 12, color: muted, margin: '0 0 16px' }}>Company-wide figures shown on the overview / details pages (kept separate from each building).</p>
                 {PORTFOLIO_COMPANY_ROWGROUPS.map(group => (
                   <RowGroupEditor key={group.key} group={group} rows={data[group.key] || []} onChange={rows => setField(group.key, rows)} theme={{ panel, border, text, muted, inputStyle }} />
@@ -720,7 +724,7 @@ export default function TeaserEditor() {
                 <div style={{ marginBottom: 22 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                     <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>Cadastral images ({locImages.length})</div>
-                    <button onClick={() => locationUploadRef.current?.click()} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: '#00B6FF', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add images</button>
+                    <button onClick={() => locationUploadRef.current?.click()} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: 'var(--cs-accent)', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add images</button>
                   </div>
                   {locImages.length === 0 && (
                     <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: muted, border: `1px dashed ${border}`, borderRadius: 6 }}>No cadastral images. Click "+ Add images".</div>
@@ -738,7 +742,7 @@ export default function TeaserEditor() {
                             <input value={item.address || ''} onChange={e => setLocField(i, 'address', e.target.value)} placeholder="Address (used for the Maps link)" style={inputStyle} />
                             <input value={item.maps || ''} onChange={e => setLocField(i, 'maps', e.target.value)} placeholder="Google Maps URL (optional — overrides address)" style={inputStyle} />
                             <div style={{ display: 'flex', gap: 6 }}>
-                              <button onClick={() => triggerUpload({ key: '__loc__', locIndex: i })} style={{ padding: '5px 10px', borderRadius: 5, border: `1px solid ${border}`, background: 'transparent', color: '#00B6FF', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>↑ Replace</button>
+                              <button onClick={() => triggerUpload({ key: '__loc__', locIndex: i })} style={{ padding: '5px 10px', borderRadius: 5, border: `1px solid ${border}`, background: 'transparent', color: 'var(--cs-accent)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>↑ Replace</button>
                             </div>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -764,7 +768,7 @@ export default function TeaserEditor() {
             )}
             {activeId === 'sales' && (
               <div>
-                <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: text }}>🤝 Sales &amp; Contact</h2>
+                <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: text, display: 'flex', alignItems: 'center', gap: 8 }}><Handshake size={18} style={{ color: 'var(--cs-accent)' }} /> Sales &amp; Contact</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12, marginBottom: 22 }}>
                   {imgCard('Contact-page photo', data.sales_photo || '', () => triggerUpload({ key: 'sales_photo' }), () => setField('sales_photo', ''))}
                 </div>
@@ -777,7 +781,7 @@ export default function TeaserEditor() {
               const photos = Array.isArray(a.photos) ? a.photos : []
               return (
                 <div>
-                  <h2 style={{ margin: '0 0 12px', fontSize: 18, fontWeight: 700, color: text }}>🏠 {a.name || `Asset ${idx + 1}`}</h2>
+                  <h2 style={{ margin: '0 0 12px', fontSize: 18, fontWeight: 700, color: text, display: 'flex', alignItems: 'center', gap: 8 }}><Home size={18} style={{ color: 'var(--cs-accent)' }} /> {a.name || `Asset ${idx + 1}`}</h2>
 
                   {/* Per-building page toggles */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14, padding: '10px 12px', marginBottom: 18, border: `1px solid ${border}`, borderRadius: 8, background: panel }}>
@@ -786,7 +790,7 @@ export default function TeaserEditor() {
                       const on = a.section_visibility?.[key] !== false
                       return (
                         <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: text, opacity: on ? 1 : 0.5, cursor: 'pointer' }}>
-                          <input type="checkbox" checked={on} onChange={e => setAssetVis(idx, key, e.target.checked)} style={{ accentColor: '#00B6FF' }} />
+                          <input type="checkbox" checked={on} onChange={e => setAssetVis(idx, key, e.target.checked)} style={{ accentColor: 'var(--cs-accent)' }} />
                           {label}
                         </label>
                       )
@@ -804,10 +808,10 @@ export default function TeaserEditor() {
                             {PHOTO_LAYOUT_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                           </select>
                         </label>
-                        <button onClick={() => triggerAssetGallery(idx)} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: '#00B6FF', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add images</button>
+                        <button onClick={() => triggerAssetGallery(idx)} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: 'var(--cs-accent)', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add images</button>
                       </div>
                     </div>
-                    <div style={{ fontSize: 10, color: muted, marginBottom: 6 }}>Tip: click a photo to set its crop focus (the blue dot) so it isn't cut off badly.</div>
+                    <div style={{ fontSize: 10, color: muted, marginBottom: 6 }}>Tip: click a photo to set its crop focus (the dot) so it isn't cut off badly.</div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
                       {photos.map((url, pi) => (
                         <div key={`${url}-${pi}`} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', border: `1px solid ${border}`, background: panel }}>
@@ -815,9 +819,9 @@ export default function TeaserEditor() {
                             {typeof url === 'string' && <FocusThumb url={url} focus={a.photo_focus?.[url]} onFocus={xy => setAssetPhotoFocus(idx, url, xy)} AuthImg={AuthImg} />}
                           </div>
                           <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 4 }}>
-                            <button onClick={() => { if (pi === 0) return; const arr = [...photos];[arr[pi - 1], arr[pi]] = [arr[pi], arr[pi - 1]]; setAssetField(idx, 'photos', arr) }} disabled={pi === 0} title="Move left" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: pi === 0 ? 'not-allowed' : 'pointer', opacity: pi === 0 ? 0.35 : 1, fontSize: 11 }}>↑</button>
-                            <button onClick={() => { if (pi >= photos.length - 1) return; const arr = [...photos];[arr[pi + 1], arr[pi]] = [arr[pi], arr[pi + 1]]; setAssetField(idx, 'photos', arr) }} disabled={pi >= photos.length - 1} title="Move right" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: pi >= photos.length - 1 ? 'not-allowed' : 'pointer', opacity: pi >= photos.length - 1 ? 0.35 : 1, fontSize: 11 }}>↓</button>
-                            <button onClick={() => setAssetField(idx, 'photos', photos.filter((_, j) => j !== pi))} title="Remove" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(220,38,38,0.85)', color: '#fff', cursor: 'pointer', fontSize: 11 }}>×</button>
+                            <button onClick={() => { if (pi === 0) return; const arr = [...photos];[arr[pi - 1], arr[pi]] = [arr[pi], arr[pi - 1]]; setAssetField(idx, 'photos', arr) }} disabled={pi === 0} title="Move left" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: pi === 0 ? 'not-allowed' : 'pointer', opacity: pi === 0 ? 0.35 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><ArrowUp size={12} /></button>
+                            <button onClick={() => { if (pi >= photos.length - 1) return; const arr = [...photos];[arr[pi + 1], arr[pi]] = [arr[pi], arr[pi + 1]]; setAssetField(idx, 'photos', arr) }} disabled={pi >= photos.length - 1} title="Move right" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: pi >= photos.length - 1 ? 'not-allowed' : 'pointer', opacity: pi >= photos.length - 1 ? 0.35 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><ArrowDown size={12} /></button>
+                            <button onClick={() => setAssetField(idx, 'photos', photos.filter((_, j) => j !== pi))} title="Remove" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(220,38,38,0.85)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><X size={12} /></button>
                           </div>
                         </div>
                       ))}
@@ -875,12 +879,12 @@ export default function TeaserEditor() {
             const visible = data.section_visibility?.[s.id] !== false
             return (
               <div key={s.id} style={{ display: 'flex', alignItems: 'center', borderBottom: `1px solid ${border}` }}>
-                <button onClick={() => setActiveId(s.id)} style={{ flex: 1, padding: '12px 14px', border: 'none', background: on ? (dark ? 'rgba(0,182,255,0.12)' : 'rgba(8,49,111,0.07)') : 'transparent', color: on ? '#00B6FF' : text, fontSize: 13, fontWeight: on ? 700 : 500, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ opacity: visible ? 1 : 0.35 }}>{s.icon}</span>
+                <button onClick={() => setActiveId(s.id)} style={{ flex: 1, padding: '12px 14px', border: 'none', background: on ? 'var(--cs-accent-soft)' : 'transparent', color: on ? 'var(--cs-accent)' : text, fontSize: 13, fontWeight: on ? 700 : 500, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', opacity: visible ? 1 : 0.35, color: on ? 'var(--cs-accent)' : 'var(--cs-text-sub)' }}><s.icon size={15} /></span>
                   <span style={{ opacity: visible ? 1 : 0.45, textDecoration: visible ? 'none' : 'line-through' }}>{s.label}</span>
                 </button>
                 <label style={{ padding: '0 10px', cursor: 'pointer', display: 'flex', alignItems: 'center' }} title={visible ? 'Hide this page in the PDF' : 'Show this page in the PDF'}>
-                  <input type="checkbox" checked={visible} onChange={e => setVis(s.id, e.target.checked)} style={{ accentColor: '#00B6FF' }} />
+                  <input type="checkbox" checked={visible} onChange={e => setVis(s.id, e.target.checked)} style={{ accentColor: 'var(--cs-accent)' }} />
                 </label>
               </div>
             )
@@ -890,9 +894,9 @@ export default function TeaserEditor() {
         {/* Editor pane */}
         <div style={{ overflowY: 'auto', padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: text }}>{section.icon} {section.label}</h2>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: text, display: 'flex', alignItems: 'center', gap: 8 }}><section.icon size={18} style={{ color: 'var(--cs-accent)' }} /> {section.label}</h2>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: muted, cursor: 'pointer' }}>
-              <input type="checkbox" checked={visOn} onChange={e => setVis(activeId, e.target.checked)} style={{ accentColor: '#00B6FF' }} />
+              <input type="checkbox" checked={visOn} onChange={e => setVis(activeId, e.target.checked)} style={{ accentColor: 'var(--cs-accent)' }} />
               Include this page in the PDF
             </label>
           </div>
@@ -912,7 +916,7 @@ export default function TeaserEditor() {
                       </div>
                       <div style={{ fontSize: 10, color: muted, marginBottom: 6, wordBreak: 'break-all' }}>{fileUrlToFilename(url) || '—'}</div>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => triggerUpload({ key })} style={{ flex: 1, padding: '6px 8px', borderRadius: 5, border: `1px solid ${border}`, background: 'transparent', color: '#00B6FF', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>↑ Replace</button>
+                        <button onClick={() => triggerUpload({ key })} style={{ flex: 1, padding: '6px 8px', borderRadius: 5, border: `1px solid ${border}`, background: 'transparent', color: 'var(--cs-accent)', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}><ArrowUp size={12} /> Replace</button>
                         {url && <button onClick={() => setField(key, '')} style={{ padding: '6px 10px', borderRadius: 5, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>Clear</button>}
                       </div>
                     </div>
@@ -935,7 +939,7 @@ export default function TeaserEditor() {
             <div style={{ marginBottom: 22 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>{galleryListKey === 'photos' ? 'Gallery photos' : 'Plans'}</div>
-                <button onClick={() => galleryUploadRef.current?.click()} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: '#00B6FF', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add images</button>
+                <button onClick={() => galleryUploadRef.current?.click()} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: 'var(--cs-accent)', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add images</button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
                 {(data[galleryListKey] || []).map((url, i) => {
@@ -949,9 +953,9 @@ export default function TeaserEditor() {
                       </div>
                       <div style={{ padding: '4px 6px', fontSize: 9, color: muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
                       <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 4 }}>
-                        <button onClick={() => { if (i === 0) return; const arr = [...data[galleryListKey]]; [arr[i-1], arr[i]] = [arr[i], arr[i-1]]; setField(galleryListKey, arr) }} disabled={i === 0} title="Move left" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: i === 0 ? 'not-allowed' : 'pointer', opacity: i === 0 ? 0.35 : 1, fontSize: 11 }}>↑</button>
-                        <button onClick={() => { const arr = data[galleryListKey] || []; if (i >= arr.length - 1) return; const n = [...arr]; [n[i+1], n[i]] = [n[i], n[i+1]]; setField(galleryListKey, n) }} disabled={i >= (data[galleryListKey]?.length || 0) - 1} title="Move right" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: i >= (data[galleryListKey]?.length || 0) - 1 ? 'not-allowed' : 'pointer', opacity: i >= (data[galleryListKey]?.length || 0) - 1 ? 0.35 : 1, fontSize: 11 }}>↓</button>
-                        <button onClick={() => { const arr = data[galleryListKey].filter((_, idx) => idx !== i); setField(galleryListKey, arr) }} title="Remove from list" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(220,38,38,0.85)', color: '#fff', cursor: 'pointer', fontSize: 11 }}>×</button>
+                        <button onClick={() => { if (i === 0) return; const arr = [...data[galleryListKey]]; [arr[i-1], arr[i]] = [arr[i], arr[i-1]]; setField(galleryListKey, arr) }} disabled={i === 0} title="Move left" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: i === 0 ? 'not-allowed' : 'pointer', opacity: i === 0 ? 0.35 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><ArrowUp size={12} /></button>
+                        <button onClick={() => { const arr = data[galleryListKey] || []; if (i >= arr.length - 1) return; const n = [...arr]; [n[i+1], n[i]] = [n[i], n[i+1]]; setField(galleryListKey, n) }} disabled={i >= (data[galleryListKey]?.length || 0) - 1} title="Move right" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: i >= (data[galleryListKey]?.length || 0) - 1 ? 'not-allowed' : 'pointer', opacity: i >= (data[galleryListKey]?.length || 0) - 1 ? 0.35 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><ArrowDown size={12} /></button>
+                        <button onClick={() => { const arr = data[galleryListKey].filter((_, idx) => idx !== i); setField(galleryListKey, arr) }} title="Remove from list" style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'rgba(220,38,38,0.85)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><X size={12} /></button>
                       </div>
                     </div>
                   )
@@ -1003,7 +1007,7 @@ export default function TeaserEditor() {
         <div style={{ borderLeft: `1px solid ${border}`, background: panel, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <div style={{ padding: '10px 14px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>Preview</div>
-            <button onClick={() => downloadAsset(`/api/download/${jobId}`, `${shortId || 'teaser'}.pdf`).catch(e => toast(e.message, 'error'))} style={{ fontSize: 11, color: '#00B6FF', textDecoration: 'none', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>⬇ Download PDF</button>
+            <button onClick={() => downloadAsset(`/api/download/${jobId}`, `${shortId || 'teaser'}.pdf`).catch(e => toast(e.message, 'error'))} style={{ fontSize: 11, color: 'var(--cs-accent)', textDecoration: 'none', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Download size={12} /> Download PDF</button>
           </div>
           <PdfPreview jobId={jobId} cacheBust={pdfBust} />
         </div>
@@ -1048,7 +1052,7 @@ function RowGroupEditor({ group, rows, onChange, theme }) {
     <div style={{ marginBottom: 20, border: `1px solid ${border}`, borderRadius: 8, overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'rgba(0,0,0,0.02)', borderBottom: `1px solid ${border}` }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: text }}>{group.label} <span style={{ color: muted, fontWeight: 500 }}>({safeRows.length})</span></div>
-        <button onClick={addRow} style={{ padding: '4px 10px', borderRadius: 4, border: `1px solid ${border}`, background: panel, color: '#00B6FF', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add row</button>
+        <button onClick={addRow} style={{ padding: '4px 10px', borderRadius: 4, border: `1px solid ${border}`, background: panel, color: 'var(--cs-accent)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add row</button>
       </div>
       {safeRows.length === 0 ? (
         <div style={{ padding: 16, fontSize: 12, color: muted, textAlign: 'center' }}>No rows.</div>
@@ -1073,10 +1077,10 @@ function RowGroupEditor({ group, rows, onChange, theme }) {
                 })
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <button onClick={() => moveRow(i, -1)} disabled={i === 0} style={{ padding: '2px 6px', borderRadius: 3, border: `1px solid ${border}`, background: panel, color: muted, cursor: i === 0 ? 'not-allowed' : 'pointer', fontSize: 10 }}>↑</button>
-                <button onClick={() => moveRow(i, 1)} disabled={i === safeRows.length - 1} style={{ padding: '2px 6px', borderRadius: 3, border: `1px solid ${border}`, background: panel, color: muted, cursor: i === safeRows.length - 1 ? 'not-allowed' : 'pointer', fontSize: 10 }}>↓</button>
+                <button onClick={() => moveRow(i, -1)} disabled={i === 0} style={{ padding: '2px 6px', borderRadius: 3, border: `1px solid ${border}`, background: panel, color: muted, cursor: i === 0 ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center' }}><ArrowUp size={11} /></button>
+                <button onClick={() => moveRow(i, 1)} disabled={i === safeRows.length - 1} style={{ padding: '2px 6px', borderRadius: 3, border: `1px solid ${border}`, background: panel, color: muted, cursor: i === safeRows.length - 1 ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center' }}><ArrowDown size={11} /></button>
               </div>
-              <button onClick={() => removeRow(i)} style={{ padding: '4px 8px', borderRadius: 4, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>×</button>
+              <button onClick={() => removeRow(i)} style={{ padding: '4px 8px', borderRadius: 4, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}><X size={12} /></button>
             </div>
           ))}
         </div>
@@ -1101,7 +1105,7 @@ function FocusThumb({ url, focus, onFocus, AuthImg }) {
   return (
     <div ref={ref} onClick={set} title="Click to set the crop focus" style={{ width: '100%', height: '100%', position: 'relative', cursor: 'crosshair' }}>
       <AuthImg url={url} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${f[0]}% ${f[1]}%` }} />
-      <div style={{ position: 'absolute', left: `${f[0]}%`, top: `${f[1]}%`, width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: '50%', border: '2px solid #00B6FF', background: 'rgba(255,255,255,0.85)', boxShadow: '0 0 0 1px rgba(0,0,0,0.35)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', left: `${f[0]}%`, top: `${f[1]}%`, width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: '50%', border: '2px solid var(--cs-accent)', background: 'rgba(255,255,255,0.85)', boxShadow: '0 0 0 1px rgba(0,0,0,0.35)', pointerEvents: 'none' }} />
     </div>
   )
 }
@@ -1206,7 +1210,7 @@ function UnitTableEditor({ value, onChange, theme }) {
       <div style={{ marginBottom: 20, border: `1px dashed ${border}`, borderRadius: 8, padding: 14, background: panel }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 6 }}>Custom table (price per unit, rent roll…)</div>
         <div style={{ fontSize: 11, color: muted, marginBottom: 10, lineHeight: 1.5 }}>Define your own columns (e.g. Unit · Surface · Sale price). It replaces the standard rental-income rows on this building's details page — for special cases that previously needed Canva.</div>
-        <button onClick={enable} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: '#00B6FF', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add custom table</button>
+        <button onClick={enable} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: 'var(--cs-accent)', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add custom table</button>
       </div>
     )
   }
@@ -1225,7 +1229,7 @@ function UnitTableEditor({ value, onChange, theme }) {
         {/* Column headers */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <span style={{ fontSize: 11, fontWeight: 600, color: muted }}>Columns</span>
-          <button onClick={addCol} style={{ padding: '3px 9px', borderRadius: 4, border: `1px solid ${border}`, background: panel, color: '#00B6FF', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Column</button>
+          <button onClick={addCol} style={{ padding: '3px 9px', borderRadius: 4, border: `1px solid ${border}`, background: panel, color: 'var(--cs-accent)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Column</button>
         </div>
         <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
           {cols.map((c, ci) => (
@@ -1249,7 +1253,7 @@ function UnitTableEditor({ value, onChange, theme }) {
             <button onClick={() => removeRow(ri)} style={{ padding: '4px 8px', borderRadius: 4, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>×</button>
           </div>
         ))}
-        <button onClick={addRow} style={{ marginTop: 4, padding: '5px 12px', borderRadius: 4, border: `1px solid ${border}`, background: panel, color: '#00B6FF', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add row</button>
+        <button onClick={addRow} style={{ marginTop: 4, padding: '5px 12px', borderRadius: 4, border: `1px solid ${border}`, background: panel, color: 'var(--cs-accent)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add row</button>
       </div>
     </div>
   )

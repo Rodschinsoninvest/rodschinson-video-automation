@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useRef } from 'react'
+import { Check, X, Info, AlertTriangle } from 'lucide-react'
 
 const ToastContext = createContext()
 
@@ -35,14 +36,15 @@ export const useToast = () => useContext(ToastContext)
 
 // ── Toast colors ──────────────────────────────────────────────────────────────
 const TOAST_STYLES = {
-  success: { bg: '#0f2d1a', border: 'rgba(34,197,94,0.35)',  icon: '✓', iconBg: '#16a34a', text: '#86efac' },
-  error:   { bg: '#2d0f0f', border: 'rgba(239,68,68,0.35)',  icon: '✕', iconBg: '#dc2626', text: '#fca5a5' },
-  info:    { bg: '#0a1e2d', border: 'rgba(0,182,255,0.3)',   icon: 'i', iconBg: '#0284c7', text: '#7dd3fc' },
-  warning: { bg: '#2d1f0a', border: 'rgba(234,179,8,0.35)',  icon: '!', iconBg: '#ca8a04', text: '#fde68a' },
+  success: { bg: '#0f2d1a', border: 'rgba(34,197,94,0.35)',  icon: Check,          iconBg: '#16a34a', text: '#86efac' },
+  error:   { bg: '#2d0f0f', border: 'rgba(239,68,68,0.35)',  icon: X,              iconBg: '#dc2626', text: '#fca5a5' },
+  info:    { bg: '#0a1e2d', border: 'var(--cs-accent-line)',   icon: Info,           iconBg: 'var(--cs-accent)', text: '#7dd3fc' },
+  warning: { bg: '#2d1f0a', border: 'rgba(234,179,8,0.35)',  icon: AlertTriangle,  iconBg: '#ca8a04', text: '#fde68a' },
 }
 
 function Toast({ id, message, type, onDismiss }) {
   const s = TOAST_STYLES[type] || TOAST_STYLES.info
+  const Icon = s.icon
   return (
     <div
       onClick={() => onDismiss(id)}
@@ -58,8 +60,8 @@ function Toast({ id, message, type, onDismiss }) {
       <div style={{
         width: 20, height: 20, borderRadius: '50%', background: s.iconBg,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: '#fff', fontSize: 10, fontWeight: 800, flexShrink: 0, marginTop: 1,
-      }}>{s.icon}</div>
+        color: '#fff', flexShrink: 0, marginTop: 1,
+      }}><Icon size={12} strokeWidth={2.5} /></div>
       <span style={{ color: s.text, fontSize: 13, lineHeight: 1.45, flex: 1 }}>{message}</span>
     </div>
   )

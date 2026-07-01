@@ -3,12 +3,13 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useBrands } from '../contexts/BrandContext'
 import { useGeneration } from '../contexts/GenerationContext'
 import { apiFetch } from '../utils/apiFetch'
+import { Sparkles, Zap, BarChart3, Calendar, Check, CheckCircle2, AlertTriangle, ArrowRight, ArrowLeft } from 'lucide-react'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const GOALS     = ['leads', 'awareness', 'authority', 'engagement', 'sales', 'retention']
 const PLATFORMS = ['linkedin', 'instagram', 'facebook', 'tiktok', 'youtube', 'twitter', 'bluesky']
 const PILLAR_COLORS = {
-  Educational: '#00B6FF', Authority: '#C8A96E',
+  Educational: 'var(--cs-accent)', Authority: '#C8A96E',
   Storytelling: '#a78bfa', Promotional: '#34d399',
 }
 
@@ -86,15 +87,15 @@ function MixBar({ pillars, warnings }) {
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--cs-text)', fontVariantNumeric: 'tabular-nums' }}>
               {data.pct}%
               {Math.abs(data.pct - data.target) > 15 && (
-                <span style={{ marginLeft: 4, color: '#f87171', fontSize: 10 }}>⚠</span>
+                <AlertTriangle size={11} style={{ marginLeft: 4, color: '#f87171', verticalAlign: 'middle' }} />
               )}
             </span>
           </div>
         ))}
       </div>
       {warnings?.map((w, i) => (
-        <div key={i} style={{ display: 'flex', gap: 7, padding: '7px 10px', background: 'rgba(248,113,113,0.07)', borderRadius: 7, border: '1px solid rgba(248,113,113,0.2)', marginTop: 6 }}>
-          <span style={{ fontSize: 12 }}>⚠️</span>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', background: 'rgba(248,113,113,0.07)', borderRadius: 7, border: '1px solid rgba(248,113,113,0.2)', marginTop: 6 }}>
+          <AlertTriangle size={13} style={{ color: '#f87171', flexShrink: 0 }} />
           <span style={{ fontSize: 11, color: '#f87171' }}>{w}</span>
         </div>
       ))}
@@ -178,9 +179,9 @@ function StrategyForm({ brands, onGenerated }) {
               return (
                 <button key={g} onClick={() => toggleArr('goals', g)} style={{
                   padding: '5px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: active ? 600 : 400,
-                  border: `1px solid ${active ? '#00B6FF60' : 'var(--cs-border)'}`,
-                  background: active ? 'rgba(0,182,255,0.1)' : 'transparent',
-                  color: active ? '#00B6FF' : 'var(--cs-text-sub)', transition: 'all 0.12s',
+                  border: `1px solid ${active ? 'var(--cs-accent)' : 'var(--cs-border)'}`,
+                  background: active ? 'var(--cs-accent-soft)' : 'transparent',
+                  color: active ? 'var(--cs-accent)' : 'var(--cs-text-sub)', transition: 'all 0.12s',
                 }}>{g}</button>
               )
             })}
@@ -196,9 +197,9 @@ function StrategyForm({ brands, onGenerated }) {
               return (
                 <button key={p} onClick={() => toggleArr('platforms', p)} style={{
                   padding: '5px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: active ? 600 : 400,
-                  border: `1px solid ${active ? '#C8A96E60' : 'var(--cs-border)'}`,
-                  background: active ? 'rgba(200,169,110,0.1)' : 'transparent',
-                  color: active ? '#C8A96E' : 'var(--cs-text-sub)', transition: 'all 0.12s',
+                  border: `1px solid ${active ? 'var(--cs-gold)' : 'var(--cs-border)'}`,
+                  background: active ? 'var(--cs-gold-soft)' : 'transparent',
+                  color: active ? 'var(--cs-gold)' : 'var(--cs-text-sub)', transition: 'all 0.12s',
                 }}>{p}</button>
               )
             })}
@@ -209,12 +210,13 @@ function StrategyForm({ brands, onGenerated }) {
 
         <button onClick={generate} disabled={loading} style={{
           padding: '10px 20px', borderRadius: 8, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-          background: loading ? 'var(--cs-hover)' : 'linear-gradient(135deg, #0a5cbf, #00B6FF)',
+          background: loading ? 'var(--cs-hover)' : 'var(--cs-accent)',
           color: loading ? 'var(--cs-text-muted)' : '#fff',
           fontSize: 13, fontWeight: 600, transition: 'opacity 0.15s', opacity: loading ? 0.7 : 1,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
         }}>
-          {loading ? '⚡ Generating strategy…' : '✨ Generate Content Strategy'}
+          {loading ? <Zap size={15} /> : <Sparkles size={15} />}
+          {loading ? 'Generating strategy…' : 'Generate Content Strategy'}
         </button>
       </div>
     </Card>
@@ -307,10 +309,10 @@ function ContentPlanPanel({ strategy, brands }) {
       {selected.size > 0 && (
         <div style={{
           padding: '12px 14px', borderRadius: 9, marginBottom: 14,
-          background: 'rgba(0,182,255,0.05)', border: '1px solid rgba(0,182,255,0.2)',
+          background: 'var(--cs-accent-soft)', border: '1px solid var(--cs-accent-soft)',
           display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8,
         }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#00B6FF', marginRight: 4 }}>{selected.size} selected</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--cs-accent)', marginRight: 4 }}>{selected.size} selected</span>
 
           <select value={genConfig.brand} onChange={e => setGenConfig(c => ({...c, brand: e.target.value}))} style={inp}>
             {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -338,10 +340,12 @@ function ContentPlanPanel({ strategy, brands }) {
 
           <button onClick={generateSelected} disabled={generating} style={{
             marginLeft: 'auto', padding: '7px 18px', borderRadius: 7, border: 'none', cursor: generating ? 'not-allowed' : 'pointer',
-            background: generating ? 'var(--cs-hover)' : 'linear-gradient(135deg,#08316F,#00B6FF)',
+            background: generating ? 'var(--cs-hover)' : 'var(--cs-accent)',
             color: generating ? 'var(--cs-text-muted)' : '#fff', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}>
-            {generating ? `Queuing… ${done}/${selected.size}` : `⚡ Generate ${selected.size}`}
+            {!generating && <Zap size={14} />}
+            {generating ? `Queuing… ${done}/${selected.size}` : `Generate ${selected.size}`}
           </button>
         </div>
       )}
@@ -355,7 +359,7 @@ function ContentPlanPanel({ strategy, brands }) {
             <div key={item.id}>
               {isNewWeek && (
                 <div style={{ padding: '10px 0 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: '#00B6FF', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Week {item.week}</div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--cs-accent)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Week {item.week}</div>
                   <div style={{ fontSize: 9, color: 'var(--cs-text-muted)' }}>— {item.theme}</div>
                   <div style={{ flex: 1, height: 1, background: 'var(--cs-border)' }} />
                 </div>
@@ -365,8 +369,8 @@ function ContentPlanPanel({ strategy, brands }) {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10,
                   padding: '9px 10px', borderRadius: 7, cursor: 'pointer',
-                  background: isSelected ? 'rgba(0,182,255,0.06)' : 'transparent',
-                  border: `1px solid ${isSelected ? 'rgba(0,182,255,0.25)' : 'transparent'}`,
+                  background: isSelected ? 'var(--cs-accent-soft)' : 'transparent',
+                  border: `1px solid ${isSelected ? 'var(--cs-accent-line)' : 'transparent'}`,
                   marginBottom: 3, transition: 'all 0.1s',
                 }}
                 onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--cs-hover)' }}
@@ -374,12 +378,12 @@ function ContentPlanPanel({ strategy, brands }) {
               >
                 {/* Checkbox */}
                 <div style={{
-                  width: 16, height: 16, borderRadius: 4, border: `2px solid ${isSelected ? '#00B6FF' : 'var(--cs-border)'}`,
-                  background: isSelected ? '#00B6FF' : 'transparent', flexShrink: 0,
+                  width: 16, height: 16, borderRadius: 4, border: `2px solid ${isSelected ? 'var(--cs-accent)' : 'var(--cs-border)'}`,
+                  background: isSelected ? 'var(--cs-accent)' : 'transparent', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.1s',
                 }}>
-                  {isSelected && <span style={{ color: '#fff', fontSize: 9, fontWeight: 800, lineHeight: 1 }}>✓</span>}
+                  {isSelected && <Check size={11} strokeWidth={3} style={{ color: '#fff' }} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, color: 'var(--cs-text)', lineHeight: 1.4 }}>{item.topic}</div>
@@ -395,8 +399,8 @@ function ContentPlanPanel({ strategy, brands }) {
       </div>
 
       {done > 0 && !generating && (
-        <div style={{ marginTop: 10, padding: '8px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, color: '#22c55e', fontSize: 12 }}>
-          ✓ {done} items queued — check the Library for progress
+        <div style={{ marginTop: 10, padding: '8px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, color: '#22c55e', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <CheckCircle2 size={14} style={{ flexShrink: 0 }} /> {done} items queued — check the Library for progress
         </div>
       )}
     </Card>
@@ -431,7 +435,7 @@ function StrategyResult({ strategy, onCalendarFill, brands }) {
       <Card>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
           <div>
-            <div style={{ color: '#00B6FF', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Strategy Ready</div>
+            <div style={{ color: 'var(--cs-accent)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Strategy Ready</div>
             <div style={{ color: 'var(--cs-text)', fontSize: 14, fontWeight: 600 }}>{strategy.duration_days}-Day Plan · {strategy.industry}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -439,11 +443,13 @@ function StrategyResult({ strategy, onCalendarFill, brands }) {
               style={{ background: 'var(--cs-input-bg)', border: '1px solid var(--cs-border)', borderRadius: 6, padding: '6px 10px', color: 'var(--cs-text)', fontSize: 12, outline: 'none', fontFamily: 'inherit' }} />
             <button onClick={fillCalendar} disabled={filling || !!filled} style={{
               padding: '7px 16px', borderRadius: 7, border: 'none', cursor: (filling || filled) ? 'not-allowed' : 'pointer',
-              background: filled ? 'rgba(34,197,94,0.12)' : filling ? 'var(--cs-hover)' : 'linear-gradient(135deg,#08316F,#00B6FF)',
+              background: filled ? 'rgba(34,197,94,0.12)' : filling ? 'var(--cs-hover)' : 'var(--cs-accent)',
               color: filled ? '#22c55e' : filling ? 'var(--cs-text-muted)' : '#fff',
               fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             }}>
-              {filled ? `✓ ${filled} posts added` : filling ? 'Filling…' : '📅 Fill my calendar'}
+              {filled ? <CheckCircle2 size={14} /> : !filling && <Calendar size={14} />}
+              {filled ? `${filled} posts added` : filling ? 'Filling…' : 'Fill my calendar'}
             </button>
           </div>
         </div>
@@ -478,7 +484,7 @@ function StrategyResult({ strategy, onCalendarFill, brands }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {s.platform_mix?.map(p => (
               <div key={p.platform} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--cs-surface2)', borderRadius: 8 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--cs-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#00B6FF', flexShrink: 0, textTransform: 'uppercase' }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--cs-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--cs-accent)', flexShrink: 0, textTransform: 'uppercase' }}>
                   {p.platform.slice(0,2)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -486,7 +492,7 @@ function StrategyResult({ strategy, onCalendarFill, brands }) {
                   <div style={{ fontSize: 10, color: 'var(--cs-text-muted)' }}>{p.content_types?.join(', ')}</div>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#00B6FF' }}>{p.posts_per_week}×</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--cs-accent)' }}>{p.posts_per_week}×</div>
                   <div style={{ fontSize: 10, color: 'var(--cs-text-muted)' }}>/ week</div>
                 </div>
               </div>
@@ -501,12 +507,12 @@ function StrategyResult({ strategy, onCalendarFill, brands }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
           {s.weekly_themes?.map(w => (
             <div key={w.week} style={{ padding: '12px 14px', background: 'var(--cs-surface2)', borderRadius: 8, border: '1px solid var(--cs-border)' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#00B6FF', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 4 }}>Week {w.week}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--cs-accent)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 4 }}>Week {w.week}</div>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--cs-text)', marginBottom: 8 }}>{w.theme}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {w.topics?.map((t, i) => (
-                  <div key={i} style={{ fontSize: 11, color: 'var(--cs-text-sub)', display: 'flex', gap: 5 }}>
-                    <span style={{ color: '#C8A96E' }}>→</span> {t}
+                  <div key={i} style={{ fontSize: 11, color: 'var(--cs-text-sub)', display: 'flex', alignItems: 'flex-start', gap: 5 }}>
+                    <ArrowRight size={12} style={{ color: 'var(--cs-gold)', flexShrink: 0, marginTop: 2 }} /> {t}
                   </div>
                 ))}
               </div>
@@ -521,7 +527,7 @@ function StrategyResult({ strategy, onCalendarFill, brands }) {
           <SectionTitle>KPIs to Track</SectionTitle>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {s.kpis.map((kpi, i) => (
-              <div key={i} style={{ padding: '5px 12px', borderRadius: 20, background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.3)', color: '#C8A96E', fontSize: 12 }}>
+              <div key={i} style={{ padding: '5px 12px', borderRadius: 20, background: 'var(--cs-gold-soft)', border: '1px solid var(--cs-gold)', color: 'var(--cs-gold)', fontSize: 12 }}>
                 {kpi}
               </div>
             ))}
@@ -568,9 +574,9 @@ function ContentMixPanel({ brands }) {
         <div>
           <div style={{ display: 'flex', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
             {[
-              { label: 'Total content', value: mix.total, color: '#00B6FF' },
+              { label: 'Total content', value: mix.total, color: 'var(--cs-accent)' },
               { label: 'Published', value: mix.by_status?.Published || 0, color: '#22c55e' },
-              { label: 'In review', value: (mix.by_status?.Ready || 0) + (mix.by_status?.Approved || 0), color: '#C8A96E' },
+              { label: 'In review', value: (mix.by_status?.Ready || 0) + (mix.by_status?.Approved || 0), color: 'var(--cs-gold)' },
             ].map(s => (
               <div key={s.label} style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 24, fontWeight: 800, color: s.color, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
@@ -601,7 +607,7 @@ function SavedStrategies({ strategies, onSelect }) {
             transition: 'border-color 0.12s',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
           }}
-          onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(0,182,255,0.3)'}
+          onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--cs-accent-line)'}
           onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--cs-border)'}
           >
             <div>
@@ -610,7 +616,7 @@ function SavedStrategies({ strategies, onSelect }) {
                 {s.goals?.join(', ')} · {new Date(s.createdAt).toLocaleDateString()}
               </div>
             </div>
-            <span style={{ color: '#00B6FF', fontSize: 11 }}>View →</span>
+            <span style={{ color: 'var(--cs-accent)', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 3 }}>View <ArrowRight size={12} /></span>
           </div>
         ))}
       </div>
@@ -653,12 +659,13 @@ export default function Strategy() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 2, background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 9, padding: 3, marginBottom: 22, width: 'fit-content' }}>
-        {[['generate','✨ Strategy Generator'],['mix','📊 Content Mix']].map(([id, label]) => (
+        {[['generate', Sparkles, 'Strategy Generator'], ['mix', BarChart3, 'Content Mix']].map(([id, Icon, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{
             padding: '6px 16px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: tab === id ? 600 : 400,
-            background: tab === id ? 'rgba(0,182,255,0.12)' : 'transparent',
-            color: tab === id ? '#00B6FF' : 'var(--cs-text-sub)', transition: 'all 0.12s',
-          }}>{label}</button>
+            background: tab === id ? 'var(--cs-accent-soft)' : 'transparent',
+            color: tab === id ? 'var(--cs-accent)' : 'var(--cs-text-sub)', transition: 'all 0.12s',
+            display: 'flex', alignItems: 'center', gap: 6,
+          }}><Icon size={14} />{label}</button>
         ))}
       </div>
 
@@ -675,7 +682,7 @@ export default function Strategy() {
                 background: 'none', border: '1px solid var(--cs-border)', borderRadius: 7,
                 padding: '6px 14px', cursor: 'pointer', color: 'var(--cs-text-sub)', fontSize: 12,
                 width: 'fit-content', display: 'flex', alignItems: 'center', gap: 5,
-              }}>← New strategy</button>
+              }}><ArrowLeft size={13} />New strategy</button>
               <StrategyResult strategy={activeStrategy} onCalendarFill={() => {}} brands={brands.length ? brands : [{id:'default',name:'My Brand'}]} />
             </>
           )}

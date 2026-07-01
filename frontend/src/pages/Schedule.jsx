@@ -1,4 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
+import {
+  Film, Images, Camera, PenLine, Zap, Clapperboard, FileText,
+  Clock, Send, Check, ArrowRight, Calendar, Menu, ChevronLeft,
+  ChevronRight, AlertTriangle, X,
+} from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { apiFetch } from '../utils/apiFetch'
 
@@ -31,15 +36,15 @@ const TIME_SLOTS = [
 ]
 
 const PUBLISH_STATUS = {
-  local:     { label: 'Local only',        color: '#C8A96E', bg: 'rgba(200,169,110,0.12)', dot: '#C8A96E' },
-  sent:      { label: 'Sent to Metricool', color: '#00B6FF', bg: 'rgba(0,182,255,0.1)',   dot: '#00B6FF' },
+  local:     { label: 'Local only',        color: 'var(--cs-gold)', bg: 'var(--cs-gold-soft)', dot: 'var(--cs-gold)' },
+  sent:      { label: 'Sent to Metricool', color: 'var(--cs-accent)', bg: 'var(--cs-accent-soft)',   dot: 'var(--cs-accent)' },
   published: { label: 'Published',         color: '#22c55e', bg: 'rgba(34,197,94,0.1)',   dot: '#22c55e' },
   failed:    { label: 'Failed',            color: '#f87171', bg: 'rgba(239,68,68,0.1)',   dot: '#f87171' },
 }
 
 const TYPE_ICONS = {
-  video: '🎬', carousel: '🖼️', image_post: '📸',
-  text_only: '✍️', story: '⚡', reel: '🎞️',
+  video: Film, carousel: Images, image_post: Camera,
+  text_only: PenLine, story: Zap, reel: Clapperboard,
 }
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
@@ -105,7 +110,7 @@ function PublishDot({ publish_status }) {
 function PostPill({ entry, onClick }) {
   const [hov, setHov] = useState(false)
   const color = PLATFORM_COLORS[entry.platform] || PLATFORM_COLORS.pending
-  const icon  = TYPE_ICONS[entry.content_type] || '📄'
+  const Icon  = TYPE_ICONS[entry.content_type] || FileText
   return (
     <div onClick={() => onClick(entry)}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
@@ -114,12 +119,12 @@ function PostPill({ entry, onClick }) {
         border: `1px solid ${color}40`, transition: 'background 0.12s' }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-        <span style={{ fontSize: 9 }}>{icon}</span>
+        <Icon size={12} style={{ color, flexShrink: 0 }} />
         <span style={{ fontSize: 10, fontWeight: 600, color, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
           {PLATFORM_LABELS[entry.platform] || entry.platform}
         </span>
         {entry.scheduled_time && (
-          <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+          <span style={{ fontSize: 9, color: 'var(--cs-text-muted)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
             {entry.scheduled_time}
           </span>
         )}
@@ -138,18 +143,18 @@ function EmptySlot({ onClick }) {
     <div onClick={onClick}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{ height: 28, borderRadius: 5, cursor: 'pointer',
-        border: `1px dashed ${hov ? 'rgba(0,182,255,0.4)' : 'var(--cs-border)'}`,
-        background: hov ? 'rgba(0,182,255,0.04)' : 'transparent',
+        border: `1px dashed ${hov ? 'var(--cs-accent-line)' : 'var(--cs-border)'}`,
+        background: hov ? 'var(--cs-accent-soft)' : 'transparent',
         display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.12s' }}
     >
-      {hov && <span style={{ color: 'rgba(0,182,255,0.6)', fontSize: 14, lineHeight: 1 }}>+</span>}
+      {hov && <span style={{ color: 'var(--cs-accent-line)', fontSize: 14, lineHeight: 1 }}>+</span>}
     </div>
   )
 }
 
 function PostDetailModal({ entry, onClose, onRemove, onPublished }) {
   const color = PLATFORM_COLORS[entry.platform] || PLATFORM_COLORS.pending
-  const icon  = TYPE_ICONS[entry.content_type] || '📄'
+  const Icon  = TYPE_ICONS[entry.content_type] || FileText
   const [publishing, setPublishing] = useState(false)
   const [pubError, setPubError]     = useState('')
   const [localPs, setLocalPs]       = useState(entry.publish_status || 'local')
@@ -191,7 +196,7 @@ function PostDetailModal({ entry, onClose, onRemove, onPublished }) {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 8, flexShrink: 0, background: `${color}20`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{icon}</div>
+          <div style={{ width: 38, height: 38, borderRadius: 8, flexShrink: 0, background: `${color}20`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon size={18} style={{ color }} /></div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ color, fontSize: 12, fontWeight: 700 }}>{PLATFORM_LABELS[entry.platform] || entry.platform}</div>
             <div style={{ color: 'var(--cs-text-muted)', fontSize: 11, marginTop: 1 }}>
@@ -217,8 +222,8 @@ function PostDetailModal({ entry, onClose, onRemove, onPublished }) {
             </span>
           ))}
           {entry.scheduled_time && (
-            <span style={{ padding: '2px 8px', borderRadius: 4, background: 'var(--cs-hover)', color: 'var(--cs-text-sub)', fontSize: 11 }}>
-              🕐 {entry.scheduled_time}
+            <span style={{ padding: '2px 8px', borderRadius: 4, background: 'var(--cs-hover)', color: 'var(--cs-text-sub)', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <Clock size={12} /> {entry.scheduled_time}
             </span>
           )}
         </div>
@@ -236,11 +241,16 @@ function PostDetailModal({ entry, onClose, onRemove, onPublished }) {
             )}
             <button onClick={handlePublish} disabled={publishing || localPs === 'sent'}
               style={{ width: '100%', padding: '8px 0', borderRadius: 6, border: 'none', cursor: (publishing || localPs === 'sent') ? 'not-allowed' : 'pointer',
-                background: localPs === 'sent' ? 'rgba(0,182,255,0.1)' : 'linear-gradient(135deg,#0066cc,#00B6FF)',
-                color: localPs === 'sent' ? '#00B6FF' : '#fff',
+                background: localPs === 'sent' ? 'var(--cs-accent-soft)' : 'var(--cs-accent)',
+                color: localPs === 'sent' ? 'var(--cs-accent)' : '#fff',
                 fontSize: 12, fontWeight: 600, transition: 'opacity 0.15s',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 opacity: publishing ? 0.6 : 1 }}>
-              {publishing ? '⏳ Sending…' : localPs === 'sent' ? '✓ Sent to Metricool' : '→ Send to Metricool'}
+              {publishing
+                ? <><Clock size={13} /> Sending…</>
+                : localPs === 'sent'
+                  ? <><Check size={13} /> Sent to Metricool</>
+                  : <><Send size={13} /> Send to Metricool</>}
             </button>
             {localPs !== 'sent' && entry.scheduled_time && (
               <div style={{ color: 'var(--cs-text-muted)', fontSize: 10, textAlign: 'center', marginTop: 6 }}>
@@ -321,12 +331,12 @@ function ScheduleModal({ date, slot, library, onClose, onSchedule }) {
             ) : available.map(item => (
               <div key={item.job_id} onClick={() => setSelected(item)} style={{
                 padding: '8px 10px', borderRadius: 6, cursor: 'pointer', marginBottom: 4,
-                background: selected?.job_id === item.job_id ? 'rgba(0,182,255,0.1)' : 'var(--cs-hover)',
-                border: `1px solid ${selected?.job_id === item.job_id ? 'rgba(0,182,255,0.3)' : 'var(--cs-border)'}`,
+                background: selected?.job_id === item.job_id ? 'var(--cs-accent-soft)' : 'var(--cs-hover)',
+                border: `1px solid ${selected?.job_id === item.job_id ? 'var(--cs-accent-line)' : 'var(--cs-border)'}`,
                 transition: 'all 0.1s',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 14 }}>{TYPE_ICONS[item.content_type] || '📄'}</span>
+                  {(() => { const ItemIcon = TYPE_ICONS[item.content_type] || FileText; return <ItemIcon size={14} style={{ color: 'var(--cs-text-sub)', flexShrink: 0 }} /> })()}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ color: 'var(--cs-text)', fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
                     <div style={{ color: 'var(--cs-text-muted)', fontSize: 10, marginTop: 1 }}>{item.language} · {item.format} · {item.status}</div>
@@ -340,10 +350,11 @@ function ScheduleModal({ date, slot, library, onClose, onSchedule }) {
             <button onClick={onClose} style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 12, cursor: 'pointer' }}>Cancel</button>
             <button disabled={!selected} onClick={() => selected && (onSchedule(date, slot, platform, selected, time), onClose())} style={{
               padding: '7px 16px', borderRadius: 6, border: 'none', cursor: selected ? 'pointer' : 'not-allowed',
-              background: selected ? 'linear-gradient(135deg,#0066cc,#00B6FF)' : 'var(--cs-hover)',
+              background: selected ? 'var(--cs-accent)' : 'var(--cs-hover)',
               color: selected ? '#fff' : 'var(--cs-text-muted)',
               fontSize: 12, fontWeight: 600, transition: 'all 0.12s',
-            }}>Schedule {time && `· ${time}`} →</button>
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+            }}>Schedule {time && `· ${time}`} <ArrowRight size={13} /></button>
           </div>
         </div>
       </div>
@@ -363,7 +374,7 @@ function ListView({ entries, onEntry }) {
   if (sorted.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--cs-text-muted)', fontSize: 14 }}>
-        <div style={{ fontSize: 36, marginBottom: 12 }}>📅</div>
+        <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}><Calendar size={36} style={{ color: 'var(--cs-text-muted)' }} /></div>
         No posts scheduled this week
       </div>
     )
@@ -373,7 +384,7 @@ function ListView({ entries, onEntry }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {sorted.map(entry => {
         const color = PLATFORM_COLORS[entry.platform] || PLATFORM_COLORS.pending
-        const icon  = TYPE_ICONS[entry.content_type] || '📄'
+        const Icon  = TYPE_ICONS[entry.content_type] || FileText
         const ps    = PUBLISH_STATUS[entry.publish_status] || PUBLISH_STATUS.local
         return (
           <div key={entry.id} onClick={() => onEntry(entry)} style={{
@@ -390,7 +401,7 @@ function ListView({ entries, onEntry }) {
                 {entry.scheduled_time || '—'}
               </div>
             </div>
-            <div style={{ width: 28, height: 28, borderRadius: 6, background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>{icon}</div>
+            <div style={{ width: 28, height: 28, borderRadius: 6, background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon size={14} style={{ color }} /></div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: 'var(--cs-text)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.title}</div>
               <div style={{ color, fontSize: 11, marginTop: 2 }}>{PLATFORM_LABELS[entry.platform] || entry.platform}</div>
@@ -517,43 +528,44 @@ export default function Schedule() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ display: 'flex', background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 7, overflow: 'hidden' }}>
-            {[['calendar','📅 Calendar'],['list','☰ List']].map(([mode, label]) => (
+            {[['calendar', Calendar, 'Calendar'], ['list', Menu, 'List']].map(([mode, ModeIcon, label]) => (
               <button key={mode} onClick={() => setViewMode(mode)} style={{
                 padding: '6px 14px', border: 'none', cursor: 'pointer', fontSize: 12,
-                background: viewMode === mode ? 'rgba(0,182,255,0.1)' : 'transparent',
-                color: viewMode === mode ? '#00B6FF' : 'var(--cs-text-sub)',
+                background: viewMode === mode ? 'var(--cs-accent-soft)' : 'transparent',
+                color: viewMode === mode ? 'var(--cs-accent)' : 'var(--cs-text-sub)',
                 fontWeight: viewMode === mode ? 600 : 400,
                 borderRight: mode === 'calendar' ? '1px solid var(--cs-border)' : 'none',
                 transition: 'all 0.12s',
-              }}>{label}</button>
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+              }}><ModeIcon size={14} /> {label}</button>
             ))}
           </div>
-          <NavBtn onClick={prevWeek}>‹</NavBtn>
+          <NavBtn onClick={prevWeek}><ChevronLeft size={16} /></NavBtn>
           <button onClick={goToday} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 12, cursor: 'pointer' }}>Today</button>
-          <NavBtn onClick={nextWeek}>›</NavBtn>
+          <NavBtn onClick={nextWeek}><ChevronRight size={16} /></NavBtn>
         </div>
       </div>
 
       {/* Gap detection banner */}
       {gapData && !gapDismissed && (
-        <div style={{ marginBottom: 16, background: 'rgba(200,169,110,0.08)', border: '1px solid rgba(200,169,110,0.3)', borderRadius: 10, padding: '12px 16px' }}>
+        <div style={{ marginBottom: 16, background: 'var(--cs-gold-soft)', border: '1px solid var(--cs-gold)', borderRadius: 10, padding: '12px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-              <span style={{ fontSize: 15 }}>⚠️</span>
-              <span style={{ color: '#C8A96E', fontSize: 12, fontWeight: 700 }}>Content gaps detected</span>
+              <AlertTriangle size={15} style={{ color: 'var(--cs-gold)' }} />
+              <span style={{ color: 'var(--cs-gold)', fontSize: 12, fontWeight: 700 }}>Content gaps detected</span>
             </div>
-            <button onClick={() => setGapDismissed(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 14, lineHeight: 1, padding: 2, flexShrink: 0 }}>✕</button>
+            <button onClick={() => setGapDismissed(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', lineHeight: 1, padding: 2, flexShrink: 0, display: 'inline-flex' }}><X size={14} /></button>
           </div>
           <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {gapData.warnings?.map((w, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--cs-text-sub)' }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#C8A96E', flexShrink: 0, display: 'inline-block' }} />
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--cs-gold)', flexShrink: 0, display: 'inline-block' }} />
                 {w.message}
               </div>
             ))}
             {gapData.gaps?.slice(0, 5).map((g, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--cs-text-sub)' }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: g.severity === 'high' ? '#f87171' : '#C8A96E', flexShrink: 0, display: 'inline-block' }} />
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: g.severity === 'high' ? '#f87171' : 'var(--cs-gold)', flexShrink: 0, display: 'inline-block' }} />
                 <span><strong style={{ color: 'var(--cs-text)' }}>{g.weekday} {g.date}</strong> — no content for: {g.missing_platforms.map(p => PLATFORM_LABELS[p] || p).join(', ')}</span>
               </div>
             ))}
@@ -589,7 +601,7 @@ export default function Schedule() {
               </div>
             )
           })}
-          {apiError && <span style={{ color: 'rgba(200,169,110,0.6)', fontSize: 11 }}>API offline — demo data</span>}
+          {apiError && <span style={{ color: 'var(--cs-gold)', fontSize: 11 }}>API offline — demo data</span>}
         </div>
       </div>
 
@@ -603,13 +615,13 @@ export default function Schedule() {
               const today = isToday(d)
               return (
                 <div key={i} style={{ padding: '10px 8px', textAlign: 'center', borderLeft: '1px solid var(--cs-border-sub)' }}>
-                  <div style={{ fontSize: 11, fontWeight: today ? 700 : 500, color: today ? '#00B6FF' : 'var(--cs-text-sub)' }}>
+                  <div style={{ fontSize: 11, fontWeight: today ? 700 : 500, color: today ? 'var(--cs-accent)' : 'var(--cs-text-sub)' }}>
                     {fmtDay(d).split(' ')[0]}
                   </div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: today ? '#00B6FF' : 'var(--cs-text)', marginTop: 2 }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: today ? 'var(--cs-accent)' : 'var(--cs-text)', marginTop: 2 }}>
                     {fmtDay(d).split(' ')[1]}
                   </div>
-                  {today && <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#00B6FF', margin: '3px auto 0' }} />}
+                  {today && <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--cs-accent)', margin: '3px auto 0' }} />}
                 </div>
               )
             })}
@@ -625,7 +637,7 @@ export default function Schedule() {
                 const dayEntries = entriesFor(day, slot.id)
                 const today = isToday(day)
                 return (
-                  <div key={di} style={{ padding: '6px 5px', borderLeft: '1px solid var(--cs-border-sub)', background: today ? 'rgba(0,182,255,0.02)' : 'transparent', minWidth: 0 }}>
+                  <div key={di} style={{ padding: '6px 5px', borderLeft: '1px solid var(--cs-border-sub)', background: today ? 'var(--cs-accent-soft)' : 'transparent', minWidth: 0 }}>
                     {loading ? (
                       <div style={{ height: 24, borderRadius: 4, background: 'var(--cs-hover)', animation: 'pulse 1.5s ease infinite' }} />
                     ) : (

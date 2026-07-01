@@ -59,22 +59,16 @@ export default function Login() {
       <div style={{ width: '100%', maxWidth: 400 }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{
-            width: 52, height: 52, borderRadius: 14, margin: '0 auto 16px',
-            background: 'linear-gradient(135deg, #08316F 0%, #00B6FF 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 20px rgba(0,182,255,0.35)',
+          <img
+            src="/rodschinson-wordmark.png"
+            alt="Rodschinson Investment"
+            style={{ height: 46, width: 'auto', margin: '0 auto 14px', display: 'block' }}
+          />
+          <p style={{
+            color: 'var(--cs-text-muted)', fontSize: 11, margin: 0,
+            letterSpacing: '0.22em', fontWeight: 600, textTransform: 'uppercase',
           }}>
-            <span style={{ color: '#fff', fontWeight: 800, fontSize: 22, letterSpacing: '-0.5px' }}>R</span>
-          </div>
-          <h1 style={{
-            fontSize: 22, fontWeight: 800, color: 'var(--cs-text)',
-            letterSpacing: '-0.5px', margin: 0,
-          }}>
-            Rodschinson
-          </h1>
-          <p style={{ color: 'var(--cs-text-muted)', fontSize: 12, margin: '4px 0 0', letterSpacing: '0.08em', fontWeight: 500 }}>
-            CONTENT STUDIO
+            Content Studio
           </p>
         </div>
 
@@ -107,7 +101,7 @@ export default function Login() {
                   outline: 'none', boxSizing: 'border-box',
                   transition: 'border-color 0.15s',
                 }}
-                onFocus={e => e.target.style.borderColor = '#00B6FF'}
+                onFocus={e => e.target.style.borderColor = 'var(--cs-accent)'}
                 onBlur={e => e.target.style.borderColor = 'var(--cs-border)'}
               />
             </div>
@@ -131,7 +125,7 @@ export default function Login() {
                     outline: 'none', boxSizing: 'border-box',
                     transition: 'border-color 0.15s',
                   }}
-                  onFocus={e => e.target.style.borderColor = '#00B6FF'}
+                  onFocus={e => e.target.style.borderColor = 'var(--cs-accent)'}
                   onBlur={e => e.target.style.borderColor = 'var(--cs-border)'}
                 />
                 <button
@@ -166,11 +160,11 @@ export default function Login() {
               style={{
                 marginTop: 4,
                 padding: '12px 24px', borderRadius: 8,
-                background: loading ? 'rgba(0,182,255,0.4)' : 'linear-gradient(135deg, #00B6FF, #0090cc)',
+                background: 'var(--cs-accent)', opacity: loading ? 0.65 : 1,
                 border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
                 color: '#fff', fontSize: 14, fontWeight: 600,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                transition: 'opacity 0.15s',
+                transition: 'opacity 0.15s, background 0.15s',
               }}
             >
               {loading ? (

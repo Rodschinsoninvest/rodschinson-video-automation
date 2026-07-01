@@ -3,19 +3,19 @@ import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useGeneration } from '../contexts/GenerationContext'
 import { useMobile } from '../hooks/useMobile'
-import { Menu, Sun, Moon, ChevronRight } from 'lucide-react'
+import { Menu, Sun, Moon, ChevronRight, Film, Images, Camera, PenLine, Zap, Clapperboard, FileText, Inbox, X } from 'lucide-react'
 
 // ─── Content type icons ───────────────────────────────────────────────────────
 const TYPE_ICONS = {
-  video: '🎬', carousel: '🖼️', image_post: '📸',
-  text_only: '✍️', story: '⚡', reel: '🎞️',
+  video: Film, carousel: Images, image_post: Camera,
+  text_only: PenLine, story: Zap, reel: Clapperboard,
 }
 
 // ─── Spinner SVG ──────────────────────────────────────────────────────────────
-function Spin({ size = 12, color = '#00B6FF' }) {
+function Spin({ size = 12, color = 'var(--cs-accent)' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 14 14" style={{ animation: 'spin 0.7s linear infinite', flexShrink: 0 }}>
-      <circle cx="7" cy="7" r="5.5" fill="none" stroke={color + '33'} strokeWidth="1.8" />
+      <circle cx="7" cy="7" r="5.5" fill="none" stroke="var(--cs-border)" strokeWidth="1.8" />
       <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   )
@@ -28,23 +28,24 @@ function JobRow({ job, onViewInLibrary, onClear, onCancel }) {
   const isError   = job.status === 'error'
   const isAborted = job.status === 'aborted'
 
-  const statusColor = isDone ? '#22c55e' : isError ? '#f87171' : isAborted ? '#6b7280' : '#00B6FF'
+  const statusColor = isDone ? '#22c55e' : isError ? '#f87171' : isAborted ? '#6b7280' : 'var(--cs-accent)'
+  const TypeIcon = TYPE_ICONS[job.contentType] || FileText
 
   return (
     <div style={{
       padding: '11px 16px',
-      borderBottom: '1px solid rgba(255,255,255,0.04)',
+      borderBottom: '1px solid var(--cs-border-sub)',
       display: 'flex', flexDirection: 'column', gap: 7,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
         {/* Type icon */}
         <span style={{
           width: 28, height: 28, borderRadius: 7, flexShrink: 0,
-          background: 'rgba(255,255,255,0.06)',
+          background: 'var(--cs-surface3)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 13,
+          color: 'var(--cs-text-sub)',
         }}>
-          {TYPE_ICONS[job.contentType] || '📄'}
+          <TypeIcon size={14} />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
@@ -59,7 +60,6 @@ function JobRow({ job, onViewInLibrary, onClear, onCancel }) {
         <div style={{
           width: 7, height: 7, borderRadius: '50%',
           background: statusColor, flexShrink: 0,
-          boxShadow: isRunning || isDone ? `0 0 6px ${statusColor}` : 'none',
         }} />
         {isRunning && <Spin />}
       </div>
@@ -67,20 +67,19 @@ function JobRow({ job, onViewInLibrary, onClear, onCancel }) {
       {/* Progress bar */}
       {isRunning && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          <div style={{ position: 'relative', height: 3, background: 'rgba(255,255,255,0.07)', borderRadius: 2, overflow: 'hidden' }}>
+          <div style={{ position: 'relative', height: 3, background: 'var(--cs-surface3)', borderRadius: 2, overflow: 'hidden' }}>
             <div style={{
               height: '100%', borderRadius: 2,
-              background: 'linear-gradient(90deg, #0a5cbf, #00B6FF)',
+              background: 'var(--cs-accent)',
               width: `${job.progress}%`, transition: 'width 0.5s ease',
-              boxShadow: '0 0 8px rgba(0,182,255,0.5)',
             }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 10, color: '#00B6FF', fontWeight: 600 }}>{job.progress}%</span>
+            <span style={{ fontSize: 10, color: 'var(--cs-accent)', fontWeight: 600 }}>{job.progress}%</span>
             <button onClick={onCancel} style={{
               padding: '2px 8px', borderRadius: 4,
               border: '1px solid rgba(239,68,68,0.25)',
-              background: 'rgba(239,68,68,0.07)', color: '#f87171',
+              background: 'rgba(239,68,68,0.07)', color: '#dc4040',
               fontSize: 10, fontWeight: 600, cursor: 'pointer',
             }}>Cancel</button>
           </div>
@@ -91,29 +90,30 @@ function JobRow({ job, onViewInLibrary, onClear, onCancel }) {
         <div style={{ display: 'flex', gap: 6 }}>
           <button onClick={onViewInLibrary} style={{
             flex: 1, padding: '5px 10px', borderRadius: 6, border: 'none',
-            background: 'rgba(0,182,255,0.1)', color: '#00B6FF',
+            background: 'var(--cs-accent-soft)', color: 'var(--cs-accent)',
             fontSize: 11, fontWeight: 600, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
           }}>
             View in Library <ChevronRight size={11} />
           </button>
           <button onClick={onClear} style={{
-            width: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)',
+            width: 28, borderRadius: 6, border: '1px solid var(--cs-border)',
             background: 'transparent', color: 'var(--cs-text-muted)',
-            fontSize: 13, cursor: 'pointer',
-          }}>✕</button>
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}><X size={13} /></button>
         </div>
       )}
 
       {(isError || isAborted) && (
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <span style={{ flex: 1, fontSize: 11, color: isAborted ? 'var(--cs-text-muted)' : '#f87171' }}>
+          <span style={{ flex: 1, fontSize: 11, color: isAborted ? 'var(--cs-text-muted)' : '#dc4040' }}>
             {job.detail || (isAborted ? 'Generation cancelled' : 'Generation failed')}
           </span>
           <button onClick={onClear} style={{
-            padding: '3px 8px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.07)',
-            background: 'transparent', color: 'var(--cs-text-muted)', fontSize: 11, cursor: 'pointer',
-          }}>✕</button>
+            padding: '3px 8px', borderRadius: 5, border: '1px solid var(--cs-border)',
+            background: 'transparent', color: 'var(--cs-text-muted)', cursor: 'pointer',
+            display: 'flex', alignItems: 'center',
+          }}><X size={12} /></button>
         </div>
       )}
     </div>
@@ -132,8 +132,8 @@ function IconBtn({ onClick, title, active, children }) {
       style={{
         width: 34, height: 34, borderRadius: 9,
         border: '1px solid',
-        borderColor: active || hov ? 'rgba(0,182,255,0.3)' : 'var(--cs-border)',
-        background: active ? 'rgba(0,182,255,0.1)' : hov ? 'var(--cs-hover)' : 'transparent',
+        borderColor: active || hov ? 'var(--cs-accent-line)' : 'var(--cs-border)',
+        background: active ? 'var(--cs-accent-soft)' : hov ? 'var(--cs-hover)' : 'transparent',
         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'all 0.15s', position: 'relative', flexShrink: 0,
       }}
@@ -187,15 +187,15 @@ export default function TopBar({ onMenuClick }) {
         )}
         {/* Subtle breadcrumb on desktop */}
         {!isMobile && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{
-              width: 22, height: 22, borderRadius: 6,
-              background: 'linear-gradient(135deg, #08316F, #00B6FF)',
+              width: 24, height: 24, borderRadius: 6,
+              background: '#ffffff', border: '1px solid var(--cs-border)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <span style={{ color: '#fff', fontWeight: 800, fontSize: 11 }}>R</span>
+              <img src="/rodschinson-mark.png" alt="Rodschinson" style={{ width: 18, height: 18, objectFit: 'contain' }} />
             </div>
-            <span style={{ color: 'var(--cs-text-muted)', fontSize: 13, fontWeight: 400 }}>
+            <span style={{ color: 'var(--cs-text-sub)', fontSize: 13, fontWeight: 500, letterSpacing: '0.01em' }}>
               Content Studio
             </span>
           </div>
@@ -218,7 +218,7 @@ export default function TopBar({ onMenuClick }) {
               <span style={{
                 position: 'absolute', top: -3, right: -3,
                 minWidth: 16, height: 16, borderRadius: 8, padding: '0 3px',
-                background: activeCount > 0 ? '#00B6FF' : '#22c55e',
+                background: activeCount > 0 ? 'var(--cs-accent)' : '#22c55e',
                 color: '#fff', fontSize: 9, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 border: '2px solid var(--cs-bg)',
@@ -235,7 +235,7 @@ export default function TopBar({ onMenuClick }) {
               background: 'var(--cs-surface)',
               border: '1px solid var(--cs-border)',
               borderRadius: 12, width: 320,
-              boxShadow: '0 16px 48px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.04)',
+              boxShadow: 'var(--cs-shadow-lg)',
               overflow: 'hidden', animation: 'slidedown 0.14s ease',
             }}>
               {/* Header */}
@@ -249,7 +249,7 @@ export default function TopBar({ onMenuClick }) {
                   {activeCount > 0 && (
                     <span style={{
                       padding: '1px 7px', borderRadius: 20,
-                      background: 'rgba(0,182,255,0.12)', color: '#00B6FF',
+                      background: 'var(--cs-accent-soft)', color: 'var(--cs-accent)',
                       fontSize: 10, fontWeight: 600,
                     }}>
                       {activeCount} running
@@ -268,7 +268,7 @@ export default function TopBar({ onMenuClick }) {
                   {hasJobs && (
                     <button onClick={() => { navigate('/library'); setOpen(false) }} style={{
                       background: 'none', border: 'none', cursor: 'pointer',
-                      color: '#00B6FF', fontSize: 11, padding: 0,
+                      color: 'var(--cs-accent)', fontSize: 11, padding: 0,
                       display: 'flex', alignItems: 'center', gap: 3,
                     }}>
                       Library <ChevronRight size={11} />
@@ -280,7 +280,9 @@ export default function TopBar({ onMenuClick }) {
               {/* Job list */}
               {!hasJobs ? (
                 <div style={{ padding: '28px 16px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>⚡</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8, color: 'var(--cs-text-muted)' }}>
+                    <Inbox size={22} />
+                  </div>
                   <div style={{ color: 'var(--cs-text-muted)', fontSize: 12 }}>No active generations</div>
                 </div>
               ) : (
@@ -311,11 +313,11 @@ export default function TopBar({ onMenuClick }) {
         {/* Avatar */}
         <div style={{
           width: 32, height: 32, borderRadius: 9,
-          background: 'linear-gradient(135deg, #08316F 0%, #00B6FF 100%)',
+          background: 'var(--cs-accent)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: '#fff', fontWeight: 700, fontSize: 11, letterSpacing: '0.5px',
           cursor: 'pointer', userSelect: 'none',
-          boxShadow: '0 2px 8px rgba(0,182,255,0.2)',
+          boxShadow: 'var(--cs-shadow-sm)',
         }}>RC</div>
       </div>
     </header>

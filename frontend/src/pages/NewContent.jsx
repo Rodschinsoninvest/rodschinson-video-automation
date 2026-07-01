@@ -1,6 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  Film, Clapperboard, Zap, Images, Camera, PenLine, FileText, ClipboardList,
+  Palette, Sparkles, Cloud, Check, CheckCircle2, X, Ban, RefreshCw,
+  ChevronUp, ChevronDown, Mic, Music, Flame, ArrowLeft, ArrowRight,
+  Scissors, Layers, Contrast, ArrowUp, ZoomIn, Activity, Sparkle,
+} from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useGeneration } from '../contexts/GenerationContext'
 import { useToast } from '../contexts/ToastContext'
@@ -16,7 +22,7 @@ export const CONTENT_TYPES = [
   {
     id: 'video',
     label: 'Video',
-    icon: '🎬',
+    icon: Film,
     desc: 'Scripted video with voiceover, rendered scenes & music',
     formats: ['16:9', '1:1', '9:16'],
     defaultFormat: '16:9',
@@ -33,7 +39,7 @@ export const CONTENT_TYPES = [
   {
     id: 'reel',
     label: 'Reel',
-    icon: '🎞️',
+    icon: Clapperboard,
     desc: 'Short vertical video for Instagram, TikTok & YouTube Shorts',
     formats: ['9:16'],
     defaultFormat: '9:16',
@@ -50,7 +56,7 @@ export const CONTENT_TYPES = [
   {
     id: 'story',
     label: 'Story',
-    icon: '⚡',
+    icon: Zap,
     desc: '15-second ephemeral vertical story',
     formats: ['9:16'],
     defaultFormat: '9:16',
@@ -67,7 +73,7 @@ export const CONTENT_TYPES = [
   {
     id: 'carousel',
     label: 'Carousel',
-    icon: '🖼️',
+    icon: Images,
     desc: 'Multi-slide image carousel (PDF-ready, LinkedIn / Instagram)',
     formats: ['1:1', '4:5'],
     defaultFormat: '1:1',
@@ -84,7 +90,7 @@ export const CONTENT_TYPES = [
   {
     id: 'image_post',
     label: 'Image Post',
-    icon: '📸',
+    icon: Camera,
     desc: 'Single branded image with headline & key stat',
     formats: ['1:1', '4:5', '16:9'],
     defaultFormat: '1:1',
@@ -101,7 +107,7 @@ export const CONTENT_TYPES = [
   {
     id: 'text_only',
     label: 'Text Post',
-    icon: '✍️',
+    icon: PenLine,
     desc: 'Long-form text post — LinkedIn article, thread or newsletter',
     formats: ['text'],
     defaultFormat: 'text',
@@ -128,7 +134,7 @@ const TEMPLATE_GROUPS = {
     },
     {
       id: 'data', label: 'Data & Markets',
-      gradient: 'linear-gradient(135deg,#031520,#061e2e)', accent: '#00B6FF',
+      gradient: 'linear-gradient(135deg,#031520,#061e2e)', accent: 'var(--cs-accent)',
       desc: 'Bloomberg terminal · data-first',
       scenes: ['Title Card', 'Big Number', 'Bar Chart', 'Bullet Points', 'CTA'],
     },
@@ -166,11 +172,11 @@ const TEMPLATE_GROUPS = {
     { id: 'reel_gradient', label: 'Gradient', gradient: 'linear-gradient(135deg,#1a0a2e,#2d1454,#08316F)', accent: '#a855f7', desc: 'Purple gradient · social-native', scenes: ['Title Card', 'Big Number', 'Bullet Points', 'Bar Chart', 'CTA'] },
   ],
   carousel: [
-    { id: 'carousel_cre',        label: 'CRE Navy',            gradient: 'linear-gradient(135deg,#08316F,#0a4a9e)', accent: '#00B6FF', desc: 'Navy · sky blue · KPI + metrics' },
+    { id: 'carousel_cre',        label: 'CRE Navy',            gradient: 'linear-gradient(135deg,#08316F,#0a4a9e)', accent: 'var(--cs-accent)', desc: 'Navy · sky blue · KPI + metrics' },
     { id: 'carousel_clean',      label: 'Clean Slides',        gradient: 'linear-gradient(135deg,#f8f9fa,#e9ecef)', accent: '#08316F', desc: 'Light · editorial · clean layout' },
     { id: 'carousel_bold',       label: 'Bold Deck',           gradient: 'linear-gradient(135deg,#08316F,#0a3d8a)', accent: '#C8A96E', desc: 'Dark navy · gold · premium' },
     { id: 'carousel_minimal',    label: 'Minimal',             gradient: 'linear-gradient(135deg,#0a0a0a,#181818)', accent: '#ffffff',  desc: 'Black · white · ultra-minimal' },
-    { id: 'carousel_data',       label: 'Data Slides',         gradient: 'linear-gradient(135deg,#031520,#061e2e)', accent: '#00B6FF', desc: 'Deep dark · cyan · data-heavy' },
+    { id: 'carousel_data',       label: 'Data Slides',         gradient: 'linear-gradient(135deg,#031520,#061e2e)', accent: 'var(--cs-accent)', desc: 'Deep dark · cyan · data-heavy' },
   ],
   image: [
     { id: 'image_stat',          label: 'Stat Card',           gradient: 'linear-gradient(135deg,#08316F,#0a3d8a)', accent: '#C8A96E'  },
@@ -268,8 +274,8 @@ function Chip({ active, children, onClick, color }) {
   return (
     <div onClick={onClick} style={{
       padding: '7px 14px', borderRadius: 6, cursor: 'pointer', userSelect: 'none',
-      border: active ? `1px solid ${color || '#00B6FF'}` : '1px solid var(--cs-border)',
-      background: active ? (color ? `${color}14` : 'rgba(0,182,255,0.08)') : 'var(--cs-hover)',
+      border: active ? `1px solid ${color || 'var(--cs-accent)'}` : '1px solid var(--cs-border)',
+      background: active ? (color ? `${color}14` : 'var(--cs-accent-soft)') : 'var(--cs-hover)',
       color: active ? (color || '#0099dd') : 'var(--cs-text-sub)',
       fontSize: 13, fontWeight: active ? 600 : 400,
       transition: 'all 0.15s', whiteSpace: 'nowrap',
@@ -299,14 +305,14 @@ function TypeCard({ type, active, onClick }) {
   return (
     <div onClick={onClick} style={{
       padding: '14px 16px', borderRadius: 8, cursor: 'pointer',
-      border: active ? '2px solid #00B6FF' : '1px solid var(--cs-border)',
-      background: active ? 'rgba(0,182,255,0.06)' : 'var(--cs-surface)',
+      border: active ? '2px solid var(--cs-accent)' : '1px solid var(--cs-border)',
+      background: active ? 'var(--cs-accent-soft)' : 'var(--cs-surface)',
       transition: 'all 0.15s',
       display: 'flex', flexDirection: 'column', gap: 4,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 18 }}>{type.icon}</span>
-        <span style={{ fontSize: 13, fontWeight: active ? 700 : 600, color: active ? '#00B6FF' : 'var(--cs-text)' }}>
+        <type.icon size={18} style={{ color: active ? 'var(--cs-accent)' : 'var(--cs-text-sub)', flexShrink: 0 }} />
+        <span style={{ fontSize: 13, fontWeight: active ? 700 : 600, color: active ? 'var(--cs-accent)' : 'var(--cs-text)' }}>
           {type.label}
         </span>
       </div>
@@ -314,8 +320,8 @@ function TypeCard({ type, active, onClick }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
         <span style={{
           padding: '2px 7px', borderRadius: 10, fontSize: 10, fontWeight: 600,
-          background: active ? 'rgba(0,182,255,0.12)' : 'var(--cs-hover)',
-          color: active ? '#00B6FF' : 'var(--cs-text-muted)',
+          background: active ? 'var(--cs-accent-soft)' : 'var(--cs-hover)',
+          color: active ? 'var(--cs-accent)' : 'var(--cs-text-muted)',
         }}>{type.estimatedTime}</span>
         {type.steps.map((s, i) => (
           <span key={s} style={{ fontSize: 10, color: 'var(--cs-text-muted)' }}>
@@ -342,9 +348,9 @@ function PipelinePreview({ typeDef }) {
           <div key={step} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
             <div style={{
               width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-              background: 'rgba(0,182,255,0.1)', border: '1px solid rgba(0,182,255,0.25)',
+              background: 'var(--cs-accent-soft)', border: '1px solid var(--cs-accent-line)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#00B6FF', fontSize: 10, fontWeight: 700,
+              color: 'var(--cs-accent)', fontSize: 10, fontWeight: 700,
             }}>{i + 1}</div>
             <div>
               <div style={{ color: 'var(--cs-text)', fontSize: 12, fontWeight: 600 }}>{step}</div>
@@ -355,14 +361,14 @@ function PipelinePreview({ typeDef }) {
       </div>
       <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
         <span style={{ fontSize: 11, color: 'var(--cs-text-muted)' }}>Estimated time:</span>
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#00B6FF' }}>{typeDef.estimatedTime}</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--cs-accent)' }}>{typeDef.estimatedTime}</span>
       </div>
     </div>
   )
 }
 
 function TemplateCard({ tpl, active, onClick }) {
-  const accentColor = tpl.accent === '#ffffff' ? '#00B6FF' : tpl.accent
+  const accentColor = tpl.accent === '#ffffff' ? 'var(--cs-accent)' : tpl.accent
   return (
     <div onClick={onClick} style={{
       cursor: 'pointer', borderRadius: 8, overflow: 'hidden', transition: 'all 0.15s',
@@ -425,9 +431,9 @@ function LogoUpload({ file, onFile }) {
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
       style={{
-        border: dragging ? '2px dashed #00B6FF' : '2px dashed var(--cs-border)',
+        border: dragging ? '2px dashed var(--cs-accent)' : '2px dashed var(--cs-border)',
         borderRadius: 8, padding: '20px', textAlign: 'center', cursor: 'pointer',
-        background: dragging ? 'rgba(0,182,255,0.04)' : 'transparent', transition: 'all 0.15s',
+        background: dragging ? 'var(--cs-accent-soft)' : 'transparent', transition: 'all 0.15s',
       }}
     >
       <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }}
@@ -440,9 +446,9 @@ function LogoUpload({ file, onFile }) {
         </div>
       ) : (
         <>
-          <div style={{ fontSize: 20, marginBottom: 6 }}>☁️</div>
+          <Cloud size={22} style={{ color: 'var(--cs-text-muted)', marginBottom: 6 }} />
           <div style={{ color: 'var(--cs-text-sub)', fontSize: 13 }}>
-            Drop logo or <span style={{ color: '#00B6FF' }}>browse</span>
+            Drop logo or <span style={{ color: 'var(--cs-accent)' }}>browse</span>
           </div>
           <div style={{ color: 'var(--cs-text-muted)', fontSize: 11, marginTop: 3 }}>PNG, SVG, JPG</div>
         </>
@@ -465,22 +471,22 @@ function StepIndicator({ step, total = 3, labels }) {
                 width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 11, fontWeight: 700,
-                background: done ? '#00B6FF' : cur ? 'rgba(0,182,255,0.1)' : 'var(--cs-hover)',
-                color: done ? '#fff' : cur ? '#00B6FF' : 'var(--cs-text-muted)',
-                border: cur ? '2px solid #00B6FF' : done ? 'none' : '1px solid var(--cs-border)',
+                background: done ? 'var(--cs-accent)' : cur ? 'var(--cs-accent-soft)' : 'var(--cs-hover)',
+                color: done ? '#fff' : cur ? 'var(--cs-accent)' : 'var(--cs-text-muted)',
+                border: cur ? '2px solid var(--cs-accent)' : done ? 'none' : '1px solid var(--cs-border)',
                 transition: 'all 0.2s',
               }}>
-                {done ? '✓' : n}
+                {done ? <Check size={13} /> : n}
               </div>
               <span style={{
                 fontSize: 12, fontWeight: cur ? 600 : 400,
-                color: cur ? 'var(--cs-text)' : done ? '#00B6FF' : 'var(--cs-text-muted)',
+                color: cur ? 'var(--cs-text)' : done ? 'var(--cs-accent)' : 'var(--cs-text-muted)',
               }}>{label}</span>
             </div>
             {i < total - 1 && (
               <div style={{
                 flex: 1, height: 1, margin: '0 10px',
-                background: step > n ? 'rgba(0,182,255,0.4)' : 'var(--cs-border)',
+                background: step > n ? 'var(--cs-accent-line)' : 'var(--cs-border)',
                 transition: 'background 0.2s',
               }} />
             )}
@@ -536,10 +542,10 @@ function CanvaTemplateCard({ tpl, active, onClick, onDelete }) {
       <div style={{
         height: 56, background: tpl.thumbnail_url
           ? `url(${tpl.thumbnail_url}) center/cover`
-          : 'linear-gradient(135deg,#00C4CC,#0097a7)',
+          : '#00C4CC',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        {!tpl.thumbnail_url && <span style={{ fontSize: 20 }}>🎨</span>}
+        {!tpl.thumbnail_url && <Palette size={20} style={{ color: '#fff' }} />}
       </div>
       <div style={{
         padding: '7px 10px', fontSize: 11, textAlign: 'center',
@@ -618,7 +624,8 @@ function AddCanvaTemplateModal({ contentType, onAdded, onClose }) {
             padding: '11px', borderRadius: 8, border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
             background: saving ? 'var(--cs-hover)' : '#00C4CC',
             color: saving ? 'var(--cs-text-muted)' : '#fff', fontSize: 13, fontWeight: 700,
-          }}>{saving ? 'Saving…' : '🎨 Import Template'}</button>
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}>{saving ? 'Saving…' : <><Palette size={15} /> Import Template</>}</button>
         </div>
       </div>
     </div>
@@ -639,20 +646,20 @@ function VariationCard({ v, active, onClick, index }) {
   return (
     <div onClick={handleClick} style={{
       borderRadius: 8, cursor: 'pointer',
-      border: active ? '2px solid #00B6FF' : '1px solid var(--cs-border)',
-      background: active ? 'rgba(0,182,255,0.05)' : 'var(--cs-surface)',
+      border: active ? '2px solid var(--cs-accent)' : '1px solid var(--cs-border)',
+      background: active ? 'var(--cs-accent-soft)' : 'var(--cs-surface)',
       transition: 'all 0.15s', overflow: 'hidden',
     }}>
       {/* Collapsed row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px' }}>
         <div style={{
           width: 22, height: 22, borderRadius: 5, flexShrink: 0,
-          background: active ? 'rgba(0,182,255,0.15)' : 'var(--cs-hover)',
+          background: active ? 'var(--cs-accent-soft)' : 'var(--cs-hover)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: active ? '#00B6FF' : 'var(--cs-text-muted)', fontSize: 10, fontWeight: 700,
+          color: active ? 'var(--cs-accent)' : 'var(--cs-text-muted)', fontSize: 10, fontWeight: 700,
         }}>{index + 1}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: active ? '#00B6FF' : 'var(--cs-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: active ? 'var(--cs-accent)' : 'var(--cs-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {title}
           </div>
           {!expanded && hook && (
@@ -661,13 +668,13 @@ function VariationCard({ v, active, onClick, index }) {
             </div>
           )}
         </div>
-        <span style={{ color: 'var(--cs-text-muted)', fontSize: 11, flexShrink: 0 }}>{expanded ? '▲' : '▼'}</span>
+        <span style={{ color: 'var(--cs-text-muted)', display: 'inline-flex', flexShrink: 0 }}>{expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</span>
       </div>
       {/* Expanded detail */}
       {expanded && (
         <div style={{ padding: '0 14px 12px', borderTop: '1px solid var(--cs-border-sub)' }}>
           {hook && (
-            <div style={{ fontSize: 12, color: 'var(--cs-text-sub)', lineHeight: 1.5, marginTop: 8, padding: '7px 10px', borderRadius: 6, background: 'var(--cs-hover)', borderLeft: `2px solid ${active ? '#00B6FF' : 'var(--cs-border)'}`, fontStyle: 'italic' }}>
+            <div style={{ fontSize: 12, color: 'var(--cs-text-sub)', lineHeight: 1.5, marginTop: 8, padding: '7px 10px', borderRadius: 6, background: 'var(--cs-hover)', borderLeft: `2px solid ${active ? 'var(--cs-accent)' : 'var(--cs-border)'}`, fontStyle: 'italic' }}>
               "{hook}"
             </div>
           )}
@@ -714,12 +721,12 @@ function GenerationPanel({ job, typeDef, onReset }) {
 
   return (
     <div style={{ animation: 'fadein 0.2s ease' }}>
-      <div style={{ background: 'var(--cs-surface)', border: `1px solid ${isError || isAborted ? 'rgba(239,68,68,0.3)' : isDone ? 'rgba(34,197,94,0.3)' : 'rgba(0,182,255,0.2)'}`, borderRadius: 12, padding: 28, marginBottom: 16 }}>
+      <div style={{ background: 'var(--cs-surface)', border: `1px solid ${isError || isAborted ? 'rgba(239,68,68,0.3)' : isDone ? 'rgba(34,197,94,0.3)' : 'var(--cs-accent-soft)'}`, borderRadius: 12, padding: 28, marginBottom: 16 }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: isDone ? 'rgba(34,197,94,0.1)' : isError || isAborted ? 'rgba(239,68,68,0.1)' : 'rgba(0,182,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
-            {isDone ? '✅' : isError ? '❌' : isAborted ? '⛔' : typeDef.icon}
+          <div style={{ width: 44, height: 44, borderRadius: 10, background: isDone ? 'rgba(34,197,94,0.1)' : isError || isAborted ? 'rgba(239,68,68,0.1)' : 'var(--cs-accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {isDone ? <CheckCircle2 size={22} style={{ color: '#16a34a' }} /> : isError ? <X size={22} style={{ color: '#ef4444' }} /> : isAborted ? <Ban size={22} style={{ color: '#ef4444' }} /> : <typeDef.icon size={22} style={{ color: 'var(--cs-accent)' }} />}
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ color: 'var(--cs-text)', fontSize: 15, fontWeight: 700 }}>
@@ -736,8 +743,9 @@ function GenerationPanel({ job, typeDef, onReset }) {
               border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.06)',
               color: '#ef4444', fontSize: 12, fontWeight: 600, flexShrink: 0,
               opacity: aborting ? 0.6 : 1,
+              display: 'inline-flex', alignItems: 'center', gap: 6,
             }}>
-              {aborting ? 'Stopping…' : '⛔ Abort'}
+              {aborting ? 'Stopping…' : <><Ban size={13} /> Abort</>}
             </button>
           )}
           {/* Dismiss × — always visible so stuck jobs can always be cleared */}
@@ -753,10 +761,10 @@ function GenerationPanel({ job, typeDef, onReset }) {
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
               <span style={{ color: 'var(--cs-text-sub)', fontSize: 12, fontWeight: 600 }}>{step}</span>
-              <span style={{ color: '#00B6FF', fontSize: 12, fontWeight: 700 }}>{progress}%</span>
+              <span style={{ color: 'var(--cs-accent)', fontSize: 12, fontWeight: 700 }}>{progress}%</span>
             </div>
             <div style={{ height: 6, background: 'var(--cs-hover)', borderRadius: 3, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg,#00B6FF,#08316F)', borderRadius: 3, transition: 'width 0.4s ease' }} />
+              <div style={{ height: '100%', width: `${progress}%`, background: 'var(--cs-accent)', borderRadius: 3, transition: 'width 0.4s ease' }} />
             </div>
           </div>
         )}
@@ -769,11 +777,11 @@ function GenerationPanel({ job, typeDef, onReset }) {
             const current = !done && progress >= (i / typeDef.steps.length * 100)
             return (
               <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                background: done ? 'rgba(34,197,94,0.1)' : current ? 'rgba(0,182,255,0.1)' : 'var(--cs-hover)',
-                color: done ? '#16a34a' : current ? '#00B6FF' : 'var(--cs-text-muted)',
-                border: `1px solid ${done ? 'rgba(34,197,94,0.25)' : current ? 'rgba(0,182,255,0.25)' : 'var(--cs-border)'}`,
+                background: done ? 'rgba(34,197,94,0.1)' : current ? 'var(--cs-accent-soft)' : 'var(--cs-hover)',
+                color: done ? '#16a34a' : current ? 'var(--cs-accent)' : 'var(--cs-text-muted)',
+                border: `1px solid ${done ? 'rgba(34,197,94,0.25)' : current ? 'var(--cs-accent-line)' : 'var(--cs-border)'}`,
               }}>
-                {done ? '✓' : current ? <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</span> : `${i+1}`} {s}
+                {done ? <Check size={12} /> : current ? <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> : `${i+1}`} {s}
               </div>
             )
           })}
@@ -791,7 +799,7 @@ function GenerationPanel({ job, typeDef, onReset }) {
           {isDone && (
             <button onClick={() => navigate('/library')} style={{
               flex: 1, padding: '12px', borderRadius: 8, border: 'none', cursor: 'pointer',
-              background: 'linear-gradient(135deg,#08316F,#00B6FF)', color: '#fff', fontSize: 13, fontWeight: 700,
+              background: 'var(--cs-accent)', color: '#fff', fontSize: 13, fontWeight: 700,
             }}>View in Library →</button>
           )}
           {!isRunning && (
@@ -850,7 +858,7 @@ function GenerateTemplateModal({ contentType, onGenerated, onClose }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
-            <h3 style={{ color: 'var(--cs-text)', fontSize: 16, fontWeight: 700, margin: 0 }}>✨ Generate Template with AI</h3>
+            <h3 style={{ color: 'var(--cs-text)', fontSize: 16, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Sparkles size={16} style={{ color: 'var(--cs-gold)' }} /> Generate Template with AI</h3>
             <p style={{ color: 'var(--cs-text-muted)', fontSize: 12, margin: '4px 0 0' }}>Claude will generate a branded HTML template for Puppeteer</p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 22 }}>×</button>
@@ -892,15 +900,15 @@ function GenerateTemplateModal({ contentType, onGenerated, onClose }) {
             </div>
           </div>
 
-          <div style={{ background: 'rgba(0,182,255,0.05)', border: '1px solid rgba(0,182,255,0.15)', borderRadius: 7, padding: '8px 12px' }}>
-            <span style={{ color: 'var(--cs-text-muted)', fontSize: 11 }}>Type: <strong style={{ color: '#00B6FF' }}>{templateType}</strong> · Claude Opus will generate the full HTML template (~10–20s)</span>
+          <div style={{ background: 'var(--cs-accent-soft)', border: '1px solid var(--cs-accent-soft)', borderRadius: 7, padding: '8px 12px' }}>
+            <span style={{ color: 'var(--cs-text-muted)', fontSize: 11 }}>Type: <strong style={{ color: 'var(--cs-accent)' }}>{templateType}</strong> · Claude Opus will generate the full HTML template (~10–20s)</span>
           </div>
 
           {error && <div style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, padding: '8px 12px', color: '#dc2626', fontSize: 12 }}>{error}</div>}
 
           <button onClick={generate} disabled={loading} style={{
             padding: '12px', borderRadius: 8, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-            background: loading ? 'var(--cs-hover)' : 'linear-gradient(135deg,#08316F,#00B6FF)',
+            background: loading ? 'var(--cs-hover)' : 'var(--cs-accent)',
             color: loading ? 'var(--cs-text-muted)' : '#fff', fontSize: 14, fontWeight: 700,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}>
@@ -908,11 +916,11 @@ function GenerateTemplateModal({ contentType, onGenerated, onClose }) {
               <>
                 <svg width="14" height="14" viewBox="0 0 14 14" style={{ animation: 'spin 0.8s linear infinite' }}>
                   <circle cx="7" cy="7" r="5.5" fill="none" stroke="var(--cs-border)" strokeWidth="1.5" />
-                  <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" fill="none" stroke="#00B6FF" strokeWidth="1.5" strokeLinecap="round" />
+                  <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" fill="none" stroke="var(--cs-accent)" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
                 Generating…
               </>
-            ) : '✨ Generate Template'}
+            ) : <><Sparkles size={15} /> Generate Template</>}
           </button>
         </div>
       </div>
@@ -1266,8 +1274,8 @@ export default function NewContent() {
       {currentJobId && (
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ marginBottom: 20 }}>
-            <h1 style={{ color: 'var(--cs-text)', fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>
-              {typeDef.icon} {typeDef.label}
+            <h1 style={{ color: 'var(--cs-text)', fontSize: 22, fontWeight: 700, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <typeDef.icon size={22} style={{ color: 'var(--cs-accent)' }} /> {typeDef.label}
             </h1>
             <p style={{ color: 'var(--cs-text-sub)', fontSize: 13, margin: 0 }}>
               {form.subject.slice(0, 80)}{form.subject.length > 80 ? '…' : ''}
@@ -1306,7 +1314,7 @@ export default function NewContent() {
               background: 'var(--cs-surface)', border: '1px solid var(--cs-border)',
               color: 'var(--cs-text-sub)', display: 'flex', alignItems: 'center', gap: 6,
             }}>
-              📋 Saved Briefs {briefTemplates.length > 0 && `(${briefTemplates.length})`}
+              <ClipboardList size={14} /> Saved Briefs {briefTemplates.length > 0 && `(${briefTemplates.length})`}
             </button>
             {showTplMenu && (
               <div style={{
@@ -1324,7 +1332,7 @@ export default function NewContent() {
                   </div>
                 ) : briefTemplates.map(t => (
                   <div key={t.id} style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', borderBottom: '1px solid var(--cs-border-sub)', gap: 8 }}>
-                    <span style={{ fontSize: 14 }}>{CONTENT_TYPES.find(ct => ct.id === t.form?.contentType)?.icon || '📄'}</span>
+                    {(() => { const TplIcon = CONTENT_TYPES.find(ct => ct.id === t.form?.contentType)?.icon || FileText; return <TplIcon size={14} style={{ color: 'var(--cs-text-sub)', flexShrink: 0 }} /> })()}
                     <button onClick={() => handleLoadTemplate(t)} style={{ flex: 1, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text)', fontSize: 12, textAlign: 'left', padding: 0 }}>
                       {t.name}
                     </button>
@@ -1385,8 +1393,8 @@ export default function NewContent() {
             <div style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 10, padding: 20, marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: variations.length ? 14 : 0 }}>
                 <div>
-                  <div style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    ✨ Generate 5 Concepts
+                  <div style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Sparkles size={13} style={{ color: 'var(--cs-gold)' }} /> Generate 5 Concepts
                   </div>
                   <div style={{ color: 'var(--cs-text-muted)', fontSize: 11, marginTop: 2 }}>
                     {selectedVariation ? `"${(selectedVariation.title || selectedVariation.angle || '').slice(0, 50)}"` : 'Let AI propose 5 different angles — pick the best one'}
@@ -1394,13 +1402,13 @@ export default function NewContent() {
                 </div>
                 <button onClick={handleGenerateVariations} disabled={variationsLoading || !form.subject.trim()} style={{
                   padding: '8px 16px', borderRadius: 7, flexShrink: 0,
-                  border: selectedVariation ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(0,182,255,0.4)',
-                  background: selectedVariation ? 'rgba(34,197,94,0.06)' : 'rgba(0,182,255,0.08)',
-                  color: selectedVariation ? '#16a34a' : '#00B6FF',
+                  border: selectedVariation ? '1px solid rgba(34,197,94,0.4)' : '1px solid var(--cs-accent-line)',
+                  background: selectedVariation ? 'rgba(34,197,94,0.06)' : 'var(--cs-accent-soft)',
+                  color: selectedVariation ? '#16a34a' : 'var(--cs-accent)',
                   fontSize: 12, fontWeight: 600, cursor: variationsLoading || !form.subject.trim() ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', gap: 6,
                 }}>
-                  {variationsLoading ? <><Spinner /> Thinking…</> : selectedVariation ? '↺ Regenerate' : '✨ Get Ideas'}
+                  {variationsLoading ? <><Spinner /> Thinking…</> : selectedVariation ? <><RefreshCw size={13} /> Regenerate</> : <><Sparkles size={13} /> Get Ideas</>}
                 </button>
               </div>
               {variations.length > 0 && (
@@ -1417,7 +1425,7 @@ export default function NewContent() {
 
               {/* Bulk launch — only for carousel and text */}
               {variations.length > 0 && (form.contentType === 'carousel' || form.contentType === 'text_only') && (
-                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, background: 'rgba(0,182,255,0.04)', border: '1px dashed rgba(0,182,255,0.2)' }}>
+                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, background: 'var(--cs-accent-soft)', border: '1px dashed var(--cs-accent-soft)' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ color: 'var(--cs-text)', fontSize: 12, fontWeight: 600 }}>
                       Launch all {variations.length} at once
@@ -1426,7 +1434,7 @@ export default function NewContent() {
                       {bulkLaunching
                         ? `Launching… ${bulkCount} / ${variations.length} queued`
                         : bulkCount > 0
-                        ? `✓ ${bulkCount} jobs queued in Library — check progress there`
+                        ? `${bulkCount} jobs queued in Library — check progress there`
                         : 'Generates all 5 ideas in parallel using current settings'}
                     </div>
                   </div>
@@ -1435,13 +1443,13 @@ export default function NewContent() {
                     disabled={bulkLaunching || form.platforms.length === 0}
                     style={{
                       padding: '8px 16px', borderRadius: 7, flexShrink: 0,
-                      border: '1px solid rgba(0,182,255,0.4)',
-                      background: bulkLaunching ? 'rgba(0,182,255,0.04)' : 'rgba(0,182,255,0.1)',
-                      color: '#00B6FF', fontSize: 12, fontWeight: 700,
+                      border: '1px solid var(--cs-accent-line)',
+                      background: bulkLaunching ? 'var(--cs-accent-soft)' : 'var(--cs-accent-soft)',
+                      color: 'var(--cs-accent)', fontSize: 12, fontWeight: 700,
                       cursor: bulkLaunching || form.platforms.length === 0 ? 'not-allowed' : 'pointer',
                       display: 'flex', alignItems: 'center', gap: 6,
                     }}>
-                    {bulkLaunching ? <><Spinner /> Launching…</> : `⚡ Generate All ${variations.length}`}
+                    {bulkLaunching ? <><Spinner /> Launching…</> : <><Zap size={13} /> Generate All {variations.length}</>}
                   </button>
                 </div>
               )}
@@ -1567,16 +1575,16 @@ export default function NewContent() {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => setShowGenTpl(true)} style={{
                     flex: 1, padding: '9px', borderRadius: 7, cursor: 'pointer',
-                    border: '1px dashed rgba(0,182,255,0.4)', background: 'rgba(0,182,255,0.04)',
-                    color: '#00B6FF', fontSize: 12, fontWeight: 600,
+                    border: '1px dashed var(--cs-accent-line)', background: 'var(--cs-accent-soft)',
+                    color: 'var(--cs-accent)', fontSize: 12, fontWeight: 600,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  }}>✨ Generate with AI</button>
+                  }}><Sparkles size={14} /> Generate with AI</button>
                   <button onClick={() => setShowCanvaTpl(true)} style={{
                     flex: 1, padding: '9px', borderRadius: 7, cursor: 'pointer',
                     border: '1px dashed rgba(0,196,204,0.4)', background: 'rgba(0,196,204,0.04)',
                     color: '#00C4CC', fontSize: 12, fontWeight: 600,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  }}>🎨 Import from Canva</button>
+                  }}><Palette size={14} /> Import from Canva</button>
                 </div>
               </Section>
             )}
@@ -1596,8 +1604,8 @@ export default function NewContent() {
             {typeDef.showVoiceStyle && (
               <Section title="Audio" hint="Choose voiceover (ElevenLabs) or background music only">
                 <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-                  <Chip active={form.audioMode === 'voice'} onClick={() => set('audioMode', 'voice')}>🎙 Voiceover</Chip>
-                  <Chip active={form.audioMode === 'music'} onClick={() => set('audioMode', 'music')}>🎵 Music only</Chip>
+                  <Chip active={form.audioMode === 'voice'} onClick={() => set('audioMode', 'voice')}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Mic size={13} /> Voiceover</span></Chip>
+                  <Chip active={form.audioMode === 'music'} onClick={() => set('audioMode', 'music')}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Music size={13} /> Music only</span></Chip>
                 </div>
                 {form.audioMode === 'voice' && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -1621,12 +1629,12 @@ export default function NewContent() {
               <Section title="Transition Style" hint="How scenes cut between each other">
                 <div className="grid grid-cols-3 gap-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                   {[
-                    { id: 'none',     label: 'Cut',      icon: '⚡', desc: 'Hard cut' },
-                    { id: 'dissolve', label: 'Dissolve', icon: '◌', desc: 'Cross fade' },
-                    { id: 'fade',     label: 'Fade',     icon: '◐', desc: 'Fade black' },
-                    { id: 'slide_up', label: 'Slide Up', icon: '↑', desc: 'Push up' },
-                    { id: 'zoom',     label: 'Zoom',     icon: '⊕', desc: 'Zoom in' },
-                    { id: 'glitch',   label: 'Glitch',   icon: '▨', desc: 'Digital' },
+                    { id: 'none',     label: 'Cut',      icon: Scissors, desc: 'Hard cut' },
+                    { id: 'dissolve', label: 'Dissolve', icon: Layers,   desc: 'Cross fade' },
+                    { id: 'fade',     label: 'Fade',     icon: Contrast, desc: 'Fade black' },
+                    { id: 'slide_up', label: 'Slide Up', icon: ArrowUp,  desc: 'Push up' },
+                    { id: 'zoom',     label: 'Zoom',     icon: ZoomIn,   desc: 'Zoom in' },
+                    { id: 'glitch',   label: 'Glitch',   icon: Activity, desc: 'Digital' },
                   ].map(t => (
                     <button
                       key={t.id}
@@ -1635,13 +1643,13 @@ export default function NewContent() {
                       style={{
                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                         padding: '10px 8px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
-                        border: form.transition === t.id ? '2px solid #00B6FF' : '2px solid var(--cs-border)',
-                        background: form.transition === t.id ? 'rgba(0,182,255,0.06)' : 'var(--cs-surface)',
+                        border: form.transition === t.id ? '2px solid var(--cs-accent)' : '2px solid var(--cs-border)',
+                        background: form.transition === t.id ? 'var(--cs-accent-soft)' : 'var(--cs-surface)',
                         transition: 'all 0.15s',
                       }}
                     >
-                      <span style={{ fontSize: 20 }}>{t.icon}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: form.transition === t.id ? '#00B6FF' : 'var(--cs-text)' }}>{t.label}</span>
+                      <t.icon size={20} style={{ color: form.transition === t.id ? 'var(--cs-accent)' : 'var(--cs-text-sub)' }} />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: form.transition === t.id ? 'var(--cs-accent)' : 'var(--cs-text)' }}>{t.label}</span>
                       <span style={{ fontSize: 10, color: 'var(--cs-text-muted)' }}>{t.desc}</span>
                     </button>
                   ))}
@@ -1662,7 +1670,7 @@ export default function NewContent() {
                     style={{
                       position: 'relative', display: 'inline-flex', alignItems: 'center',
                       width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
-                      background: form.caption_style !== 'none' ? '#00B6FF' : 'var(--cs-border)',
+                      background: form.caption_style !== 'none' ? 'var(--cs-accent)' : 'var(--cs-border)',
                       transition: 'background 0.2s', padding: 0,
                     }}
                   >
@@ -1677,9 +1685,9 @@ export default function NewContent() {
                 {form.caption_style !== 'none' && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                     {[
-                      { id: 'viral',   label: 'Viral',   icon: '🔥', desc: 'Bold TikTok' },
-                      { id: 'minimal', label: 'Minimal', icon: '✦',  desc: 'Clean pill' },
-                      { id: 'neon',    label: 'Neon',    icon: '⚡', desc: 'Glow effect' },
+                      { id: 'viral',   label: 'Viral',   icon: Flame,   desc: 'Bold TikTok' },
+                      { id: 'minimal', label: 'Minimal', icon: Sparkle, desc: 'Clean pill' },
+                      { id: 'neon',    label: 'Neon',    icon: Zap,     desc: 'Glow effect' },
                     ].map(s => (
                       <button
                         key={s.id}
@@ -1688,13 +1696,13 @@ export default function NewContent() {
                         style={{
                           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                           padding: '10px 8px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
-                          border: form.caption_style === s.id ? '2px solid #00B6FF' : '2px solid var(--cs-border)',
-                          background: form.caption_style === s.id ? 'rgba(0,182,255,0.06)' : 'var(--cs-surface)',
+                          border: form.caption_style === s.id ? '2px solid var(--cs-accent)' : '2px solid var(--cs-border)',
+                          background: form.caption_style === s.id ? 'var(--cs-accent-soft)' : 'var(--cs-surface)',
                           transition: 'all 0.15s',
                         }}
                       >
-                        <span style={{ fontSize: 20 }}>{s.icon}</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: form.caption_style === s.id ? '#00B6FF' : 'var(--cs-text)' }}>{s.label}</span>
+                        <s.icon size={20} style={{ color: form.caption_style === s.id ? 'var(--cs-accent)' : 'var(--cs-text-sub)' }} />
+                        <span style={{ fontSize: 11, fontWeight: 700, color: form.caption_style === s.id ? 'var(--cs-accent)' : 'var(--cs-text)' }}>{s.label}</span>
                         <span style={{ fontSize: 10, color: 'var(--cs-text-muted)' }}>{s.desc}</span>
                       </button>
                     ))}
@@ -1733,8 +1741,8 @@ export default function NewContent() {
               <div style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 10, padding: 20, marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: carouselSlides.length ? 16 : 0 }}>
                   <div>
-                    <div style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>
-                      🖼️ Slide Preview
+                    <div style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Images size={13} /> Slide Preview
                     </div>
                     <div style={{ color: 'var(--cs-text-muted)', fontSize: 12 }}>
                       {carouselSlides.length
@@ -1747,15 +1755,15 @@ export default function NewContent() {
                     disabled={carouselSlidesLoading}
                     style={{
                       padding: '8px 16px', borderRadius: 7, flexShrink: 0,
-                      border: carouselSlides.length ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(0,182,255,0.4)',
-                      background: carouselSlides.length ? 'rgba(34,197,94,0.06)' : 'rgba(0,182,255,0.08)',
-                      color: carouselSlides.length ? '#16a34a' : '#00B6FF',
+                      border: carouselSlides.length ? '1px solid rgba(34,197,94,0.4)' : '1px solid var(--cs-accent-line)',
+                      background: carouselSlides.length ? 'rgba(34,197,94,0.06)' : 'var(--cs-accent-soft)',
+                      color: carouselSlides.length ? '#16a34a' : 'var(--cs-accent)',
                       fontSize: 12, fontWeight: 600,
                       cursor: carouselSlidesLoading ? 'not-allowed' : 'pointer',
                       display: 'flex', alignItems: 'center', gap: 8,
                     }}
                   >
-                    {carouselSlidesLoading ? <><Spinner /> Generating…</> : carouselSlides.length ? '↺ Regenerate' : '⚡ Preview Slides'}
+                    {carouselSlidesLoading ? <><Spinner /> Generating…</> : carouselSlides.length ? <><RefreshCw size={13} /> Regenerate</> : <><Zap size={13} /> Preview Slides</>}
                   </button>
                 </div>
                 {carouselSlides.length > 0 && (
@@ -1785,20 +1793,20 @@ export default function NewContent() {
                   </div>
                   {!previewScript && (
                     <button onClick={handlePreviewScript} disabled={previewLoading} style={{
-                      padding: '8px 16px', borderRadius: 7, border: '1px solid rgba(0,182,255,0.4)',
-                      background: 'rgba(0,182,255,0.08)', color: '#00B6FF',
+                      padding: '8px 16px', borderRadius: 7, border: '1px solid var(--cs-accent-line)',
+                      background: 'var(--cs-accent-soft)', color: 'var(--cs-accent)',
                       fontSize: 12, fontWeight: 600, cursor: previewLoading ? 'not-allowed' : 'pointer',
                       display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
                     }}>
                       {previewLoading && <Spinner />}
-                      {previewLoading ? 'Generating…' : '⚡ Preview'}
+                      {previewLoading ? 'Generating…' : <><Zap size={13} /> Preview</>}
                     </button>
                   )}
                 </div>
                 {previewScript && (
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span style={{ color: '#16a34a', fontSize: 12, fontWeight: 600 }}>✓ Preview ready — edit freely</span>
+                      <span style={{ color: '#16a34a', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Check size={13} /> Preview ready — edit freely</span>
                       <button onClick={() => { setPreviewScript(null); setEditedScript('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 11 }}>Reset</button>
                     </div>
                     <textarea
@@ -1829,20 +1837,20 @@ export default function NewContent() {
               <div style={{ color: 'var(--cs-text-sub)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
                 Summary
               </div>
-              <SummaryRow label="Type"      value={`${typeDef.icon} ${typeDef.label}`} />
+              <SummaryRow label="Type"      value={typeDef.label} />
               <SummaryRow label="Brief"     value={form.subject ? form.subject.slice(0, 60) + (form.subject.length > 60 ? '…' : '') : '—'} />
               <SummaryRow label="Brand"     value={apiBrands.find(b => b.id === form.brand)?.name} />
               <SummaryRow label="Language"  value={form.language} />
               {form.contentType !== 'text_only' && <SummaryRow label="Format"    value={form.format} />}
               {form.contentType === 'carousel' && <SummaryRow label="Slides" value={`${form.slides} slides`} />}
               {(form.contentType === 'video' || form.contentType === 'reel' || form.contentType === 'story') && <SummaryRow label="Duration" value={(DURATIONS_BY_TYPE[form.contentType] || []).find(d => d.value === form.duration)?.label || `${form.duration}s`} />}
-              {typeDef.showTemplate && <SummaryRow label="Template"  value={form.canvaTemplateUrl ? `🎨 Canva: ${canvaTemplates.find(t => t.url === form.canvaTemplateUrl)?.name || 'Custom'}` : templates.find(t => t.id === form.template)?.label} />}
+              {typeDef.showTemplate && <SummaryRow label="Template"  value={form.canvaTemplateUrl ? `Canva: ${canvaTemplates.find(t => t.url === form.canvaTemplateUrl)?.name || 'Custom'}` : templates.find(t => t.id === form.template)?.label} />}
               {typeDef.showWritingStyle && <SummaryRow label="Style"     value={STYLES.find(s => s.id === form.style)?.label} />}
-              {typeDef.showVoiceStyle   && <SummaryRow label="Audio" value={form.audioMode === 'music' ? `🎵 Music — ${MUSIC_GENRES.find(g => g.id === form.musicGenre)?.label}` : `🎙 Voiceover — ${VOICE_STYLES.find(v => v.id === form.voiceStyle)?.label}`} />}
+              {typeDef.showVoiceStyle   && <SummaryRow label="Audio" value={form.audioMode === 'music' ? `Music — ${MUSIC_GENRES.find(g => g.id === form.musicGenre)?.label}` : `Voiceover — ${VOICE_STYLES.find(v => v.id === form.voiceStyle)?.label}`} />}
               <SummaryRow label="Platforms" value={form.platforms.map(id => ALL_PLATFORMS.find(p => p.id === id)?.label).filter(Boolean).join(', ') || '—'} />
               {previewScript && (
-                <div style={{ marginTop: 8, padding: '6px 10px', borderRadius: 6, background: 'rgba(0,182,255,0.06)', border: '1px solid rgba(0,182,255,0.15)' }}>
-                  <span style={{ color: '#00B6FF', fontSize: 11 }}>Custom script will be used</span>
+                <div style={{ marginTop: 8, padding: '6px 10px', borderRadius: 6, background: 'var(--cs-accent-soft)', border: '1px solid var(--cs-accent-soft)' }}>
+                  <span style={{ color: 'var(--cs-accent)', fontSize: 11 }}>Custom script will be used</span>
                 </div>
               )}
             </div>
@@ -1856,12 +1864,12 @@ export default function NewContent() {
             {/* Background generation CTA */}
             <button onClick={() => handleGenerate()} style={{
               width: '100%', padding: '14px', borderRadius: 8, border: 'none',
-              background: 'linear-gradient(135deg,#08316F,#00B6FF)',
+              background: 'var(--cs-accent)',
               color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              boxShadow: '0 4px 20px rgba(0,182,255,0.3)',
+              boxShadow: 'var(--cs-shadow-md)',
             }}>
-              <span>{typeDef.icon}</span>
+              <typeDef.icon size={16} />
               Generate {typeDef.label}
             </button>
             <p style={{ color: 'var(--cs-text-muted)', fontSize: 11, textAlign: 'center', marginTop: 8, marginBottom: 0 }}>
@@ -1876,15 +1884,17 @@ export default function NewContent() {
             <button onClick={() => { setError(null); setStep(s => s - 1) }} style={{
               padding: '10px 20px', borderRadius: 7, border: '1px solid var(--cs-border)',
               background: 'var(--cs-surface)', color: 'var(--cs-text-sub)', fontSize: 13, cursor: 'pointer',
-            }}>← Back</button>
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}><ArrowLeft size={14} /> Back</button>
           )}
           {step < 3 && (
             <button onClick={goNext} style={{
               flex: 1, padding: '10px 20px', borderRadius: 7, border: 'none',
-              background: 'linear-gradient(135deg,#08316F,#00B6FF)',
+              background: 'var(--cs-accent)',
               color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             }}>
-              Continue →
+              Continue <ArrowRight size={14} />
             </button>
           )}
         </div>
@@ -1899,7 +1909,7 @@ export default function NewContent() {
       {!currentJobId && <div style={{ width: 240, flexShrink: 0, position: 'sticky', top: 0 }}>
         <div style={{ background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 10, padding: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <span style={{ fontSize: 20 }}>{typeDef.icon}</span>
+            <typeDef.icon size={20} style={{ color: 'var(--cs-accent)', flexShrink: 0 }} />
             <div>
               <div style={{ color: 'var(--cs-text)', fontSize: 13, fontWeight: 700 }}>{typeDef.label}</div>
               <div style={{ color: 'var(--cs-text-muted)', fontSize: 11 }}>{typeDef.estimatedTime}</div>
@@ -1920,7 +1930,7 @@ export default function NewContent() {
           </div>
           {typeDef.steps.map((s, i) => (
             <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
-              <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'rgba(0,182,255,0.1)', border: '1px solid rgba(0,182,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#00B6FF', fontWeight: 700, flexShrink: 0 }}>{i+1}</div>
+              <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--cs-accent-soft)', border: '1px solid var(--cs-accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: 'var(--cs-accent)', fontWeight: 700, flexShrink: 0 }}>{i+1}</div>
               <span style={{ color: 'var(--cs-text-sub)', fontSize: 11 }}>{s}</span>
             </div>
           ))}
@@ -1930,7 +1940,7 @@ export default function NewContent() {
           {/* Step dots */}
           <div style={{ display: 'flex', gap: 4 }}>
             {[1,2,3].map(n => (
-              <div key={n} style={{ flex: 1, height: 3, borderRadius: 2, background: step >= n ? '#00B6FF' : 'var(--cs-border)', transition: 'background 0.2s' }} />
+              <div key={n} style={{ flex: 1, height: 3, borderRadius: 2, background: step >= n ? 'var(--cs-accent)' : 'var(--cs-border)', transition: 'background 0.2s' }} />
             ))}
           </div>
           <div style={{ color: 'var(--cs-text-muted)', fontSize: 10, marginTop: 5 }}>Step {step} of 3</div>

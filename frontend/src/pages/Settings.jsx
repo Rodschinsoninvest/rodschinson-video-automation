@@ -17,7 +17,7 @@ function SettingField({ keyName, meta, value, onChange }) {
   const [show, setShow] = useState(false)
   const isPassword = meta.type === 'password'
 
-  const sourceColor = meta.source === 'override' ? '#00B6FF' : meta.source === 'env' ? '#22c55e' : '#637083'
+  const sourceColor = meta.source === 'override' ? 'var(--cs-accent)' : meta.source === 'env' ? '#22c55e' : '#637083'
   const sourceLabel = meta.source === 'override' ? 'override' : meta.source === 'env' ? 'env' : 'not set'
 
   return (
@@ -47,7 +47,7 @@ function SettingField({ keyName, meta, value, onChange }) {
             outline: 'none', boxSizing: 'border-box',
             fontFamily: isPassword && !show ? 'monospace' : 'inherit',
           }}
-          onFocus={e => e.target.style.borderColor = '#00B6FF'}
+          onFocus={e => e.target.style.borderColor = 'var(--cs-accent)'}
           onBlur={e => e.target.style.borderColor = 'var(--cs-border)'}
         />
         {isPassword && (
@@ -178,9 +178,9 @@ export default function Settings() {
                 onClick={() => setActiveGroup(id)}
                 style={{
                   width: '100%', padding: '10px 16px', border: 'none', cursor: 'pointer',
-                  background: isActive ? 'rgba(0,182,255,0.08)' : 'transparent',
-                  borderLeft: isActive ? '2px solid #00B6FF' : '2px solid transparent',
-                  color: isActive ? '#00B6FF' : 'var(--cs-text-sub)',
+                  background: isActive ? 'var(--cs-accent-soft)' : 'transparent',
+                  borderLeft: isActive ? '2px solid var(--cs-accent)' : '2px solid transparent',
+                  color: isActive ? 'var(--cs-accent)' : 'var(--cs-text-sub)',
                   display: 'flex', alignItems: 'center', gap: 10,
                   textAlign: 'left', fontSize: 13, fontWeight: isActive ? 600 : 400,
                   transition: 'background 0.15s, color 0.15s',
@@ -222,7 +222,7 @@ export default function Settings() {
         <div className="cs-card" style={{ flex: 1, padding: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <ActiveIcon size={18} color="#00B6FF" />
+              <ActiveIcon size={18} color="var(--cs-accent)" />
               <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--cs-text)', margin: 0 }}>
                 {activeGroupMeta?.label}
               </h2>
@@ -233,7 +233,7 @@ export default function Settings() {
                 env
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#00B6FF', display: 'inline-block' }} />
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--cs-accent)', display: 'inline-block' }} />
                 override
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -266,10 +266,10 @@ export default function Settings() {
               {activeGroup === 'general' && (
                 <div style={{
                   padding: '14px 16px', borderRadius: 8, marginTop: 4,
-                  background: 'rgba(0,182,255,0.06)', border: '1px solid rgba(0,182,255,0.15)',
+                  background: 'var(--cs-accent-soft)', border: '1px solid var(--cs-accent-soft)',
                   fontSize: 13, color: 'var(--cs-text-sub)', lineHeight: 1.6,
                 }}>
-                  <strong style={{ color: '#00B6FF' }}>Tip:</strong> Values set here override environment variables without requiring a server restart. Sensitive values are masked — leave unchanged to keep the current value.
+                  <strong style={{ color: 'var(--cs-accent)' }}>Tip:</strong> Values set here override environment variables without requiring a server restart. Sensitive values are masked — leave unchanged to keep the current value.
                 </div>
               )}
 
@@ -289,7 +289,7 @@ export default function Settings() {
                   disabled={saving}
                   style={{
                     padding: '10px 24px', borderRadius: 8,
-                    background: saving ? 'rgba(0,182,255,0.4)' : '#00B6FF',
+                    background: saving ? 'var(--cs-accent-line)' : 'var(--cs-accent)',
                     border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
                     color: '#fff', fontSize: 14, fontWeight: 600,
                     display: 'flex', alignItems: 'center', gap: 8,

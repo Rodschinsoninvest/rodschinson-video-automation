@@ -1,66 +1,99 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-navy:  #08316F;
-  --color-brand-gold:  #C8A96E;
-  --color-brand-cyan:  #00B6FF;
+  --color-brand-navy: #08316F;
+  --color-brand-gold: #C8A96E;
+  --color-brand-ink:  #0C1A30;
 }
 
 /* ── Layout tokens ─────────────────────────────────────────────────────────── */
 :root {
   --cs-sidebar-w:   240px;
-  --cs-topbar-h:    52px;
+  --cs-topbar-h:    54px;
   --cs-radius:      10px;
-  --cs-radius-sm:   7px;
+  --cs-radius-sm:   8px;
   --cs-radius-lg:   14px;
+
+  /* Brand constants (theme-independent) */
+  --cs-gold:        #C8A96E;
+  --cs-gold-strong: #b8945a;
 }
 
-/* ── Light theme ───────────────────────────────────────────────────────────── */
+/* ── Light theme (default) ─────────────────────────────────────────────────── */
 :root,
 [data-theme="light"] {
-  --cs-bg:           #eef2f7;
-  --cs-surface:      #ffffff;
-  --cs-surface2:     #f6f8fb;
-  --cs-surface3:     #f0f3f8;
-  --cs-border:       rgba(0,0,0,0.12);
-  --cs-border-sub:   rgba(0,0,0,0.07);
-  --cs-text:         #0c1526;
-  --cs-text-sub:     #34465c;
-  --cs-text-muted:   #5b6f86;   /* WCAG-AA on white */
-  --cs-hover:        rgba(0,0,0,0.05);
-  --cs-input-bg:     #f5f7fa;
-  --cs-glow:         rgba(0,182,255,0.14);
-  --cs-card-shine:   linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.5) 100%);
-  /* sidebar always dark */
-  --cs-sidebar-bg:   #08101e;
-  --cs-sidebar-border: rgba(255,255,255,0.06);
-  --cs-sidebar-text: rgba(255,255,255,0.66);
-  --cs-sidebar-active: rgba(255,255,255,0.95);
-  --cs-sidebar-hover: rgba(255,255,255,0.06);
-  --cs-sidebar-active-bg: rgba(0,182,255,0.12);
+  --cs-bg:            #f3f5f8;
+  --cs-surface:       #ffffff;
+  --cs-surface2:      #f6f8fb;
+  --cs-surface3:      #eef2f7;
+  --cs-border:        rgba(12,26,48,0.11);
+  --cs-border-sub:    rgba(12,26,48,0.06);
+  --cs-text:          #0c1a30;
+  --cs-text-sub:      #3c4f66;
+  --cs-text-muted:    #66788f;   /* WCAG-AA on white */
+  --cs-hover:         rgba(8,49,111,0.055);
+  --cs-input-bg:      #f4f6f9;
+
+  /* Brand accent — navy primary, gold premium accent */
+  --cs-accent:          #08316F;
+  --cs-accent-strong:   #0a4196;
+  --cs-accent-soft:     rgba(8,49,111,0.08);
+  --cs-accent-line:     rgba(8,49,111,0.16);
+  --cs-accent-contrast: #ffffff;
+  --cs-gold-soft:       rgba(200,169,110,0.16);
+  --cs-ring:            rgba(8,49,111,0.28);
+
+  --cs-glow:        rgba(8,49,111,0.08);
+  --cs-card-shine:  transparent;
+  --cs-shadow-sm:   0 1px 2px rgba(12,26,48,0.05);
+  --cs-shadow-md:   0 4px 16px rgba(12,26,48,0.07);
+  --cs-shadow-lg:   0 18px 48px rgba(12,26,48,0.13);
+
+  /* Sidebar — deep institutional navy */
+  --cs-sidebar-bg:        #0a1a30;
+  --cs-sidebar-border:    rgba(255,255,255,0.07);
+  --cs-sidebar-text:      rgba(255,255,255,0.62);
+  --cs-sidebar-active:    #ffffff;
+  --cs-sidebar-hover:     rgba(255,255,255,0.06);
+  --cs-sidebar-active-bg: rgba(255,255,255,0.07);
+  --cs-sidebar-accent:    var(--cs-gold);
 }
 
 /* ── Dark theme ────────────────────────────────────────────────────────────── */
 [data-theme="dark"] {
-  --cs-bg:           #050810;
-  --cs-surface:      #090f1d;
-  --cs-surface2:     #0c1427;
-  --cs-surface3:     #0f182e;
-  --cs-border:       rgba(255,255,255,0.13);
-  --cs-border-sub:   rgba(255,255,255,0.08);
-  --cs-text:         #e8edf6;
-  --cs-text-sub:     #aab9cf;
-  --cs-text-muted:   #8194ac;   /* lighter so it reads on the near-black bg */
-  --cs-hover:        rgba(255,255,255,0.07);
-  --cs-input-bg:     rgba(255,255,255,0.06);
-  --cs-glow:         rgba(0,182,255,0.2);
-  --cs-card-shine:   linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-  --cs-sidebar-bg:   #030710;
-  --cs-sidebar-border: rgba(255,255,255,0.08);
-  --cs-sidebar-text: rgba(255,255,255,0.62);
-  --cs-sidebar-active: rgba(255,255,255,0.92);
-  --cs-sidebar-hover: rgba(255,255,255,0.05);
-  --cs-sidebar-active-bg: rgba(0,182,255,0.11);
+  --cs-bg:            #070e1b;
+  --cs-surface:       #0d1726;
+  --cs-surface2:      #111d30;
+  --cs-surface3:      #16233a;
+  --cs-border:        rgba(255,255,255,0.10);
+  --cs-border-sub:    rgba(255,255,255,0.06);
+  --cs-text:          #e9eef6;
+  --cs-text-sub:      #aab8cc;
+  --cs-text-muted:    #8092a8;
+  --cs-hover:         rgba(255,255,255,0.06);
+  --cs-input-bg:      rgba(255,255,255,0.05);
+
+  --cs-accent:          #4f8bdc;   /* brightened navy for contrast on dark */
+  --cs-accent-strong:   #6a9ee4;
+  --cs-accent-soft:     rgba(79,139,220,0.14);
+  --cs-accent-line:     rgba(79,139,220,0.22);
+  --cs-accent-contrast: #ffffff;
+  --cs-gold-soft:       rgba(200,169,110,0.16);
+  --cs-ring:            rgba(79,139,220,0.38);
+
+  --cs-glow:        rgba(79,139,220,0.10);
+  --cs-card-shine:  transparent;
+  --cs-shadow-sm:   0 1px 2px rgba(0,0,0,0.4);
+  --cs-shadow-md:   0 4px 16px rgba(0,0,0,0.45);
+  --cs-shadow-lg:   0 18px 48px rgba(0,0,0,0.55);
+
+  --cs-sidebar-bg:        #060c17;
+  --cs-sidebar-border:    rgba(255,255,255,0.08);
+  --cs-sidebar-text:      rgba(255,255,255,0.60);
+  --cs-sidebar-active:    #ffffff;
+  --cs-sidebar-hover:     rgba(255,255,255,0.05);
+  --cs-sidebar-active-bg: rgba(255,255,255,0.06);
+  --cs-sidebar-accent:    var(--cs-gold);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -78,70 +111,56 @@ body {
   transition: background 0.25s, color 0.25s;
 }
 
-/* ── Background ambience ───────────────────────────────────────────────────── */
+/* ── Background — clean, flat, no colourful ambience ───────────────────────── */
+[data-theme="light"] body { background-image: none; }
 [data-theme="dark"] body {
   background-image:
-    radial-gradient(ellipse 80% 50% at 15% -10%, rgba(8,49,111,0.3), transparent),
-    radial-gradient(ellipse 50% 40% at 85% 110%, rgba(0,182,255,0.06), transparent),
-    radial-gradient(rgba(255,255,255,0.018) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 28px 28px;
-}
-
-[data-theme="light"] body {
-  background-image:
-    radial-gradient(ellipse 70% 40% at 50% -5%, rgba(0,182,255,0.07), transparent),
-    radial-gradient(ellipse 40% 30% at 80% 90%, rgba(8,49,111,0.04), transparent);
+    radial-gradient(ellipse 90% 50% at 50% -10%, rgba(8,49,111,0.22), transparent 70%);
 }
 
 /* ── Scrollbars ────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar          { width: 6px; height: 6px; }
+::-webkit-scrollbar          { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track    { background: transparent; }
 ::-webkit-scrollbar-thumb    { background: var(--cs-border); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0,182,255,0.5); }
+::-webkit-scrollbar-thumb:hover { background: var(--cs-text-muted); }
 
-/* ── Typography ────────────────────────────────────────────────────────────── */
-h1, h2, h3 { letter-spacing: -0.5px; }
+/* ── Typography — Montserrat headings (brand), Inter body ──────────────────── */
+h1, h2, h3, h4 {
+  font-family: 'Montserrat', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+h1 { letter-spacing: -0.02em; }
 
-/* ── Glass card ────────────────────────────────────────────────────────────── */
+/* ── Card ──────────────────────────────────────────────────────────────────── */
 .cs-card {
   background: var(--cs-surface);
   border: 1px solid var(--cs-border);
   border-radius: var(--cs-radius);
   position: relative;
-  overflow: hidden;
+  box-shadow: var(--cs-shadow-sm);
 }
 
-.cs-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--cs-card-shine);
-  pointer-events: none;
-  border-radius: inherit;
-}
-
-/* ── Gradient text ─────────────────────────────────────────────────────────── */
+/* Brand accent text — solid navy (no gradient) */
 .cs-gradient-text {
-  background: linear-gradient(135deg, #00B6FF 0%, #C8A96E 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--cs-accent);
+  -webkit-text-fill-color: currentColor;
 }
 
 /* ── Button base ───────────────────────────────────────────────────────────── */
 button { font-family: inherit; }
 
-/* ── Primary button ────────────────────────────────────────────────────────── */
+/* ── Primary button — solid navy ───────────────────────────────────────────── */
 .cs-btn-primary {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 9px 18px; border-radius: var(--cs-radius-sm); border: none;
-  background: linear-gradient(135deg, #0a5cbf 0%, #00B6FF 100%);
-  color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
-  box-shadow: 0 2px 14px rgba(0,182,255,0.28);
-  transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  background: var(--cs-accent);
+  color: var(--cs-accent-contrast); font-size: 13px; font-weight: 600; cursor: pointer;
+  box-shadow: var(--cs-shadow-sm);
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
 }
-.cs-btn-primary:hover  { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,182,255,0.38); }
+.cs-btn-primary:hover  { background: var(--cs-accent-strong); transform: translateY(-1px); box-shadow: var(--cs-shadow-md); }
 .cs-btn-primary:active { transform: translateY(0); }
+.cs-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
 /* ── Ghost button ──────────────────────────────────────────────────────────── */
 .cs-btn-ghost {
@@ -152,7 +171,7 @@ button { font-family: inherit; }
   font-size: 12px; font-weight: 500; cursor: pointer;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
-.cs-btn-ghost:hover { background: var(--cs-hover); border-color: rgba(0,182,255,0.25); color: var(--cs-text); }
+.cs-btn-ghost:hover { background: var(--cs-hover); border-color: var(--cs-accent-line); color: var(--cs-text); }
 
 /* ── Status pill ───────────────────────────────────────────────────────────── */
 .cs-pill {
@@ -162,7 +181,7 @@ button { font-family: inherit; }
 
 /* ── Focus rings ───────────────────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid rgba(0,182,255,0.45);
+  outline: 2px solid var(--cs-ring);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -178,20 +197,15 @@ button { font-family: inherit; }
   0%   { background-position: -200% center; }
   100% { background-position:  200% center; }
 }
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 var(--cs-glow); }
-  50%       { box-shadow: 0 0 18px 6px var(--cs-glow); }
-}
-@keyframes aurora {
-  0%,100% { opacity: 0.6; transform: translateX(0) scaleY(1); }
-  50%      { opacity: 1;   transform: translateX(4px) scaleY(1.04); }
-}
+/* legacy keyframes kept as harmless no-ops (subtle) for any lingering refs */
+@keyframes glow-pulse { 0%,100% { box-shadow: none; } }
+@keyframes aurora     { 0%,100% { opacity: 0.6; } 50% { opacity: 0.8; } }
 
-/* ── Skeleton shimmer ──────────────────────────────────────────────────────── */
+/* ── Skeleton shimmer — neutral ────────────────────────────────────────────── */
 .cs-skeleton {
   background: linear-gradient(90deg,
     var(--cs-hover) 25%,
-    rgba(0,182,255,0.05) 50%,
+    var(--cs-surface3) 50%,
     var(--cs-hover) 75%
   );
   background-size: 200% 100%;
@@ -207,15 +221,14 @@ button { font-family: inherit; }
 
 /* ── Topbar glass ──────────────────────────────────────────────────────────── */
 .cs-topbar-glass {
-  background: rgba(9, 15, 29, 0.8);
+  background: rgba(255,255,255,0.82);
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
 }
-
-[data-theme="light"] .cs-topbar-glass {
-  background: rgba(255,255,255,0.82);
-  backdrop-filter: blur(20px) saturate(1.6);
-  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+[data-theme="dark"] .cs-topbar-glass {
+  background: rgba(13, 23, 38, 0.82);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
 }
 
 /* ── Input base ────────────────────────────────────────────────────────────── */
@@ -232,8 +245,8 @@ button { font-family: inherit; }
   box-sizing: border-box;
 }
 .cs-input:focus {
-  border-color: rgba(0,182,255,0.4);
-  box-shadow: 0 0 0 3px rgba(0,182,255,0.08);
+  border-color: var(--cs-accent);
+  box-shadow: 0 0 0 3px var(--cs-accent-soft);
 }
 
 /* ── Divider ───────────────────────────────────────────────────────────────── */

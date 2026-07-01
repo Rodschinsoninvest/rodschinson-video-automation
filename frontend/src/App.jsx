@@ -27,8 +27,8 @@ function PrivateRoute({ children }) {
         background: 'var(--cs-bg)',
       }}>
         <span style={{
-          width: 28, height: 28, border: '3px solid rgba(0,182,255,0.25)',
-          borderTopColor: '#00B6FF', borderRadius: '50%',
+          width: 28, height: 28, border: '3px solid var(--cs-accent-line)',
+          borderTopColor: 'var(--cs-accent)', borderRadius: '50%',
           animation: 'spin 0.7s linear infinite', display: 'inline-block',
         }} />
       </div>

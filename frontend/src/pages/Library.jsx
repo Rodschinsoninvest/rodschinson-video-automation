@@ -5,6 +5,14 @@ import { useGeneration } from '../contexts/GenerationContext'
 import { useToast } from '../contexts/ToastContext'
 import { CarouselSlidePreview } from '../components/CarouselPreview'
 import { apiFetch, downloadAsset } from '../utils/apiFetch'
+import {
+  Film, Images, Camera, PenLine, Zap, Clapperboard, Building2, FileText,
+  X, Check, CheckCircle2, XCircle, AlertTriangle, Sparkles, Flame, Scale,
+  RefreshCw, Pencil, RefreshCcw, Download, ArrowLeft, ArrowRight, Calendar,
+  Rocket, Trash2, Globe, ThumbsUp, Heart, MessageSquare, Repeat2, Send,
+  Share2, Bookmark, MoreHorizontal, Play, Music, Search, Palette, ChevronDown,
+  BarChart3,
+} from 'lucide-react'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -19,14 +27,17 @@ const STATUS_META = {
 const STATUS_FLOW = ['Draft', 'Ready', 'Approved', 'Scheduled', 'Published']
 
 const TYPE_META = {
-  video:      { icon: '🎬', label: 'Video'      },
-  carousel:   { icon: '🖼️', label: 'Carousel'   },
-  image_post: { icon: '📸', label: 'Image Post' },
-  text_only:  { icon: '✍️', label: 'Text'       },
-  story:      { icon: '⚡', label: 'Story'      },
-  reel:       { icon: '🎞️', label: 'Reel'       },
-  property_teaser: { icon: '🏢', label: 'Teaser' },
+  video:      { icon: Film,         label: 'Video'      },
+  carousel:   { icon: Images,       label: 'Carousel'   },
+  image_post: { icon: Camera,       label: 'Image Post' },
+  text_only:  { icon: PenLine,      label: 'Text'       },
+  story:      { icon: Zap,          label: 'Story'      },
+  reel:       { icon: Clapperboard, label: 'Reel'       },
+  property_teaser: { icon: Building2, label: 'Teaser' },
 }
+
+// Fallback meta for unknown content types
+const FALLBACK_TYPE = { icon: FileText, label: '' }
 
 const TEMPLATE_GRADIENTS = {
   rodschinson_premium: 'linear-gradient(135deg,#08316F,#0a3d8a)',
@@ -94,7 +105,7 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 function initials(brand) { return brand === 'rachid' ? 'RC' : 'RI' }
-function brandColor(brand) { return brand === 'rachid' ? '#00B6FF' : '#C8A96E' }
+function brandColor(brand) { return brand === 'rachid' ? 'var(--cs-accent)' : 'var(--cs-gold)' }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -114,14 +125,15 @@ function StatusBadge({ status }) {
 }
 
 function TypeBadge({ type }) {
-  const m = TYPE_META[type] || { icon: '📄', label: type }
+  const m = TYPE_META[type] || { ...FALLBACK_TYPE, label: type }
+  const Icon = m.icon
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
       padding: '2px 7px', borderRadius: 4,
-      background: 'rgba(0,0,0,0.06)', fontSize: 11, color: 'rgba(0,0,0,0.5)',
+      background: 'var(--cs-surface3)', fontSize: 11, color: 'var(--cs-text-sub)',
     }}>
-      <span style={{ fontSize: 10 }}>{m.icon}</span>{m.label}
+      <Icon size={12} />{m.label}
     </span>
   )
 }
@@ -145,7 +157,7 @@ function PlatformBadges({ platforms = [] }) {
   )
 }
 
-function ActionBtn({ onClick, label, color = 'rgba(0,0,0,0.5)' }) {
+function ActionBtn({ onClick, label, color = 'var(--cs-text-sub)' }) {
   const [hover, setHover] = useState(false)
   return (
     <button
@@ -154,10 +166,11 @@ function ActionBtn({ onClick, label, color = 'rgba(0,0,0,0.5)' }) {
       onMouseLeave={() => setHover(false)}
       style={{
         padding: '5px 10px', borderRadius: 5, cursor: 'pointer', whiteSpace: 'nowrap',
-        border: `1px solid ${hover ? color : 'rgba(0,0,0,0.1)'}`,
-        background: hover ? `${color}12` : 'transparent',
-        color: hover ? color : 'rgba(0,0,0,0.4)',
+        border: `1px solid ${hover ? color : 'var(--cs-border)'}`,
+        background: hover ? `color-mix(in srgb, ${color} 8%, transparent)` : 'transparent',
+        color: hover ? color : 'var(--cs-text-muted)',
         fontSize: 11, fontWeight: 500, transition: 'all 0.12s',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4,
       }}
     >{label}</button>
   )
@@ -188,15 +201,15 @@ function StatusStepper({ status, onChangeStatus }) {
             >
               <div style={{
                 width: current ? 10 : 8, height: current ? 10 : 8, borderRadius: '50%',
-                background: isHov ? '#00B6FF' : current ? '#00B6FF' : done ? 'rgba(0,182,255,0.4)' : 'var(--cs-border)',
-                border: current ? '2px solid #00B6FF' : isHov ? '2px solid #00B6FF' : 'none',
-                boxShadow: current ? '0 0 6px #00B6FF80' : 'none',
+                background: isHov ? 'var(--cs-accent)' : current ? 'var(--cs-accent)' : done ? 'var(--cs-accent-line)' : 'var(--cs-border)',
+                border: current ? '2px solid var(--cs-accent)' : isHov ? '2px solid var(--cs-accent)' : 'none',
+                boxShadow: current ? '0 0 6px var(--cs-accent)80' : 'none',
                 transition: 'all 0.15s',
               }} />
               <span style={{ fontSize: 9, color: done ? 'var(--cs-text-sub)' : 'var(--cs-text-muted)', whiteSpace: 'nowrap', fontWeight: current ? 700 : 400 }}>{s}</span>
             </div>
             {i < STATUS_FLOW.length - 1 && (
-              <div style={{ flex: 1, height: 1, background: done && i < idx ? 'rgba(0,182,255,0.3)' : 'var(--cs-border)', marginBottom: 16 }} />
+              <div style={{ flex: 1, height: 1, background: done && i < idx ? 'var(--cs-accent-line)' : 'var(--cs-border)', marginBottom: 16 }} />
             )}
           </div>
         )
@@ -206,11 +219,12 @@ function StatusStepper({ status, onChangeStatus }) {
 }
 
 function ModalHeader({ item, onClose }) {
-  const type = TYPE_META[item.content_type] || { icon: '📄', label: item.content_type }
+  const type = TYPE_META[item.content_type] || { ...FALLBACK_TYPE, label: item.content_type }
+  const TypeIcon = type.icon
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flex: 1 }}>
-        <span style={{ fontSize: 24, lineHeight: 1.2 }}>{type.icon}</span>
+        <span style={{ display: 'inline-flex', color: 'var(--cs-accent)', lineHeight: 1.2 }}><TypeIcon size={22} /></span>
         <div>
           <h2 style={{ color: 'var(--cs-text)', fontSize: 15, fontWeight: 700, margin: '0 0 4px', lineHeight: 1.3 }}>{item.title}</h2>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -221,8 +235,8 @@ function ModalHeader({ item, onClose }) {
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-        <div style={{ width: 30, height: 30, borderRadius: '50%', background: `linear-gradient(135deg,#08316F,${brandColor(item.brand)})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9, fontWeight: 700 }}>{initials(item.brand)}</div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 20, lineHeight: 1, padding: '0 4px' }}>×</button>
+        <div style={{ width: 30, height: 30, borderRadius: '50%', background: brandColor(item.brand), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9, fontWeight: 700 }}>{initials(item.brand)}</div>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', display: 'inline-flex', lineHeight: 1, padding: '0 4px' }}><X size={18} /></button>
       </div>
     </div>
   )
@@ -284,7 +298,7 @@ function ScheduleInline({ item, onScheduled, onClose }) {
       <div style={{ display: 'flex', gap: 6 }}>
         <button onClick={submit} disabled={saving} style={{
           flex: 1, padding: '7px', borderRadius: 6, border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
-          background: 'linear-gradient(135deg,#6d28d9,#8b5cf6)', color: '#fff', fontSize: 12, fontWeight: 600,
+          background: '#6d28d9', color: '#fff', fontSize: 12, fontWeight: 600,
         }}>{saving ? 'Scheduling…' : 'Confirm Schedule'}</button>
         <button onClick={onClose} style={{
           padding: '7px 10px', borderRadius: 6, border: '1px solid var(--cs-border)',
@@ -367,12 +381,12 @@ function PublishModal({ item, onClose, onPublished }) {
             <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--cs-text)' }}>Publish content</div>
             <div style={{ fontSize: 12, color: 'var(--cs-text-sub)', marginTop: 2 }}>Select platforms to publish to now via Metricool</div>
           </div>
-          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--cs-border)', background: 'var(--cs-hover)', cursor: 'pointer', color: 'var(--cs-text-sub)', fontSize: 16 }}>✕</button>
+          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--cs-border)', background: 'var(--cs-hover)', cursor: 'pointer', color: 'var(--cs-text-sub)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><X size={16} /></button>
         </div>
 
         {/* Content info strip */}
         <div style={{ margin: '16px 24px 0', padding: '10px 14px', background: 'var(--cs-surface2)', borderRadius: 10, border: '1px solid var(--cs-border)', display: 'flex', gap: 10, alignItems: 'center' }}>
-          <div style={{ fontSize: 22 }}>{TYPE_META[item.content_type]?.icon || '📄'}</div>
+          {(() => { const StripIcon = TYPE_META[item.content_type]?.icon || FALLBACK_TYPE.icon; return <span style={{ display: 'inline-flex', color: 'var(--cs-accent)' }}><StripIcon size={22} /></span> })()}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--cs-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
             <div style={{ fontSize: 11, color: 'var(--cs-text-sub)', marginTop: 1 }}>{item.format} · {item.template?.replace(/_/g,' ')}</div>
@@ -399,7 +413,7 @@ function PublishModal({ item, onClose, onPublished }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: on ? p.color : 'var(--cs-border)', flexShrink: 0, transition: 'background 0.12s' }} />
                       <span style={{ fontWeight: 600, fontSize: 13, color: on ? p.color : 'var(--cs-text)' }}>{p.name}</span>
-                      {warn && <span style={{ fontSize: 11, color: '#f59e0b', marginLeft: 'auto' }}>⚠</span>}
+                      {warn && <span style={{ color: '#f59e0b', marginLeft: 'auto', display: 'inline-flex' }}><AlertTriangle size={12} /></span>}
                     </div>
                     {compat && (
                       <div style={{ fontSize: 10, color: warn ? '#f59e0b' : 'var(--cs-text-muted)', marginTop: 3, marginLeft: 16 }}>
@@ -418,7 +432,7 @@ function PublishModal({ item, onClose, onPublished }) {
           <div style={{ padding: '24px', textAlign: 'center' }}>
             {result.ok ? (
               <>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+                <div style={{ marginBottom: 12, color: '#22c55e', display: 'flex', justifyContent: 'center' }}><CheckCircle2 size={40} /></div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--cs-text)', marginBottom: 6 }}>Published successfully</div>
                 <div style={{ fontSize: 13, color: 'var(--cs-text-sub)' }}>
                   Sent to {result.platforms.map(p => ALL_PLATFORMS.find(x => x.id === p)?.name || p).join(', ')} via Metricool
@@ -426,7 +440,7 @@ function PublishModal({ item, onClose, onPublished }) {
               </>
             ) : (
               <>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>❌</div>
+                <div style={{ marginBottom: 12, color: '#ef4444', display: 'flex', justifyContent: 'center' }}><XCircle size={40} /></div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--cs-text)', marginBottom: 6 }}>Publish failed</div>
                 <div style={{ fontSize: 12, color: '#f87171', background: 'rgba(248,113,113,0.08)', padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(248,113,113,0.2)' }}>{result.error}</div>
                 <div style={{ fontSize: 11, color: 'var(--cs-text-muted)', marginTop: 8 }}>Check METRICOOL_API_TOKEN, METRICOOL_USER_ID, METRICOOL_BLOG_ID in .env</div>
@@ -440,7 +454,7 @@ function PublishModal({ item, onClose, onPublished }) {
           <div style={{ margin: '0 24px 12px', border: '1px solid var(--cs-border)', borderRadius: 10, overflow: 'hidden' }}>
             <div style={{ padding: '8px 12px', background: 'var(--cs-surface2)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--cs-text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               AI-generated captions
-              <button onClick={() => setShowCaptions(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 13 }}>✕</button>
+              <button onClick={() => setShowCaptions(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--cs-text-muted)', display: 'inline-flex' }}><X size={13} /></button>
             </div>
             <div style={{ maxHeight: 200, overflowY: 'auto' }}>
               {Object.entries(captions).map(([platform, text]) => {
@@ -465,16 +479,17 @@ function PublishModal({ item, onClose, onPublished }) {
             <>
               {selected.length > 0 && !showCaptions && (
                 <button onClick={generateCaptions} disabled={genCap} style={{
-                  padding: '8px', borderRadius: 8, border: '1px solid rgba(0,182,255,0.3)',
-                  background: 'rgba(0,182,255,0.06)', color: '#00B6FF', fontSize: 12, fontWeight: 600,
+                  padding: '8px', borderRadius: 8, border: '1px solid var(--cs-accent-line)',
+                  background: 'var(--cs-accent-soft)', color: 'var(--cs-accent)', fontSize: 12, fontWeight: 600,
                   cursor: genCap ? 'not-allowed' : 'pointer', opacity: genCap ? 0.6 : 1,
-                }}>{genCap ? 'Generating captions…' : '✨ Generate platform-specific captions'}</button>
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}>{genCap ? 'Generating captions…' : <><Sparkles size={14} /> Generate platform-specific captions</>}</button>
               )}
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={onClose} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
                 <button onClick={publish} disabled={!selected.length || publishing} style={{
                   flex: 2, padding: '10px', borderRadius: 8, border: 'none', cursor: selected.length && !publishing ? 'pointer' : 'not-allowed',
-                  background: selected.length ? 'linear-gradient(135deg,#08316F,#00B6FF)' : 'var(--cs-hover)',
+                  background: selected.length ? 'var(--cs-accent)' : 'var(--cs-hover)',
                   color: selected.length ? '#fff' : 'var(--cs-text-muted)', fontSize: 13, fontWeight: 700,
                   opacity: publishing ? 0.7 : 1, transition: 'all 0.15s',
                 }}>
@@ -483,7 +498,7 @@ function PublishModal({ item, onClose, onPublished }) {
               </div>
             </>
           ) : (
-            <button onClick={onClose} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#08316F,#00B6FF)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Close</button>
+            <button onClick={onClose} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: 'var(--cs-accent)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Close</button>
           )}
         </div>
       </div>
@@ -546,7 +561,7 @@ function CommentsPanel({ jobId }) {
             </div>
             <div style={{ fontSize: 13, color: 'var(--cs-text-sub)', lineHeight: 1.5 }}>{c.text}</div>
           </div>
-          <button onClick={() => remove(c.id)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 14, padding: '2px 4px', opacity: 0.5 }}>✕</button>
+          <button onClick={() => remove(c.id)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--cs-text-muted)', display: 'inline-flex', padding: '2px 4px', opacity: 0.5 }}><X size={14} /></button>
         </div>
       ))}
       <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
@@ -558,7 +573,7 @@ function CommentsPanel({ jobId }) {
         />
         <button onClick={submit} disabled={saving || !text.trim()} style={{
           padding: '7px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
-          background: '#08316F', color: '#fff', fontSize: 12, fontWeight: 600,
+          background: 'var(--cs-accent)', color: '#fff', fontSize: 12, fontWeight: 600,
           opacity: saving || !text.trim() ? 0.5 : 1,
         }}>{saving ? '…' : 'Post'}</button>
       </div>
@@ -575,7 +590,7 @@ function RepurposeModal({ item, onClose }) {
   const [jobs, setJobs]         = useState(null)
 
   const toggle = f => setSelected(s => s.includes(f) ? s.filter(x => x !== f) : [...s, f])
-  const FORMAT_ICONS = { video: '🎬', reel: '🎞️', carousel: '🖼️', text_only: '✍️' }
+  const FORMAT_ICONS = { video: Film, reel: Clapperboard, carousel: Images, text_only: PenLine }
   const FORMAT_LABELS = { video: 'Video 16:9', reel: 'Reel 9:16', carousel: 'Carousel', text_only: 'Text Post' }
 
   const run = async () => {
@@ -600,7 +615,7 @@ function RepurposeModal({ item, onClose }) {
             <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--cs-text)' }}>Repurpose content</div>
             <div style={{ fontSize: 12, color: 'var(--cs-text-sub)', marginTop: 2 }}>Generate all formats from this brief</div>
           </div>
-          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--cs-border)', background: 'var(--cs-hover)', cursor: 'pointer', color: 'var(--cs-text-sub)', fontSize: 16 }}>✕</button>
+          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--cs-border)', background: 'var(--cs-hover)', cursor: 'pointer', color: 'var(--cs-text-sub)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><X size={16} /></button>
         </div>
         {!jobs ? (
           <>
@@ -610,14 +625,15 @@ function RepurposeModal({ item, onClose }) {
                 {ALL_FORMATS.map(f => {
                   const isCurrent = f === item.content_type
                   const on = selected.includes(f)
+                  const FmtIcon = FORMAT_ICONS[f] || FALLBACK_TYPE.icon
                   return (
                     <button key={f} onClick={() => !isCurrent && toggle(f)} disabled={isCurrent} style={{
                       padding: '12px 14px', borderRadius: 10, cursor: isCurrent ? 'default' : 'pointer', textAlign: 'left',
-                      border: `1px solid ${on && !isCurrent ? '#08316F' : 'var(--cs-border)'}`,
-                      background: isCurrent ? 'var(--cs-hover)' : on ? 'rgba(8,49,111,0.08)' : 'var(--cs-surface2)',
+                      border: `1px solid ${on && !isCurrent ? 'var(--cs-accent)' : 'var(--cs-border)'}`,
+                      background: isCurrent ? 'var(--cs-hover)' : on ? 'var(--cs-accent-soft)' : 'var(--cs-surface2)',
                       opacity: isCurrent ? 0.5 : 1,
                     }}>
-                      <div style={{ fontSize: 20, marginBottom: 4 }}>{FORMAT_ICONS[f]}</div>
+                      <div style={{ marginBottom: 4, color: 'var(--cs-accent)', display: 'inline-flex' }}><FmtIcon size={20} /></div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--cs-text)' }}>{FORMAT_LABELS[f]}</div>
                       {isCurrent && <div style={{ fontSize: 10, color: 'var(--cs-text-muted)', marginTop: 2 }}>Current format</div>}
                     </button>
@@ -629,7 +645,7 @@ function RepurposeModal({ item, onClose }) {
               <button onClick={onClose} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
               <button onClick={run} disabled={!selected.length || running} style={{
                 flex: 2, padding: '10px', borderRadius: 8, border: 'none',
-                background: selected.length ? 'linear-gradient(135deg,#08316F,#00B6FF)' : 'var(--cs-hover)',
+                background: selected.length ? 'var(--cs-accent)' : 'var(--cs-hover)',
                 color: selected.length ? '#fff' : 'var(--cs-text-muted)', fontSize: 13, fontWeight: 700,
                 cursor: selected.length && !running ? 'pointer' : 'not-allowed', opacity: running ? 0.7 : 1,
               }}>{running ? 'Queuing…' : `Generate ${selected.length} format${selected.length !== 1 ? 's' : ''}`}</button>
@@ -637,17 +653,19 @@ function RepurposeModal({ item, onClose }) {
           </>
         ) : (
           <div style={{ padding: '20px 24px' }}>
-            <div style={{ fontSize: 40, textAlign: 'center', marginBottom: 12 }}>✅</div>
+            <div style={{ textAlign: 'center', marginBottom: 12, color: '#22c55e', display: 'flex', justifyContent: 'center' }}><CheckCircle2 size={40} /></div>
             <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--cs-text)', textAlign: 'center', marginBottom: 8 }}>{jobs.length} job{jobs.length !== 1 ? 's' : ''} queued</div>
-            {jobs.map(j => (
+            {jobs.map(j => {
+              const QIcon = FORMAT_ICONS[j.content_type] || FALLBACK_TYPE.icon
+              return (
               <div key={j.job_id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--cs-surface2)', marginBottom: 6 }}>
-                <span>{FORMAT_ICONS[j.content_type]}</span>
+                <span style={{ display: 'inline-flex', color: 'var(--cs-text-sub)' }}><QIcon size={16} /></span>
                 <span style={{ fontSize: 12, color: 'var(--cs-text-sub)', flex: 1 }}>{FORMAT_LABELS[j.content_type]}</span>
                 <span style={{ fontSize: 11, color: '#22c55e', fontWeight: 600 }}>Queued</span>
               </div>
-            ))}
+            )})}
             <div style={{ fontSize: 11, color: 'var(--cs-text-muted)', textAlign: 'center', marginTop: 10 }}>Check the Library in a few minutes</div>
-            <button onClick={onClose} style={{ width: '100%', marginTop: 14, padding: '10px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#08316F,#00B6FF)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Close</button>
+            <button onClick={onClose} style={{ width: '100%', marginTop: 14, padding: '10px', borderRadius: 8, border: 'none', background: 'var(--cs-accent)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Close</button>
           </div>
         )}
       </div>
@@ -681,23 +699,23 @@ function HooksPanel({ item, onClose }) {
   }
 
   return (
-    <div style={{ background: 'var(--cs-surface2)', border: '1px solid rgba(200,169,110,0.25)', borderRadius: 10, padding: 14, marginBottom: 12 }}>
+    <div style={{ background: 'var(--cs-surface2)', border: '1px solid var(--cs-gold-soft)', borderRadius: 10, padding: 14, marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#C8A96E', textTransform: 'uppercase', letterSpacing: '0.08em' }}>⚡ Hook Generator</div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 14 }}>✕</button>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cs-gold)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 5 }}><Zap size={13} /> Hook Generator</div>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', display: 'inline-flex' }}><X size={14} /></button>
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
         {(item.platforms?.length ? item.platforms : ['linkedin']).map(p => (
           <button key={p} onClick={() => setPlatform(p)} style={{
             padding: '3px 10px', borderRadius: 4, fontSize: 11, cursor: 'pointer',
-            border: `1px solid ${platform === p ? '#C8A96E' : 'var(--cs-border)'}`,
-            background: platform === p ? 'rgba(200,169,110,0.12)' : 'transparent',
-            color: platform === p ? '#C8A96E' : 'var(--cs-text-muted)',
+            border: `1px solid ${platform === p ? 'var(--cs-gold)' : 'var(--cs-border)'}`,
+            background: platform === p ? 'var(--cs-gold-soft)' : 'transparent',
+            color: platform === p ? 'var(--cs-gold)' : 'var(--cs-text-muted)',
           }}>{p}</button>
         ))}
         <button onClick={generate} disabled={loading} style={{
           marginLeft: 'auto', padding: '4px 14px', borderRadius: 6, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-          background: loading ? 'var(--cs-hover)' : 'linear-gradient(135deg,#b8960a,#C8A96E)',
+          background: loading ? 'var(--cs-hover)' : 'var(--cs-gold)',
           color: loading ? 'var(--cs-text-muted)' : '#fff', fontSize: 11, fontWeight: 700,
         }}>{loading ? 'Generating…' : 'Generate'}</button>
       </div>
@@ -711,13 +729,13 @@ function HooksPanel({ item, onClose }) {
             }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, color: 'var(--cs-text)', lineHeight: 1.5 }}>{h.text || h}</div>
-                {h.score && <div style={{ fontSize: 10, color: '#C8A96E', marginTop: 3 }}>Score: {h.score}/10</div>}
+                {h.score && <div style={{ fontSize: 10, color: 'var(--cs-gold)', marginTop: 3 }}>Score: {h.score}/10</div>}
               </div>
               <button onClick={() => copy(h.text || h, i)} style={{
                 flexShrink: 0, padding: '3px 7px', borderRadius: 4, fontSize: 10, cursor: 'pointer',
                 border: '1px solid var(--cs-border)', background: copied === i ? 'rgba(34,197,94,0.1)' : 'transparent',
-                color: copied === i ? '#22c55e' : 'var(--cs-text-muted)',
-              }}>{copied === i ? '✓' : 'Copy'}</button>
+                color: copied === i ? '#22c55e' : 'var(--cs-text-muted)', display: 'inline-flex', alignItems: 'center',
+              }}>{copied === i ? <Check size={11} /> : 'Copy'}</button>
             </div>
           ))}
         </div>
@@ -744,13 +762,13 @@ function ImprovePanel({ item, onClose }) {
   return (
     <div style={{ background: 'var(--cs-surface2)', border: '1px solid rgba(2,132,199,0.25)', borderRadius: 10, padding: 14, marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.08em' }}>✦ Improve Content</div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 14 }}>✕</button>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 5 }}><Sparkles size={13} /> Improve Content</div>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', display: 'inline-flex' }}><X size={14} /></button>
       </div>
       {!result ? (
         <button onClick={run} disabled={loading} style={{
           width: '100%', padding: '8px', borderRadius: 6, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-          background: loading ? 'var(--cs-hover)' : 'linear-gradient(135deg,#0369a1,#0284c7)',
+          background: loading ? 'var(--cs-hover)' : '#0284c7',
           color: loading ? 'var(--cs-text-muted)' : '#fff', fontSize: 12, fontWeight: 600,
         }}>{loading ? 'Analyzing…' : 'Analyze & improve'}</button>
       ) : (
@@ -796,13 +814,13 @@ function ViralPanel({ item, onClose }) {
   return (
     <div style={{ background: 'var(--cs-surface2)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: 10, padding: 14, marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '0.08em' }}>🔥 Make Viral</div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 14 }}>✕</button>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 5 }}><Flame size={13} /> Make Viral</div>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', display: 'inline-flex' }}><X size={14} /></button>
       </div>
       {!result ? (
         <button onClick={run} disabled={loading} style={{
           width: '100%', padding: '8px', borderRadius: 6, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-          background: loading ? 'var(--cs-hover)' : 'linear-gradient(135deg,#6d28d9,#8b5cf6)',
+          background: loading ? 'var(--cs-hover)' : '#8b5cf6',
           color: loading ? 'var(--cs-text-muted)' : '#fff', fontSize: 12, fontWeight: 600,
         }}>{loading ? 'Rewriting…' : 'Generate viral versions'}</button>
       ) : (
@@ -844,8 +862,8 @@ function ABTestPanel({ item, onClose }) {
   return (
     <div style={{ background: 'var(--cs-surface2)', border: '1px solid rgba(20,184,166,0.25)', borderRadius: 10, padding: 14, marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#14b8a6', textTransform: 'uppercase', letterSpacing: '0.08em' }}>⚖ A/B Test</div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 14 }}>✕</button>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#14b8a6', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 5 }}><Scale size={13} /> A/B Test</div>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', display: 'inline-flex' }}><X size={14} /></button>
       </div>
       {!result ? (
         <>
@@ -861,13 +879,13 @@ function ABTestPanel({ item, onClose }) {
           />
           <button onClick={create} disabled={loading} style={{
             width: '100%', padding: '8px', borderRadius: 6, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-            background: loading ? 'var(--cs-hover)' : 'linear-gradient(135deg,#0f766e,#14b8a6)',
+            background: loading ? 'var(--cs-hover)' : '#14b8a6',
             color: loading ? 'var(--cs-text-muted)' : '#fff', fontSize: 12, fontWeight: 600,
           }}>{loading ? 'Creating…' : 'Create A/B test'}</button>
         </>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 12, color: '#14b8a6', fontWeight: 600 }}>Test created ✓</div>
+          <div style={{ fontSize: 12, color: '#14b8a6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>Test created <Check size={13} /></div>
           {result.variants?.map((v, i) => (
             <div key={i} style={{ padding: '8px 10px', borderRadius: 7, background: 'var(--cs-surface)', border: '1px solid rgba(20,184,166,0.2)' }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#14b8a6', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>Variant {String.fromCharCode(65 + i)}</div>
@@ -932,58 +950,61 @@ function ModalActions({ item, onStatusChange, onRegenerate, onDelete, onClose })
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, paddingBottom: 10, borderBottom: '1px solid var(--cs-border)' }}>
         <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--cs-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', alignSelf: 'center', marginRight: 2 }}>AI</span>
         {[
-          { key: 'hooks',   label: '⚡ Hooks',   color: '#C8A96E', show: showHooks,   set: () => { closeAll(); setShowHooks(v => !v) } },
-          { key: 'improve', label: '✦ Improve',  color: '#0284c7', show: showImprove, set: () => { closeAll(); setShowImprove(v => !v) } },
-          { key: 'viral',   label: '🔥 Viral',   color: '#8b5cf6', show: showViral,   set: () => { closeAll(); setShowViral(v => !v) } },
-          { key: 'abtest',  label: '⚖ A/B Test', color: '#14b8a6', show: showABTest,  set: () => { closeAll(); setShowABTest(v => !v) } },
-        ].map(({ key, label, color, show, set }) => (
+          { key: 'hooks',   Icon: Zap,   label: 'Hooks',    color: 'var(--cs-gold)', show: showHooks,   set: () => { closeAll(); setShowHooks(v => !v) } },
+          { key: 'improve', Icon: Sparkles, label: 'Improve', color: '#0284c7', show: showImprove, set: () => { closeAll(); setShowImprove(v => !v) } },
+          { key: 'viral',   Icon: Flame, label: 'Viral',    color: '#8b5cf6', show: showViral,   set: () => { closeAll(); setShowViral(v => !v) } },
+          { key: 'abtest',  Icon: Scale, label: 'A/B Test', color: '#14b8a6', show: showABTest,  set: () => { closeAll(); setShowABTest(v => !v) } },
+        ].map(({ key, Icon, label, color, show, set }) => (
           <button key={key} onClick={set} style={{
             padding: '5px 11px', borderRadius: 5, cursor: 'pointer', fontSize: 11, fontWeight: 600,
             border: `1px solid ${show ? color : 'var(--cs-border)'}`,
-            background: show ? `${color}14` : 'transparent',
+            background: show ? `color-mix(in srgb, ${color} 8%, transparent)` : 'transparent',
             color: show ? color : 'var(--cs-text-muted)',
-            transition: 'all 0.12s',
-          }}>{label}</button>
+            transition: 'all 0.12s', display: 'inline-flex', alignItems: 'center', gap: 5,
+          }}><Icon size={12} /> {label}</button>
         ))}
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ color: 'var(--cs-text-muted)', fontSize: 12 }}>{fmtDate(item.created_at)}</span>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button onClick={onRegenerate} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 12 }}>↻ Regenerate</button>
+          <button onClick={onRegenerate} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}><RefreshCw size={13} /> Regenerate</button>
           {isLongTeaser && (
-            <button onClick={() => { onClose(); navigate(`/teaser-editor/${item.job_id}`) }} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(200,169,110,0.4)', background: 'rgba(200,169,110,0.08)', color: '#C8A96E', fontSize: 12, fontWeight: 700 }}>✎ Edit teaser</button>
+            <button onClick={() => { onClose(); navigate(`/teaser-editor/${item.job_id}`) }} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid var(--cs-gold-soft)', background: 'var(--cs-gold-soft)', color: 'var(--cs-gold)', fontSize: 12, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Pencil size={13} /> Edit teaser</button>
           )}
-          <button onClick={() => setShowRepurpose(true)} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(0,182,255,0.3)', background: 'rgba(0,182,255,0.06)', color: '#00B6FF', fontSize: 12, fontWeight: 600 }}>♻ Repurpose</button>
+          <button onClick={() => setShowRepurpose(true)} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid var(--cs-accent-line)', background: 'var(--cs-accent-soft)', color: 'var(--cs-accent)', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}><RefreshCcw size={13} /> Repurpose</button>
           {item.output_file && (
-            <button onClick={() => downloadAsset(`/api/download/${item.job_id}`).catch(e=>alert(e.message))} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.06)', color: '#16a34a', fontSize: 12, fontWeight: 600 }}>⬇ Download</button>
+            <button onClick={() => downloadAsset(`/api/download/${item.job_id}`).catch(e=>alert(e.message))} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.06)', color: '#16a34a', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Download size={13} /> Download</button>
           )}
           {prevStatus && (
             <button onClick={() => { onStatusChange(item.job_id, prevStatus); onClose() }} style={{
               padding: '7px 14px', borderRadius: 6, cursor: 'pointer',
               border: '1px solid var(--cs-border)', background: 'transparent',
-              color: 'var(--cs-text-muted)', fontSize: 12,
-            }}>← {prevStatus}</button>
+              color: 'var(--cs-text-muted)', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5,
+            }}><ArrowLeft size={13} /> {prevStatus}</button>
           )}
-          <button onClick={onDelete} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 12 }}>🗑 Delete</button>
+          <button onClick={onDelete} style={{ padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
           {!showSchedule && item.status !== 'Published' && (
             <button onClick={() => setShowSchedule(true)} style={{
               padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: 'none',
               background: 'rgba(109,40,217,0.1)', color: '#6d28d9', fontSize: 12, fontWeight: 600,
-            }}>📅 Schedule</button>
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+            }}><Calendar size={13} /> Schedule</button>
           )}
           {nextStatus && nextStatus !== 'Scheduled' && nextStatus !== 'Published' && (
             <button onClick={() => { onStatusChange(item.job_id, nextStatus); onClose() }} style={{
               padding: '7px 14px', borderRadius: 6, cursor: 'pointer', border: 'none',
               background: STATUS_META[nextStatus]?.bg || 'var(--cs-hover)',
               color: STATUS_META[nextStatus]?.color, fontSize: 12, fontWeight: 600,
-            }}>→ {nextStatus}</button>
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+            }}>{nextStatus} <ArrowRight size={13} /></button>
           )}
           {item.status !== 'Published' && (
             <button onClick={() => setShowPublish(true)} style={{
               padding: '7px 16px', borderRadius: 6, cursor: 'pointer', border: 'none',
-              background: 'linear-gradient(135deg,#08316F,#00B6FF)', color: '#fff', fontSize: 12, fontWeight: 700,
-            }}>🚀 Publish</button>
+              background: 'var(--cs-accent)', color: '#fff', fontSize: 12, fontWeight: 700,
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+            }}><Rocket size={13} /> Publish</button>
           )}
         </div>
       </div>
@@ -1022,7 +1043,8 @@ const PLATFORM_FORMAT_COMPAT = {
 
 function ContentThumbnail({ item, slides, height = 220, borderRadius = 0 }) {
   const gradient = TEMPLATE_GRADIENTS[item.template] || 'linear-gradient(135deg,#08316F,#0d1a30)'
-  const type = TYPE_META[item.content_type] || { icon: '📄' }
+  const type = TYPE_META[item.content_type] || FALLBACK_TYPE
+  const TypeIcon = type.icon
 
   if (item.content_type === 'carousel' && slides?.length) {
     const firstPng = slides[0]?.png_url
@@ -1032,7 +1054,7 @@ function ContentThumbnail({ item, slides, height = 220, borderRadius = 0 }) {
     // Render first slide data as a mini card
     const s = slides[0]
     return (
-      <div style={{ width: '100%', height, background: 'linear-gradient(135deg,#08316F,#00B6FF)', borderRadius, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 16px', textAlign: 'center', boxSizing: 'border-box' }}>
+      <div style={{ width: '100%', height, background: 'linear-gradient(135deg,#08316F,var(--cs-accent))', borderRadius, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 16px', textAlign: 'center', boxSizing: 'border-box' }}>
         {s?.tag && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>{s.tag}</div>}
         <div style={{ color: '#fff', fontSize: 15, fontWeight: 700, lineHeight: 1.3 }}>{(s?.headline || item.title || '').replace(/\\n/g, ' ')}</div>
         {s?.subheadline && <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 6 }}>{s.subheadline}</div>}
@@ -1047,7 +1069,7 @@ function ContentThumbnail({ item, slides, height = 220, borderRadius = 0 }) {
   }
   return (
     <div style={{ width: '100%', height, background: gradient, borderRadius, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ fontSize: 36 }}>{type.icon}</div>
+      <div style={{ color: 'rgba(255,255,255,0.85)', display: 'flex' }}><TypeIcon size={36} /></div>
       <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, marginTop: 6 }}>{item.format}</div>
     </div>
   )
@@ -1057,7 +1079,7 @@ function ContentThumbnail({ item, slides, height = 220, borderRadius = 0 }) {
 function BrandAvatar({ brand, size = 40, fontSize = 13 }) {
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', flexShrink: 0,
-      background: 'linear-gradient(135deg,#08316F,#C8A96E)',
+      background: 'var(--cs-accent)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       color: '#fff', fontWeight: 800, fontSize, lineHeight: 1 }}>
       {initials(brand)}
@@ -1086,12 +1108,12 @@ function LinkedInPreview({ item, slides }) {
             <div style={{ fontSize: 15, fontWeight: 700, color: '#000', lineHeight: 1.25 }}>{name}</div>
             <div style={{ fontSize: 12, color: '#666', lineHeight: 1.4, marginTop: 1 }}>{headline}</div>
             <div style={{ fontSize: 11, color: '#999', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
-              2h &nbsp;·&nbsp; <span style={{ fontSize: 13, lineHeight: 1 }}>🌐</span>
+              2h &nbsp;·&nbsp; <span style={{ display: 'inline-flex', lineHeight: 1 }}><Globe size={13} /></span>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#f3f2ef', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, color: '#666' }}>···</div>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#f3f2ef', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, color: '#666' }}>✕</div>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#f3f2ef', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#666' }}><MoreHorizontal size={16} /></div>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#f3f2ef', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#666' }}><X size={14} /></div>
           </div>
         </div>
 
@@ -1122,9 +1144,9 @@ function LinkedInPreview({ item, slides }) {
         {/* Reaction counts */}
         <div style={{ padding: '8px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ display: 'flex', gap: -2 }}>
-              {['👍','❤️','💡'].map((e,i) => (
-                <span key={i} style={{ fontSize: 14, zIndex: 3-i }}>{e}</span>
+            <div style={{ display: 'flex', gap: 2 }}>
+              {[{ Icon: ThumbsUp, bg: '#0a66c2' }, { Icon: Heart, bg: '#df704d' }].map(({ Icon, bg }, i) => (
+                <span key={i} style={{ width: 16, height: 16, borderRadius: '50%', background: bg, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', zIndex: 3 - i, border: '1.5px solid #fff', marginLeft: i ? -4 : 0 }}><Icon size={9} /></span>
               ))}
             </div>
             <span style={{ fontSize: 13, color: '#666' }}>842</span>
@@ -1134,11 +1156,11 @@ function LinkedInPreview({ item, slides }) {
 
         {/* Action bar */}
         <div style={{ borderTop: '1px solid #e8e8e8', display: 'flex' }}>
-          {[['👍','Like','#666'],['💬','Comment','#666'],['🔁','Repost','#666'],['✈️','Send','#666']].map(([icon,label,color]) => (
+          {[[ThumbsUp,'Like'],[MessageSquare,'Comment'],[Repeat2,'Repost'],[Send,'Send']].map(([Icon,label]) => (
             <button key={label} style={{ flex: 1, padding: '10px 4px', border: 'none', background: 'none', cursor: 'pointer',
-              color, fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+              color: '#666', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               borderRadius: 4, transition: 'background 0.1s' }}>
-              {icon} {label}
+              <Icon size={16} /> {label}
             </button>
           ))}
         </div>
@@ -1160,15 +1182,15 @@ function YouTubePreview({ item, slides }) {
           <div style={{ width: 300, position: 'relative' }}>
             {/* Shorts label */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <div style={{ background: '#FF0000', borderRadius: 4, padding: '2px 8px', fontSize: 12, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>▶ Shorts</div>
+              <div style={{ background: '#FF0000', borderRadius: 4, padding: '2px 8px', fontSize: 12, fontWeight: 700, color: '#fff', letterSpacing: 0.5, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Play size={11} fill="#fff" /> Shorts</div>
             </div>
             <div style={{ borderRadius: 16, overflow: 'hidden', position: 'relative', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
               <ContentThumbnail item={item} slides={slides} height={533} borderRadius={16} />
               {/* Right sidebar */}
               <div style={{ position: 'absolute', right: 10, bottom: 80, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
-                {[['❤️','12K'],['💬','284'],['↗️',''],['⋮','']].map(([icon, count], i) => (
+                {[[Heart,'12K'],[MessageSquare,'284'],[Share2,''],[MoreHorizontal,'']].map(([Icon, count], i) => (
                   <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                    <div style={{ fontSize: 26, filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.9))' }}>{icon}</div>
+                    <div style={{ color: '#fff', display: 'flex', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.9))' }}><Icon size={26} /></div>
                     {count && <div style={{ color: '#fff', fontSize: 11, fontWeight: 700, textShadow: '0 1px 4px #000' }}>{count}</div>}
                   </div>
                 ))}
@@ -1193,7 +1215,7 @@ function YouTubePreview({ item, slides }) {
             <ContentThumbnail item={item} slides={slides} height={360} />
             {/* Player overlay */}
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-              <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, color: '#fff' }}>▶</div>
+              <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><Play size={24} fill="#fff" /></div>
             </div>
             {/* Duration badge */}
             <div style={{ position: 'absolute', bottom: 10, right: 10, background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 12, fontWeight: 700, padding: '2px 6px', borderRadius: 3 }}>
@@ -1214,7 +1236,7 @@ function YouTubePreview({ item, slides }) {
                 {channelName} &nbsp;·&nbsp; 1.2K views &nbsp;·&nbsp; 2 hours ago
               </div>
             </div>
-            <div style={{ color: '#aaa', fontSize: 22, cursor: 'pointer', padding: '0 4px' }}>⋮</div>
+            <div style={{ color: '#aaa', cursor: 'pointer', padding: '0 4px', display: 'inline-flex' }}><MoreHorizontal size={20} /></div>
           </div>
         </div>
       )}
@@ -1247,9 +1269,9 @@ function TikTokPreview({ item, slides }) {
               <BrandAvatar brand={item.brand} size={44} fontSize={11} />
               <div style={{ position: 'absolute', bottom: -8, left: '50%', transform: 'translateX(-50%)', width: 18, height: 18, borderRadius: '50%', background: '#ff2d55', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#fff', fontWeight: 700, border: '2px solid #000' }}>+</div>
             </div>
-            {[['❤️','42.1K'],['💬','1.2K'],['🔖','8.4K'],['↗️','Share']].map(([icon, count], i) => (
+            {[[Heart,'42.1K'],[MessageSquare,'1.2K'],[Bookmark,'8.4K'],[Share2,'Share']].map(([Icon, count], i) => (
               <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                <div style={{ fontSize: 28, filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.9))' }}>{icon}</div>
+                <div style={{ color: '#fff', display: 'flex', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.9))' }}><Icon size={28} /></div>
                 <div style={{ color: '#fff', fontSize: 11, fontWeight: 700, textShadow: '0 1px 4px #000' }}>{count}</div>
               </div>
             ))}
@@ -1266,7 +1288,7 @@ function TikTokPreview({ item, slides }) {
               {item.title}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'linear-gradient(135deg,#ff2d55,#ff6b35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9 }}>♫</div>
+              <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#ff2d55', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><Music size={9} /></div>
               <div style={{ color: '#fff', fontSize: 12, opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Original audio · {item.brand === 'rachid' ? 'rachid.chikhi' : 'rodschinson'}</div>
             </div>
           </div>
@@ -1292,14 +1314,14 @@ function InstagramPreview({ item, slides }) {
             <ContentThumbnail item={item} slides={slides} height={533} borderRadius={20} />
             {/* Right actions */}
             <div style={{ position: 'absolute', right: 10, bottom: 80, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-              {[['🤍','14.2K'],['💬','386'],['↗️',''],['⋮','']].map(([icon,count],i) => (
+              {[[Heart,'14.2K'],[MessageSquare,'386'],[Share2,''],[MoreHorizontal,'']].map(([Icon,count],i) => (
                 <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                  <div style={{ fontSize: 26, filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.8))' }}>{icon}</div>
+                  <div style={{ color: '#fff', display: 'flex', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.8))' }}><Icon size={26} /></div>
                   {count && <div style={{ color: '#fff', fontSize: 11, fontWeight: 700, textShadow: '0 1px 3px #000' }}>{count}</div>}
                 </div>
               ))}
               {/* Spinning music disc */}
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#08316F,#C8A96E)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(255,255,255,0.4)', fontSize: 12 }}>♫</div>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--cs-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(255,255,255,0.4)', color: '#fff' }}><Music size={14} /></div>
             </div>
             {/* Bottom info */}
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 48, background: 'linear-gradient(transparent,rgba(0,0,0,0.8))', padding: '40px 12px 14px' }}>
@@ -1312,7 +1334,7 @@ function InstagramPreview({ item, slides }) {
                 {item.title}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
-                <div style={{ fontSize: 11 }}>♫</div>
+                <div style={{ display: 'flex', color: '#fff' }}><Music size={11} /></div>
                 <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11 }}>Original audio</div>
               </div>
             </div>
@@ -1337,7 +1359,7 @@ function InstagramPreview({ item, slides }) {
             <div style={{ fontSize: 14, fontWeight: 700, color: '#000' }}>{username}</div>
             <div style={{ fontSize: 11, color: '#8e8e8e' }}>Belgium · Sponsored</div>
           </div>
-          <div style={{ color: '#000', fontSize: 20, cursor: 'pointer' }}>···</div>
+          <div style={{ color: '#000', cursor: 'pointer', display: 'inline-flex' }}><MoreHorizontal size={20} /></div>
         </div>
 
         {/* Media */}
@@ -1360,10 +1382,10 @@ function InstagramPreview({ item, slides }) {
 
         {/* Action row */}
         <div style={{ padding: '10px 16px 6px', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <span style={{ fontSize: 24, cursor: 'pointer' }}>🤍</span>
-          <span style={{ fontSize: 24, cursor: 'pointer' }}>💬</span>
-          <span style={{ fontSize: 24, cursor: 'pointer' }}>✈️</span>
-          <span style={{ marginLeft: 'auto', fontSize: 24, cursor: 'pointer' }}>🔖</span>
+          <span style={{ cursor: 'pointer', display: 'inline-flex', color: '#000' }}><Heart size={24} /></span>
+          <span style={{ cursor: 'pointer', display: 'inline-flex', color: '#000' }}><MessageSquare size={24} /></span>
+          <span style={{ cursor: 'pointer', display: 'inline-flex', color: '#000' }}><Send size={24} /></span>
+          <span style={{ marginLeft: 'auto', cursor: 'pointer', display: 'inline-flex', color: '#000' }}><Bookmark size={24} /></span>
         </div>
         <div style={{ padding: '0 16px 4px', fontSize: 13, fontWeight: 700, color: '#000' }}>1,284 likes</div>
         <div style={{ padding: '2px 16px 12px', fontSize: 14, color: '#000', lineHeight: 1.5 }}>
@@ -1389,12 +1411,12 @@ function FacebookPreview({ item, slides }) {
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: '#050505' }}>{name}</div>
             <div style={{ fontSize: 12, color: '#65676B', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-              2h &nbsp;·&nbsp; <span style={{ fontSize: 14 }}>🌐</span> &nbsp;·&nbsp; <span style={{ fontSize: 12, background: '#e4e6eb', borderRadius: 4, padding: '1px 6px' }}>Sponsored</span>
+              2h &nbsp;·&nbsp; <span style={{ display: 'inline-flex' }}><Globe size={14} /></span> &nbsp;·&nbsp; <span style={{ fontSize: 12, background: '#e4e6eb', borderRadius: 4, padding: '1px 6px' }}>Sponsored</span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, color: '#606770', alignItems: 'center' }}>
-            <span style={{ cursor: 'pointer', fontSize: 20 }}>···</span>
-            <span style={{ cursor: 'pointer', fontSize: 18 }}>✕</span>
+            <span style={{ cursor: 'pointer', display: 'inline-flex' }}><MoreHorizontal size={20} /></span>
+            <span style={{ cursor: 'pointer', display: 'inline-flex' }}><X size={18} /></span>
           </div>
         </div>
 
@@ -1421,7 +1443,10 @@ function FacebookPreview({ item, slides }) {
         {/* Reaction counts */}
         <div style={{ padding: '8px 18px', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E4E6EB' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ fontSize: 15 }}>👍</span><span style={{ fontSize: 15 }}>❤️</span><span style={{ fontSize: 15 }}>😮</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: -2 }}>
+              <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#1877F2', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', border: '1.5px solid #fff', zIndex: 2 }}><ThumbsUp size={9} /></span>
+              <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#df704d', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', border: '1.5px solid #fff', marginLeft: -4 }}><Heart size={9} /></span>
+            </span>
             <span style={{ fontSize: 13, color: '#65676B' }}>342</span>
           </div>
           <div style={{ fontSize: 13, color: '#65676B' }}>24 comments · 8 shares</div>
@@ -1429,11 +1454,11 @@ function FacebookPreview({ item, slides }) {
 
         {/* Action bar */}
         <div style={{ display: 'flex' }}>
-          {[['👍','Like'],['💬','Comment'],['↗️','Share']].map(([icon,label]) => (
+          {[[ThumbsUp,'Like'],[MessageSquare,'Comment'],[Share2,'Share']].map(([Icon,label]) => (
             <button key={label} style={{ flex: 1, padding: '10px 4px', border: 'none', background: 'none', cursor: 'pointer',
               color: '#65676B', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               borderRadius: 4, transition: 'background 0.1s' }}>
-              {icon} {label}
+              <Icon size={16} /> {label}
             </button>
           ))}
         </div>
@@ -1462,7 +1487,7 @@ function XPreview({ item, slides }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontWeight: 700, fontSize: 15, color: '#e7e9ea' }}>{displayName}</span>
                 {/* Verified badge */}
-                <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#1d9bf0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#fff', flexShrink: 0 }}>✓</span>
+                <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#1d9bf0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}><Check size={11} /></span>
               </div>
               <div style={{ fontSize: 14, color: '#71767b' }}>@{username} · 2h</div>
             </div>
@@ -1486,7 +1511,7 @@ function XPreview({ item, slides }) {
               {['video','reel','story'].includes(item.content_type) && (
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
                   <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-                    <span style={{ fontSize: 20, color: '#fff', marginLeft: 3 }}>▶</span>
+                    <span style={{ color: '#fff', marginLeft: 3, display: 'inline-flex' }}><Play size={20} fill="#fff" /></span>
                   </div>
                 </div>
               )}
@@ -1499,9 +1524,9 @@ function XPreview({ item, slides }) {
 
           {/* Action bar */}
           <div style={{ padding: '4px 20px 14px', display: 'flex', justifyContent: 'space-between', maxWidth: 400 }}>
-            {[['💬','48'],['🔁','312'],['🤍','1.2K'],['📊',''],['↗️','']].map(([icon, count], i) => (
+            {[[MessageSquare,'48'],[Repeat2,'312'],[Heart,'1.2K'],[BarChart3,''],[Share2,'']].map(([Icon, count], i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#71767b', fontSize: 13, cursor: 'pointer' }}>
-                <span style={{ fontSize: 16 }}>{icon}</span>
+                <span style={{ display: 'inline-flex' }}><Icon size={16} /></span>
                 {count && <span>{count}</span>}
               </div>
             ))}
@@ -1533,7 +1558,8 @@ function PlatformPreviewPane({ item, platform, slides }) {
 
 function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete }) {
   const gradient = TEMPLATE_GRADIENTS[item.template] || 'linear-gradient(135deg,#08316F,#0d1a30)'
-  const type     = TYPE_META[item.content_type] || { icon: '📄', label: item.content_type }
+  const type     = TYPE_META[item.content_type] || { ...FALLBACK_TYPE, label: item.content_type }
+  const TypeIcon = type.icon
   const isVideo  = VIDEO_TYPES.has(item.content_type)
   const isText   = TEXT_TYPES.has(item.content_type)
   const [slides, setSlides]         = useState(null)
@@ -1544,7 +1570,7 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
   // All 6 platforms always available as tabs; item's own platforms highlighted
   const ALL_PREVIEW_PLATFORMS = ['linkedin', 'instagram', 'youtube', 'tiktok', 'facebook', 'twitter']
   const tabs = [
-    { id: 'original', label: 'Original', icon: '🎨' },
+    { id: 'original', label: 'Original', icon: Palette },
     ...ALL_PREVIEW_PLATFORMS
       .filter(p => PLATFORM_META[p])
       .map(p => ({
@@ -1592,8 +1618,8 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
               <button key={tab.id} onClick={() => setPreviewTab(tab.id)} style={{
                 padding: '8px 14px', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
                 background: 'none', fontSize: 12, fontWeight: active ? 700 : 400,
-                color: active ? (tab.color || '#00B6FF') : 'var(--cs-text-sub)',
-                borderBottom: active ? `2px solid ${tab.color || '#00B6FF'}` : '2px solid transparent',
+                color: active ? (tab.color || 'var(--cs-accent)') : 'var(--cs-text-sub)',
+                borderBottom: active ? `2px solid ${tab.color || 'var(--cs-accent)'}` : '2px solid transparent',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                 transition: 'all 0.12s', position: 'relative',
                 opacity: tab.id !== 'original' && !tab.targeted ? 0.55 : 1,
@@ -1601,10 +1627,10 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   {/* targeted dot */}
                   {tab.targeted && (
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: tab.color || '#00B6FF', flexShrink: 0 }} />
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: tab.color || 'var(--cs-accent)', flexShrink: 0 }} />
                   )}
                   {tab.label}
-                  {isWarning && <span style={{ fontSize: 10 }}>⚠</span>}
+                  {isWarning && <span style={{ display: 'inline-flex', color: '#f59e0b' }}><AlertTriangle size={10} /></span>}
                 </div>
                 {tab.compat && (
                   <div style={{ fontSize: 9, opacity: 0.65, fontWeight: 400, color: isWarning ? '#f59e0b' : 'inherit' }}>
@@ -1632,7 +1658,7 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
                 <video src={`/api/video/${item.job_id}`} controls style={{ width: '100%', maxHeight: 280, background: '#000', display: 'block', flexShrink: 0 }} />
               ) : (
                 <div style={{ background: gradient, height: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0 }}>
-                  <div style={{ fontSize: 44, marginBottom: 6 }}>{type.icon}</div>
+                  <div style={{ marginBottom: 6, color: 'rgba(255,255,255,0.85)', display: 'flex' }}><TypeIcon size={44} /></div>
                   <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11 }}>{item.format} · {item.template?.replace(/_/g,' ')}</div>
                   <div style={{ position: 'absolute', top: 10, right: 10 }}><StatusBadge status={item.status} /></div>
                 </div>
@@ -1667,7 +1693,7 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
               ) : (
                 <div style={{ background: gradient, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 40 }}>📸</div>
+                    <div style={{ color: 'rgba(255,255,255,0.85)', display: 'flex', justifyContent: 'center' }}><Camera size={40} /></div>
                     <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 6 }}>{item.format} · {item.template?.replace(/_/g,' ')}</div>
                   </div>
                   <div style={{ position: 'absolute', top: 10, right: 10 }}><StatusBadge status={item.status} /></div>
@@ -1677,7 +1703,7 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
 
             {/* ── Text post preview — show the actual text content ── */}
             {isText && (
-              <div style={{ background: 'linear-gradient(135deg,#0077B5,#005580)', padding: '20px 24px', flexShrink: 0 }}>
+              <div style={{ background: '#0077B5', padding: '20px 24px', flexShrink: 0 }}>
                 <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Text Post</div>
                 <div style={{ color: '#fff', fontSize: 14, fontWeight: 700, lineHeight: 1.4, maxWidth: 400 }}>{item.title}</div>
               </div>
@@ -1702,9 +1728,9 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
 
           {/* Carousel info */}
           {item.content_type === 'carousel' && slides && (
-            <div style={{ background: 'rgba(0,182,255,0.06)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, border: '1px solid rgba(0,182,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ color: '#00B6FF', fontSize: 12 }}>🖼️ {slides.length} slides ready</span>
-              <button onClick={() => downloadAsset(`/api/download/${item.job_id}`).catch(e=>alert(e.message))} style={{ padding: '4px 12px', borderRadius: 5, cursor: 'pointer', border: '1px solid rgba(22,163,74,0.4)', background: 'rgba(22,163,74,0.08)', color: '#16a34a', fontSize: 11, fontWeight: 600 }}>⬇ Download PNGs</button>
+            <div style={{ background: 'var(--cs-accent-soft)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, border: '1px solid var(--cs-accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--cs-accent)', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Images size={14} /> {slides.length} slides ready</span>
+              <button onClick={() => downloadAsset(`/api/download/${item.job_id}`).catch(e=>alert(e.message))} style={{ padding: '4px 12px', borderRadius: 5, cursor: 'pointer', border: '1px solid rgba(22,163,74,0.4)', background: 'rgba(22,163,74,0.08)', color: '#16a34a', fontSize: 11, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Download size={13} /> Download PNGs</button>
             </div>
           )}
 
@@ -1719,7 +1745,8 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
 
 function CardThumbnail({ item, gradient, height = 130 }) {
   const [thumbUrl, setThumbUrl] = useState(null)
-  const type = TYPE_META[item.content_type] || { icon: '📄' }
+  const type = TYPE_META[item.content_type] || FALLBACK_TYPE
+  const TypeIcon = type.icon
   const isPortrait = item.format === '9:16'
   const isVideoType = ['video','reel','story'].includes(item.content_type)
 
@@ -1739,7 +1766,7 @@ function CardThumbnail({ item, gradient, height = 130 }) {
   if (isVideoType && item.output_file) {
     return (
       <div style={{ width: '100%', height, background: gradient, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>▶</div>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cs-accent)' }}><Play size={16} fill="currentColor" /></div>
       </div>
     )
   }
@@ -1749,7 +1776,7 @@ function CardThumbnail({ item, gradient, height = 130 }) {
   return (
     <div style={{ width: '100%', height, background: gradient, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ width: isPortrait ? 46 : 72, height: isPortrait ? 72 : 46, border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 20 }}>{type.icon}</span>
+        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.85)' }}><TypeIcon size={20} /></span>
       </div>
     </div>
   )
@@ -1775,7 +1802,7 @@ function ContentCard({ item, onStatusChange, onRegenerate, onDelete, selected, o
         style={{
           background: 'var(--cs-surface)', borderRadius: 10, overflow: 'hidden',
           display: 'flex', flexDirection: 'column', transition: 'box-shadow 0.15s, transform 0.15s',
-          border: selected ? '2px solid #00B6FF' : '1px solid var(--cs-border)',
+          border: selected ? '2px solid var(--cs-accent)' : '1px solid var(--cs-border)',
         }}
         onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
         onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
@@ -1788,14 +1815,14 @@ function ContentCard({ item, onStatusChange, onRegenerate, onDelete, selected, o
             <div
               onClick={e => { e.stopPropagation(); onSelect(item.job_id) }}
               style={{ position: 'absolute', top: 8, left: 8, width: 18, height: 18, borderRadius: 4, cursor: 'pointer', zIndex: 2,
-                background: selected ? '#00B6FF' : 'rgba(0,0,0,0.4)',
-                border: selected ? '2px solid #00B6FF' : '2px solid rgba(255,255,255,0.5)',
+                background: selected ? 'var(--cs-accent)' : 'rgba(0,0,0,0.4)',
+                border: selected ? '2px solid var(--cs-accent)' : '2px solid rgba(255,255,255,0.5)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
-            >{selected && <span style={{ color: '#fff', fontSize: 10, lineHeight: 1 }}>✓</span>}</div>
+            >{selected && <span style={{ color: '#fff', lineHeight: 1, display: 'inline-flex' }}><Check size={11} /></span>}</div>
           )}
           <div style={{ position: 'absolute', top: 8, right: 8 }}><StatusBadge status={item.status} /></div>
-          <div style={{ position: 'absolute', bottom: 8, left: 8, width: 22, height: 22, borderRadius: '50%', background: `linear-gradient(135deg,#08316F,${brandColor(item.brand)})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 8, fontWeight: 700 }}>{initials(item.brand)}</div>
+          <div style={{ position: 'absolute', bottom: 8, left: 8, width: 22, height: 22, borderRadius: '50%', background: brandColor(item.brand), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 8, fontWeight: 700 }}>{initials(item.brand)}</div>
           <div style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.55)', borderRadius: 3, padding: '1px 5px', fontSize: 10, color: 'rgba(255,255,255,0.85)' }}>{item.format}</div>
         </div>
 
@@ -1816,17 +1843,17 @@ function ContentCard({ item, onStatusChange, onRegenerate, onDelete, selected, o
         {/* Actions */}
         <div style={{ display: 'flex', gap: 4, padding: '6px 8px', borderTop: '1px solid var(--cs-border-sub)', flexWrap: 'wrap' }}>
           <ActionBtn label="Preview" onClick={() => setPreview(true)} color="#0284c7" />
-          <ActionBtn label="↻" onClick={() => onRegenerate(item)} color="#b45309" />
+          <ActionBtn label={<RefreshCw size={13} />} onClick={() => onRegenerate(item)} color="#b45309" />
           {item.output_file && (
-            <ActionBtn label="⬇" onClick={() => downloadAsset(`/api/download/${item.job_id}`).catch(e=>alert(e.message))} color="#16a34a" />
+            <ActionBtn label={<Download size={13} />} onClick={() => downloadAsset(`/api/download/${item.job_id}`).catch(e=>alert(e.message))} color="#16a34a" />
           )}
           {nextStatus && nextStatus !== 'Scheduled' && (
-            <ActionBtn label={`→ ${nextStatus}`} onClick={() => onStatusChange(item.job_id, nextStatus)} color={STATUS_META[nextStatus]?.color} />
+            <ActionBtn label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>{nextStatus} <ArrowRight size={12} /></span>} onClick={() => onStatusChange(item.job_id, nextStatus)} color={STATUS_META[nextStatus]?.color} />
           )}
           {item.status !== 'Scheduled' && item.status !== 'Published' && (
-            <ActionBtn label="📅" onClick={() => setPreview(true)} color="#6d28d9" />
+            <ActionBtn label={<Calendar size={13} />} onClick={() => setPreview(true)} color="#6d28d9" />
           )}
-          <ActionBtn label="🗑" onClick={() => onDelete(item.job_id)} color="#ef4444" />
+          <ActionBtn label={<Trash2 size={13} />} onClick={() => onDelete(item.job_id)} color="#ef4444" />
         </div>
       </div>
     </>
@@ -1845,10 +1872,10 @@ function FilterBar({ active, onSelect, search, onSearch, total, counts }) {
           return (
             <button key={f.id} onClick={() => onSelect(f.id)} style={{
               padding: '6px 12px', borderRadius: 20, border: 'none', cursor: 'pointer',
-              background: on ? 'rgba(0,182,255,0.1)' : 'var(--cs-hover)',
-              color: on ? '#0284c7' : 'var(--cs-text-sub)',
+              background: on ? 'var(--cs-accent-soft)' : 'var(--cs-hover)',
+              color: on ? 'var(--cs-accent)' : 'var(--cs-text-sub)',
               fontSize: 12, fontWeight: on ? 600 : 400,
-              outline: on ? '1px solid rgba(0,182,255,0.3)' : '1px solid var(--cs-border)',
+              outline: on ? '1px solid var(--cs-accent-line)' : '1px solid var(--cs-border)',
               transition: 'all 0.12s', display: 'flex', alignItems: 'center', gap: 5,
             }}>
               {f.label}
@@ -1858,7 +1885,7 @@ function FilterBar({ active, onSelect, search, onSearch, total, counts }) {
         })}
       </div>
       <div style={{ position: 'relative' }}>
-        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--cs-text-muted)', fontSize: 13, pointerEvents: 'none' }}>🔍</span>
+        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--cs-text-muted)', display: 'inline-flex', pointerEvents: 'none' }}><Search size={13} /></span>
         <input value={search} onChange={e => onSearch(e.target.value)} placeholder="Search…" style={{
           background: 'var(--cs-surface)', border: '1px solid var(--cs-border)',
           borderRadius: 8, padding: '6px 12px 6px 30px',
@@ -1877,17 +1904,17 @@ function BulkBar({ selected, total, onSelectAll, onClear, onDelete, onStatus }) 
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-      background: 'rgba(0,182,255,0.06)', border: '1px solid rgba(0,182,255,0.2)',
+      background: 'var(--cs-accent-soft)', border: '1px solid var(--cs-accent-soft)',
       borderRadius: 8, padding: '8px 14px', marginBottom: 14,
       animation: 'fadein 0.15s ease',
     }}>
-      <span style={{ color: '#00B6FF', fontSize: 12, fontWeight: 700 }}>{selected} selected</span>
+      <span style={{ color: 'var(--cs-accent)', fontSize: 12, fontWeight: 700 }}>{selected} selected</span>
       <button onClick={onSelectAll} style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 11, cursor: 'pointer' }}>Select all ({total})</button>
       <button onClick={onClear} style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid var(--cs-border)', background: 'transparent', color: 'var(--cs-text-sub)', fontSize: 11, cursor: 'pointer' }}>Clear</button>
       <div style={{ flex: 1 }} />
       <div style={{ position: 'relative' }}>
-        <button onClick={() => setShowStatus(s => !s)} style={{ padding: '5px 12px', borderRadius: 5, border: '1px solid var(--cs-border)', background: 'var(--cs-surface)', color: 'var(--cs-text-sub)', fontSize: 11, cursor: 'pointer' }}>
-          Set status ▾
+        <button onClick={() => setShowStatus(s => !s)} style={{ padding: '5px 12px', borderRadius: 5, border: '1px solid var(--cs-border)', background: 'var(--cs-surface)', color: 'var(--cs-text-sub)', fontSize: 11, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          Set status <ChevronDown size={12} />
         </button>
         {showStatus && (
           <div style={{ position: 'absolute', top: 30, left: 0, zIndex: 50, background: 'var(--cs-surface)', border: '1px solid var(--cs-border)', borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.12)', minWidth: 130, animation: 'fadein 0.1s ease' }}>
@@ -1899,8 +1926,8 @@ function BulkBar({ selected, total, onSelectAll, onClear, onDelete, onStatus }) 
           </div>
         )}
       </div>
-      <button onClick={onDelete} style={{ padding: '5px 12px', borderRadius: 5, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
-        🗑 Delete {selected}
+      <button onClick={onDelete} style={{ padding: '5px 12px', borderRadius: 5, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)', color: '#ef4444', fontSize: 11, cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+        <Trash2 size={13} /> Delete {selected}
       </button>
     </div>
   )
@@ -1913,7 +1940,7 @@ function EmptyState({ filtered }) {
   if (filtered) {
     return (
       <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
+        <div style={{ marginBottom: 12, color: 'var(--cs-text-muted)', display: 'flex', justifyContent: 'center' }}><Search size={40} /></div>
         <div style={{ color: 'var(--cs-text-sub)', fontSize: 14, marginBottom: 6 }}>No content matches your filter</div>
         <div style={{ color: 'var(--cs-text-muted)', fontSize: 12 }}>Try a different filter or clear your search</div>
       </div>
@@ -1921,7 +1948,7 @@ function EmptyState({ filtered }) {
   }
   return (
     <div style={{ textAlign: 'center', padding: '80px 20px', animation: 'fadein 0.3s ease' }}>
-      <div style={{ fontSize: 48, marginBottom: 16 }}>🎬</div>
+      <div style={{ marginBottom: 16, color: 'var(--cs-text-muted)', display: 'flex', justifyContent: 'center' }}><Film size={48} /></div>
       <div style={{ color: 'var(--cs-text)', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>No content yet</div>
       <div style={{ color: 'var(--cs-text-sub)', fontSize: 14, marginBottom: 24, maxWidth: 320, margin: '0 auto 24px' }}>
         Generate your first video and it will appear here ready for review and scheduling.
@@ -1930,12 +1957,13 @@ function EmptyState({ filtered }) {
         onClick={() => navigate('/')}
         style={{
           padding: '12px 28px', borderRadius: 8, border: 'none',
-          background: 'linear-gradient(135deg,#08316F,#00B6FF)',
+          background: 'var(--cs-accent)',
           color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-          boxShadow: '0 4px 16px rgba(0,182,255,0.3)',
+          boxShadow: 'var(--cs-shadow-md)',
+          display: 'inline-flex', alignItems: 'center', gap: 8,
         }}
       >
-        Create your first video →
+        Create your first video <ArrowRight size={16} />
       </button>
     </div>
   )
@@ -2110,27 +2138,27 @@ export default function Library() {
           display: 'flex', alignItems: 'center', gap: 10,
           animation: 'fadein 0.2s ease',
         }}>
-          <span style={{ fontSize: 18 }}>✅</span>
+          <span style={{ color: '#16a34a', display: 'inline-flex' }}><CheckCircle2 size={18} /></span>
           <div style={{ flex: 1 }}>
             <span style={{ color: '#16a34a', fontSize: 13, fontWeight: 600 }}>New content ready! </span>
             <span style={{ color: 'var(--cs-text-sub)', fontSize: 12 }}>Your generation completed and has been added to your library.</span>
           </div>
-          <button onClick={() => setNewBanner(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', fontSize: 18, lineHeight: 1 }}>×</button>
+          <button onClick={() => setNewBanner(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cs-text-muted)', display: 'inline-flex', lineHeight: 1 }}><X size={16} /></button>
         </div>
       )}
 
       {/* Active jobs banner */}
       {jobs.filter(j => j.status === 'pending' || j.status === 'running').length > 0 && (
         <div style={{
-          background: 'rgba(0,182,255,0.05)', border: '1px solid rgba(0,182,255,0.2)',
+          background: 'var(--cs-accent-soft)', border: '1px solid var(--cs-accent-soft)',
           borderRadius: 8, padding: '10px 16px', marginBottom: 16,
           display: 'flex', alignItems: 'center', gap: 10,
         }}>
           <svg width="14" height="14" viewBox="0 0 14 14" style={{ animation: 'spin 0.8s linear infinite', flexShrink: 0 }}>
-            <circle cx="7" cy="7" r="5.5" fill="none" stroke="rgba(0,182,255,0.3)" strokeWidth="1.5" />
-            <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" fill="none" stroke="#00B6FF" strokeWidth="1.5" strokeLinecap="round" />
+            <circle cx="7" cy="7" r="5.5" fill="none" stroke="var(--cs-accent-line)" strokeWidth="1.5" />
+            <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" fill="none" stroke="var(--cs-accent)" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-          <span style={{ color: '#00B6FF', fontSize: 12, fontWeight: 600 }}>
+          <span style={{ color: 'var(--cs-accent)', fontSize: 12, fontWeight: 600 }}>
             {jobs.filter(j => j.status === 'pending' || j.status === 'running').length} generation{jobs.filter(j => j.status === 'pending' || j.status === 'running').length > 1 ? 's' : ''} in progress
           </span>
           <span style={{ color: 'var(--cs-text-muted)', fontSize: 12 }}>— this page will refresh automatically when done</span>
@@ -2152,8 +2180,8 @@ export default function Library() {
 
       {error && (
         <div style={{ background: 'rgba(180,83,9,0.06)', border: '1px solid rgba(180,83,9,0.15)', borderRadius: 7, padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ color: '#b45309', fontSize: 12, flex: 1 }}>⚠ {error}</span>
-          <button onClick={load} style={{ padding: '4px 12px', borderRadius: 5, border: '1px solid rgba(180,83,9,0.3)', background: 'rgba(180,83,9,0.08)', color: '#b45309', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>↻ Retry</button>
+          <span style={{ color: '#b45309', fontSize: 12, flex: 1, display: 'inline-flex', alignItems: 'center', gap: 6 }}><AlertTriangle size={13} style={{ flexShrink: 0 }} /> {error}</span>
+          <button onClick={load} style={{ padding: '4px 12px', borderRadius: 5, border: '1px solid rgba(180,83,9,0.3)', background: 'rgba(180,83,9,0.08)', color: '#b45309', fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5 }}><RefreshCw size={12} /> Retry</button>
           <span style={{ fontSize: 10, color: 'rgba(180,83,9,0.6)', flexShrink: 0 }}>Showing demo content</span>
         </div>
       )}
@@ -2162,7 +2190,7 @@ export default function Library() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
           <svg width="24" height="24" viewBox="0 0 24 24" style={{ animation: 'spin 0.8s linear infinite' }}>
             <circle cx="12" cy="12" r="10" fill="none" stroke="var(--cs-border)" strokeWidth="2" />
-            <path d="M12 2A10 10 0 0 1 22 12" fill="none" stroke="#00B6FF" strokeWidth="2" strokeLinecap="round" />
+            <path d="M12 2A10 10 0 0 1 22 12" fill="none" stroke="var(--cs-accent)" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </div>
       )}
