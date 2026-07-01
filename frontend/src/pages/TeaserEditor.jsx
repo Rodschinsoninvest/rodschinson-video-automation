@@ -120,7 +120,20 @@ const PORTFOLIO_ASSET_ROWGROUPS = [
   { key: 'technical_specs_rows',label: 'Technical specs',        cols: [['label','Label'],['value','Value']] },
   { key: 'lease_terms_rows',    label: 'Lease terms',            cols: [['label','Label'],['value','Value']] },
   { key: 'surfaces',            label: 'Surfaces (floor / area)',cols: [['floor','Floor'],['area','Area']] },
-  { key: 'amenities_bullets',   label: 'Amenities',              cols: [{ key: 'value', label: 'Amenity', span: 1 }], primitive: true },
+  { key: 'amenities_bullets',   label: 'Amenities / Kenmerken',  cols: [{ key: 'value', label: 'Amenity', span: 1 }], primitive: true },
+]
+// Editable section-header labels shown on the details slides (kept in sync with
+// the renderer's details_labels; e.g. amenities → "Kenmerken" in NL).
+const DETAILS_LABEL_FIELDS = [
+  ['details',    'Details header'],
+  ['financials', 'Financial summary'],
+  ['valuation',  'Valuation breakdown'],
+  ['income',     'Rental income'],
+  ['surfaces',   'Surfaces'],
+  ['specs',      'Technical specs'],
+  ['leases',     'Lease terms'],
+  ['amenities',  'Amenities / Kenmerken'],
+  ['other',      'Other'],
 ]
 // Company-wide (shared) fields for a portfolio teaser.
 const PORTFOLIO_COVER_TEXT = [
@@ -754,6 +767,19 @@ export default function TeaserEditor() {
                 {PORTFOLIO_COMPANY_ROWGROUPS.map(group => (
                   <RowGroupEditor key={group.key} group={group} rows={data[group.key] || []} onChange={rows => setField(group.key, rows)} theme={{ panel, border, text, muted, inputStyle }} />
                 ))}
+
+                {/* Section-header labels shown on the details slides (rename e.g. "Kenmerken"). */}
+                <div style={{ marginTop: 8, marginBottom: 20, border: `1px solid ${border}`, borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ padding: '10px 12px', background: 'rgba(0,0,0,0.02)', borderBottom: `1px solid ${border}`, fontSize: 12, fontWeight: 700, color: text }}>Section labels (details slides)</div>
+                  <div style={{ padding: 10, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+                    {DETAILS_LABEL_FIELDS.map(([key, label]) => (
+                      <div key={key}>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>{label}</label>
+                        <input value={data.details_labels?.[key] ?? ''} placeholder={label} onChange={e => setField('details_labels', { ...(data.details_labels || {}), [key]: e.target.value })} style={inputStyle} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
             {activeId === 'location' && (
@@ -934,6 +960,9 @@ export default function TeaserEditor() {
 
                   {/* Custom multi-column table (e.g. sale price per unit) */}
                   <UnitTableEditor value={a.unit_table} onChange={t => setAssetField(idx, 'unit_table', t)} theme={{ panel, border, text, muted, inputStyle }} />
+
+                  {/* Extra free-form tables shown on the details slide (e.g. Kenmerken) */}
+                  <ExtraTablesEditor tables={a.extra_tables || []} onChange={t => setAssetField(idx, 'extra_tables', t)} theme={{ panel, border, text, muted, inputStyle }} />
                 </div>
               )
             })()}
@@ -1252,6 +1281,45 @@ function BoundaryEditor({ imgUrl, points, onChange, AuthImg, theme }) {
         <span style={{ fontSize: 11, color: muted }}>{pts.length} point{pts.length === 1 ? '' : 's'} · click image to add · drag to move · double-click a point to delete{pts.length > 0 && pts.length < 3 ? ' · need ≥3 to show' : ''}</span>
         {pts.length > 0 && <button onClick={() => onChange([])} style={{ padding: '4px 10px', borderRadius: 4, border: `1px solid rgba(220,38,38,0.3)`, background: panel, color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>Clear outline</button>}
       </div>
+    </div>
+  )
+}
+
+// ── Extra free-form tables (details slide) ──────────────────────────────────
+// Each table = { head, rows:[{label,value}] }; the renderer shows these on the
+// building's details slide (e.g. a "Kenmerken" table), so make them editable.
+function ExtraTablesEditor({ tables, onChange, theme }) {
+  const { border, text, muted, inputStyle } = theme
+  const list = Array.isArray(tables) ? tables : []
+  const setTable = (i, patch) => onChange(list.map((t, j) => (j === i ? { ...t, ...patch } : t)))
+  const addTable = () => onChange([...list, { head: '', rows: [{ label: '', value: '' }] }])
+  const removeTable = (i) => onChange(list.filter((_, j) => j !== i))
+
+  return (
+    <div style={{ marginBottom: 20, border: `1px dashed ${border}`, borderRadius: 8, padding: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: text }}>Extra tables (details slide)</div>
+          <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>Free-form tables like “Kenmerken”, certificates, acquisition — each with its own title and rows.</div>
+        </div>
+        <button onClick={addTable} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: 'var(--cs-accent)', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add table</button>
+      </div>
+      {list.map((t, i) => (
+        <div key={i} style={{ marginTop: 12, border: `1px solid ${border}`, borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 10px', background: 'rgba(0,0,0,0.02)', borderBottom: `1px solid ${border}` }}>
+            <input value={t.head || ''} onChange={e => setTable(i, { head: e.target.value })} placeholder="Table title (e.g. Kenmerken)" style={{ ...inputStyle, fontWeight: 700 }} />
+            <button onClick={() => removeTable(i)} title="Remove table" style={{ padding: '6px 10px', borderRadius: 5, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>Remove</button>
+          </div>
+          <div style={{ padding: 8 }}>
+            <RowGroupEditor
+              group={{ key: `extra_${i}`, label: 'Rows', cols: [['label', 'Label'], ['value', 'Value']] }}
+              rows={Array.isArray(t.rows) ? t.rows : []}
+              onChange={rows => setTable(i, { rows })}
+              theme={theme}
+            />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
