@@ -780,6 +780,35 @@ export default function TeaserEditor() {
                     ))}
                   </div>
                 </div>
+
+                {/* Overview slide (building list) content */}
+                <div style={{ marginBottom: 20, border: `1px solid ${border}`, borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ padding: '10px 12px', background: 'rgba(0,0,0,0.02)', borderBottom: `1px solid ${border}`, fontSize: 12, fontWeight: 700, color: text }}>Overview slide (building list)</div>
+                  <div style={{ padding: 10 }}>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Subtitle</label>
+                    <input value={data.portfolio_overview?.sub || ''} onChange={e => setField('portfolio_overview', { ...(data.portfolio_overview || {}), sub: e.target.value })} style={{ ...inputStyle, marginBottom: 4 }} />
+                  </div>
+                  <div style={{ padding: '0 10px 4px' }}>
+                    <RowGroupEditor group={{ key: 'ov_totals', label: 'Totals strip', cols: [['k', 'Label'], ['v', 'Value']] }} rows={data.portfolio_overview?.totals || []} onChange={rows => setField('portfolio_overview', { ...(data.portfolio_overview || {}), totals: rows })} theme={{ panel, border, text, muted, inputStyle }} />
+                  </div>
+                  <div style={{ padding: '0 10px 10px' }}>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Company facts heading</label>
+                    <input value={data.company_facts_head || ''} onChange={e => setField('company_facts_head', e.target.value)} placeholder="e.g. Over de vennootschap" style={{ ...inputStyle, marginBottom: 4 }} />
+                    <RowGroupEditor group={{ key: 'company_facts', label: 'Company facts', cols: [['k', 'Label'], ['v', 'Value']] }} rows={data.company_facts || []} onChange={rows => setField('company_facts', rows)} theme={{ panel, border, text, muted, inputStyle }} />
+                  </div>
+                </div>
+
+                {/* Company financials slide extras */}
+                <div style={{ marginBottom: 20, border: `1px solid ${border}`, borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ padding: '10px 12px', background: 'rgba(0,0,0,0.02)', borderBottom: `1px solid ${border}`, fontSize: 12, fontWeight: 700, color: text }}>Company financials slide</div>
+                  <div style={{ padding: 10 }}>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>Financials table title</label>
+                    <input value={data.company_singles?.head || ''} onChange={e => setField('company_singles', { ...(data.company_singles || {}), head: e.target.value })} style={{ ...inputStyle, marginBottom: 4 }} />
+                    <RowGroupEditor group={{ key: 'company_singles', label: 'Financials rows', cols: [['label', 'Label'], ['value', 'Value']] }} rows={data.company_singles?.rows || []} onChange={rows => setField('company_singles', { ...(data.company_singles || {}), rows })} theme={{ panel, border, text, muted, inputStyle }} />
+                    <RowGroupEditor group={{ key: 'extra_bullets', label: 'Other bullets', cols: [{ key: 'value', label: 'Bullet', span: 1 }], primitive: true }} rows={data.extra_bullets || []} onChange={rows => setField('extra_bullets', rows)} theme={{ panel, border, text, muted, inputStyle }} />
+                    <CompanyTablesEditor tables={data.company_tables || []} onChange={t => setField('company_tables', t)} theme={{ panel, border, text, muted, inputStyle }} />
+                  </div>
+                </div>
               </div>
             )}
             {activeId === 'location' && (
@@ -1318,6 +1347,31 @@ function ExtraTablesEditor({ tables, onChange, theme }) {
               theme={theme}
             />
           </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Company multi-column tables (financials slide) ──────────────────────────
+// data.company_tables = [{ head, columns:[...], rows:[[...], ...] }, ...]. Each
+// entry is edited with the same UnitTableEditor; removing one drops it from the array.
+function CompanyTablesEditor({ tables, onChange, theme }) {
+  const { border, text, muted } = theme
+  const list = Array.isArray(tables) ? tables : []
+  const setOne = (i, val) => onChange(val === null ? list.filter((_, j) => j !== i) : list.map((t, j) => (j === i ? val : t)))
+  return (
+    <div style={{ marginBottom: 8, border: `1px dashed ${border}`, borderRadius: 8, padding: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: text }}>Financial tables (multi-column)</div>
+          <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>Multi-column tables (e.g. Post | 2025 | 2024) shown on the company financials slide.</div>
+        </div>
+        <button onClick={() => onChange([...list, { head: '', columns: ['Post', '2025', '2024'], rows: [['', '', '']] }])} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: 'var(--cs-accent)', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add table</button>
+      </div>
+      {list.map((t, i) => (
+        <div key={i} style={{ marginTop: 12 }}>
+          <UnitTableEditor value={t} onChange={val => setOne(i, val)} theme={theme} />
         </div>
       ))}
     </div>
