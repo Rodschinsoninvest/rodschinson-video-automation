@@ -38,3 +38,6 @@ Path
 
 # Logs
 *.log
+
+# Local Netlify folder
+.netlify
