@@ -192,8 +192,15 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
    compact instead of stretching the value to the far edge of the slide. */
 .details .d-2col{display:flex;gap:0 44px;align-items:flex-start}
 .details .d-2col > table{flex:1;min-width:0}
-/* Vertically centre sparse detail grids so pages aren't top-heavy with a gap below. */
-.details .d-grid{align-content:center}
+/* Fill the page: detail rows stretch to the full body height (no bottom void). */
+.details .d-grid{align-content:stretch}
+.details .d-grid.one > .d-card{height:100%}
+/* A lone card without enough rows to fill → centre its content in the panel. */
+.details .d-grid.one > .d-card:not(.d-fill){justify-content:center}
+/* A lone table with enough rows → stretch the table so rows fill the page. */
+.details .d-card.d-fill > table,
+.details .d-card.d-fill .d-2col{height:100%}
+.details .d-card.d-fill .d-2col > table{height:100%}
 
 /* Consolidated unit-level table — per-row: Unit / Surface / step rents */
 .details .u-card{padding:11px 14px 12px}
@@ -1471,6 +1478,7 @@ window.loadLongTeaser = function(data, brandName){
   function cardHtml(p){
     const cls = ['d-card'];
     if (p.wide) cls.push('wide');
+    if (p.fill) cls.push('d-fill');
     if (p.kind === 'bullets' && !p.wide) cls.push('narrow');
     if (p.kind === 'unit-table') cls.push('u-card');
     const tag = p.tag ? `<span class="d-head-tag">${esc(p.tag)}</span>` : '';
@@ -1503,6 +1511,17 @@ window.loadLongTeaser = function(data, brandName){
     }
   }
   flushBucket();
+
+  // Fill lone-card pages: a card alone on a page goes full-width, and a table
+  // with enough rows stretches to fill the page height (rows spread out) instead
+  // of leaving a big empty band. Short/bullet lone cards are centred (CSS).
+  detailPages.forEach(pg => {
+    if (pg.length === 1) {
+      pg[0].wide = true;
+      const rc = pg[0].rows ? pg[0].rows.length : 0;
+      if (pg[0].kind === 'table' && rc >= 9) pg[0].fill = true;
+    }
+  });
 
   // Optional KPI strip — shown ONCE on the first details page.
   // Pulls from data.key_metrics (list of {label, value, sub}) when provided.
