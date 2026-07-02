@@ -363,6 +363,10 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
 .locatie .info .l-title{font-family:'Montserrat';font-weight:800;font-size:20px;color:var(--navy);line-height:1.3;padding-bottom:18px;border-bottom:1px solid var(--border);margin-bottom:20px}
 .locatie .info .l-link{display:block;color:var(--cyan);font-family:'Montserrat';font-weight:700;font-size:19px;text-decoration:underline;margin-bottom:20px;line-height:1.3}
 .locatie .info .l-rule{height:1px;background:var(--border);margin-bottom:20px}
+.locatie .info .l-cadastral{margin-top:4px}
+.locatie .info .l-cadastral img{width:100%;max-height:300px;object-fit:contain;border:1px solid var(--border);border-radius:6px;background:#fff}
+.locatie .info .l-cadastral .l-cadastral-cap{margin-top:8px;font-size:11px;color:var(--grey-text);letter-spacing:0.02em;display:flex;align-items:center;gap:7px}
+.locatie .info .l-cadastral .l-cadastral-cap::before{content:'';width:13px;height:13px;border:1.5px dashed #E2231A;border-radius:3px;flex-shrink:0}
 .locatie .loc-crosshair{
   position:absolute;right:10px;top:30px;width:28px;height:28px;border-radius:50%;
   border:1.5px solid var(--cyan);color:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:300;line-height:1;background:#fff;
@@ -1544,6 +1548,7 @@ window.loadLongTeaser = function(data, brandName){
           <div class="l-rule"></div>
           <a class="l-link" href="${esc(mapsUrl)}" target="_blank">${esc(mapLinkTxt)}</a>
           <div class="l-rule"></div>
+          ${data.cadastral_parcel ? `<div class="l-cadastral"><img src="${esc(fileUrl(data.cadastral_parcel))}" alt="cadastral parcel"><div class="l-cadastral-cap">${esc(data.cadastral_caption || ({EN:'Cadastral parcel',FR:'Parcelle cadastrale',NL:'Kadastraal perceel'}[LANG] || 'Cadastral parcel'))}</div></div>` : ''}
         </div>
         <div class="loc-crosshair">!</div>
       </div>

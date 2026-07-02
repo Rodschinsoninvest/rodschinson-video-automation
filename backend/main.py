@@ -7666,6 +7666,35 @@ async def long_teaser_translate(job_id: str, body: LongTeaserTranslateRequest, r
     return {"data": data}
 
 
+class LongTeaserCadastralRequest(BaseModel):
+    address: str = ""
+
+
+@app.post("/api/long-teaser/{job_id}/cadastral")
+async def long_teaser_cadastral(job_id: str, body: LongTeaserCadastralRequest, request: Request):
+    """Fetch a cadastral parcel image (Flemish orthophoto + parcel outline) for an
+    address and save it into the teaser's assets. Best-effort: Flanders only."""
+    await _get_request_user(request)
+    address = (body.address or "").strip()
+    if not address:
+        raise HTTPException(422, "An address is required to search the cadastre.")
+    paths = _teaser_paths(job_id)
+    if not paths["json"].exists():
+        raise HTTPException(404, "Teaser JSON not found")
+    adir = paths["assets_dir"]
+    adir.mkdir(parents=True, exist_ok=True)
+    out = adir / "cadastral_parcel.png"
+    try:
+        import geo_flanders as _geo
+        loop = asyncio.get_event_loop()
+        res = await loop.run_in_executor(None, lambda: _geo.aerial_for_address(address, out))
+    except Exception as e:
+        raise HTTPException(502, f"Cadastral lookup failed: {e}")
+    if not res or not out.exists():
+        raise HTTPException(404, "No cadastral parcel found for that address (the cadastre lookup only covers Flanders — upload an image instead).")
+    return {"url": _to_file_url(out), "boundary": res.get("boundary")}
+
+
 @app.post("/api/long-teaser/{job_id}/regenerate", status_code=202)
 async def long_teaser_regenerate(job_id: str, request: Request, body: dict | None = Body(default=None)):
     """Re-run the Puppeteer renderer (and optionally the PPTX builder) against the

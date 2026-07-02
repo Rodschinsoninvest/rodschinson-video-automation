@@ -89,7 +89,7 @@ const IMAGE_FIELDS_BY_SECTION = {
   cover:        [['cover_photo', 'Cover photo']],
   activa:       [['activa_photo', 'Description page photo']],
   aerial:       [['aerial_view',  'Aerial image']],
-  localisation: [['street_map',   'Google Maps photo']],
+  localisation: [['street_map',   'Google Maps photo'], ['cadastral_parcel', 'Cadastral parcel (Location slide, below the address)']],
   sales:        [['sales_photo',  'Contact-page photo']],
 }
 
@@ -380,6 +380,32 @@ export default function TeaserEditor() {
       toast(e.message, 'error')
     } finally {
       setTranslating(false)
+    }
+  }
+
+  // Fetch a cadastral parcel image for the teaser address (Flanders cadastre).
+  const [fetchingCad, setFetchingCad] = useState(false)
+  const handleFetchCadastral = async () => {
+    const address = (data?.address || '').trim()
+    if (!address) { toast('Add the address first (on the Description page).', 'error'); return }
+    setFetchingCad(true)
+    try {
+      const res = await apiFetch(`/api/long-teaser/${jobId}/cadastral`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || `Cadastral fetch failed (${res.status})`)
+      }
+      const { url } = await res.json()
+      setField('cadastral_parcel', url)
+      toast('Cadastral parcel added. Save & Regenerate to see it.', 'success')
+    } catch (e) {
+      toast(e.message, 'error')
+    } finally {
+      setFetchingCad(false)
     }
   }
 
@@ -1109,6 +1135,17 @@ export default function TeaserEditor() {
             <div style={{ marginBottom: 22 }}>
               <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted, marginBottom: 8 }}>Parcel outline (red)</div>
               <BoundaryEditor imgUrl={data.aerial_view || ''} points={data.boundary} onChange={pts => setField('boundary', pts)} AuthImg={AuthImg} theme={{ border, text, muted, panel }} />
+            </div>
+          )}
+
+          {/* Cadastral parcel: fetch by address (Flanders) — shown on the Location slide */}
+          {activeId === 'localisation' && (
+            <div style={{ marginBottom: 22, padding: 12, border: `1px dashed ${border}`, borderRadius: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 4 }}>Cadastral parcel</div>
+              <div style={{ fontSize: 11, color: muted, marginBottom: 10, lineHeight: 1.5 }}>Search the cadastre for this teaser's address, or upload your own image above. It appears on the Location slide, below the address. (Auto-search covers Flanders; for Brussels/Wallonia, upload the image.)</div>
+              <button onClick={handleFetchCadastral} disabled={fetchingCad} style={{ padding: '8px 14px', borderRadius: 6, border: 'none', background: 'var(--cs-accent)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: fetchingCad ? 'not-allowed' : 'pointer', opacity: fetchingCad ? 0.6 : 1 }}>
+                {fetchingCad ? 'Searching…' : '🔍 Search cadastre by address'}
+              </button>
             </div>
           )}
 
