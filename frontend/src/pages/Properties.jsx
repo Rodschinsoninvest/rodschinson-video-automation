@@ -7,7 +7,7 @@ import { apiFetch } from '../utils/apiFetch'
 import {
   Building2, Hotel, Factory, Stethoscope, Pill, Car, GraduationCap,
   ShoppingBag, HardHat, Dumbbell, Trees, Home, ClipboardList, Sparkles,
-  Info, Phone, Satellite, Map, FileText, FolderOpen, Images, Camera,
+  Info, Phone, Satellite, Map as MapIcon, FileText, FolderOpen, Images, Camera,
   Users, RefreshCw, Plus, ChevronUp, ChevronDown,
 } from 'lucide-react'
 
@@ -656,7 +656,7 @@ function LongTeaserModal({ prop, brands, onClose, onGenerate, dark }) {
               [Home, 'Cover (first page)', coverImage, setCoverImage],
               [Phone, 'Contact (last page)', salesImage, setSalesImage],
               [Satellite, 'Aerial view', aerialImage, setAerialImage],
-              [Map, 'Cadastral parcel', cadastralImage, setCadastralImage],
+              [MapIcon, 'Cadastral parcel', cadastralImage, setCadastralImage],
             ].map(([LabelIcon, label, val, setter], idx) => (
               <div key={idx}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9.5, fontWeight: 600, color: muted, marginBottom: 3 }}><LabelIcon size={12} /> {label}</div>
