@@ -179,7 +179,7 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
 }
 .details .d-head .d-head-tag{font-family:'Montserrat';font-weight:500;font-size:9.5px;letter-spacing:0.06em;text-transform:none;color:var(--grey-text)}
 .details table{width:100%;border-collapse:collapse;font-size:11.5px;color:#111;table-layout:fixed}
-.details td{padding:6.5px 10px;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere;line-height:1.35;border:none}
+.details td{padding:4.5px 10px;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere;line-height:1.3;border:none}
 .details td:first-child{color:var(--grey-text);width:58%;padding-left:10px;font-weight:500}
 .details td:last-child{text-align:right;font-weight:700;color:var(--navy);padding-right:10px}
 /* Zebra banding reads cleaner than hairline row borders */
@@ -770,7 +770,7 @@ window.loadLongTeaser = function(data, brandName){
     }
     // Estimated rendered height (px) of a card — drives height-packing so a page
     // is never overfilled (which would clip text) nor near-empty.
-    const CH_BASE=60, CH_ROW=22, CH_CROW=19, CH_CHEAD=18, CH_BULL=21, DECK_GAP=12;
+    const CH_BASE=62, CH_ROW=24, CH_CROW=20, CH_CHEAD=18, CH_BULL=22, DECK_GAP=12;
     function cardHeight(c){
       if (c.kind==='coltable') return CH_BASE + CH_CHEAD + c.rows.length*CH_CROW;
       if (c.kind==='bullets')  return CH_BASE + Math.ceil(c.rows.length/2)*CH_BULL;
@@ -1192,8 +1192,9 @@ window.loadLongTeaser = function(data, brandName){
   const chunk = (arr, n) => { const o=[]; for (let i=0;i<arr.length;i+=n) o.push(arr.slice(i,i+n)); return o; };
 
   // Per-page capacities, tuned for 528px usable body after title row.
-  const HALF_ROWS = 14;   // rows per card when 2 cards share a page
-  const FULL_ROWS = 22;   // rows per card when it spans the whole page width
+  // Kept conservative so rows that wrap to 2 lines don't overflow and get cropped.
+  const HALF_ROWS = 13;   // rows per card when 2 cards share a page
+  const FULL_ROWS = 19;   // rows per card when it spans the whole page width
   const HALF_BULL = 18;   // bullet items in a 2-column half card
   const FULL_BULL = 26;   // bullet items in a full-width 2-col card
 
