@@ -7568,7 +7568,7 @@ _TRANSLATE_SKIP_KEYS = {
     "sales_photo", "back_photo", "street_map", "map_url", "google_maps_url",
     "sharepoint_url", "expertise_url", "maps", "url", "photos", "plans",
     "boundary", "photo_focus", "plan_rotation", "section_visibility",
-    "photo_layout", "font_family",
+    "photo_layout", "font_family", "heading_font",
 }
 _URLISH_RE = re.compile(r'^(https?://|file://|data:|/)|\.(png|jpe?g|webp|gif|svg|pdf|heic|heif|avif)$', re.I)
 

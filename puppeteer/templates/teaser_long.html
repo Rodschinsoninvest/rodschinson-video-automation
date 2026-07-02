@@ -543,9 +543,10 @@ function measureCardHeights(items){
 window.loadLongTeaser = function(data, brandName){
   data = data || {};
 
-  // ── Selectable font ("police") — overrides the default Montserrat everywhere.
-  // Curated list with weights known to exist on Google Fonts (css2 400s if not).
+  // ── Selectable fonts ("police") — separate Title + Body fonts override the
+  // default Montserrat. Curated weights known to exist on Google Fonts.
   const FONTS_MAP = {
+    // Sans-serif
     'Montserrat':'300;400;500;600;700;800;900',
     'Inter':'300;400;500;600;700;800;900',
     'Poppins':'300;400;500;600;700;800;900',
@@ -555,18 +556,41 @@ window.loadLongTeaser = function(data, brandName){
     'Open Sans':'300;400;500;600;700;800',
     'Lato':'300;400;700;900',
     'Nunito':'300;400;500;600;700;800',
+    'Oswald':'300;400;500;600;700',
+    // Serif
+    'Fraunces':'300;400;500;600;700;800;900',
     'Playfair Display':'400;500;600;700;800;900',
+    'Cormorant Garamond':'300;400;500;600;700',
+    'DM Serif Display':'400',
+    'Lora':'400;500;600;700',
+    'EB Garamond':'400;500;600;700;800',
+    'Libre Baskerville':'400;700',
+    'PT Serif':'400;700',
+    'Source Serif 4':'300;400;500;600;700;800;900',
+    'Bitter':'300;400;500;600;700;800;900',
     'Merriweather':'300;400;700',
   };
-  const FONT = (data.font_family && FONTS_MAP[data.font_family]) ? data.font_family : 'Montserrat';
-  if (FONT !== 'Montserrat') {
-    const l = document.createElement('link'); l.rel = 'stylesheet';
-    l.href = `https://fonts.googleapis.com/css2?family=${FONT.replace(/ /g,'+')}:wght@${FONTS_MAP[FONT]}&display=swap`;
-    document.head.appendChild(l);
-  }
+  const _pickFont = (v, fb) => (v && FONTS_MAP[v]) ? v : fb;
+  const BODY_FONT = _pickFont(data.font_family, 'Montserrat');
+  const HEAD_FONT = _pickFont(data.heading_font, BODY_FONT);
+  // Load the Google Font(s) actually used (Montserrat is already in <head>).
+  [...new Set([BODY_FONT, HEAD_FONT])].forEach(f => {
+    if (f !== 'Montserrat') {
+      const l = document.createElement('link'); l.rel = 'stylesheet';
+      l.href = `https://fonts.googleapis.com/css2?family=${f.replace(/ /g,'+')}:wght@${FONTS_MAP[f]}&display=swap`;
+      document.head.appendChild(l);
+    }
+  });
+  // Title elements (headings) get HEAD_FONT; everything else gets BODY_FONT.
+  const HEAD_SEL = ['.c-title','.c-loc','.wm-main','.wm-sub','.badge','.ref-tag','.price-val','.price-label',
+    '.pg-header .sec','.d-title','.d-head','.kpi-value','.kpi-label','.a-title','.a-eyebrow','.a-asset-eyebrow',
+    '.pf-head','.pf-item .t','.ad-title','.ad-eyebrow','.ad-index','.lo-title','.lo-eyebrow','.l-title',
+    '.s-name','.s-role','.divider .wm','.u-sum-v','.logo .l1','.logo .l2']
+    .map(s => `#doc ${s}`).join(',');
   const fo = document.createElement('style');
   // Keep 'Noto Color Emoji' in the stack so 📍/↗ icons still render under the override.
-  fo.textContent = `#doc, #doc *{font-family:'${FONT}','Noto Color Emoji',sans-serif !important}`;
+  fo.textContent = `#doc, #doc *{font-family:'${BODY_FONT}','Noto Color Emoji',sans-serif !important}`
+    + `${HEAD_SEL}{font-family:'${HEAD_FONT}','Noto Color Emoji',sans-serif !important}`;
   document.head.appendChild(fo);
 
   const T = {

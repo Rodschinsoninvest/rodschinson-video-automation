@@ -175,8 +175,9 @@ const PORTFOLIO_ASSET_SUBSECTIONS = [
 // "Photos per page" choices — Auto keeps the adaptive grid; a fixed N renders a
 // clean uniform grid so wide photos aren't cropped by a denser auto layout.
 const PHOTO_LAYOUT_OPTIONS = [['', 'Auto'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4']]
-// Selectable teaser font ("police") — must match FONTS_MAP in teaser_long.html.
-const TEASER_FONTS = ['Montserrat', 'Inter', 'Poppins', 'Raleway', 'Work Sans', 'Roboto', 'Open Sans', 'Lato', 'Nunito', 'Playfair Display', 'Merriweather']
+// Selectable teaser fonts ("police") — must match FONTS_MAP in teaser_long.html.
+const TEASER_FONTS_SANS = ['Montserrat', 'Inter', 'Poppins', 'Raleway', 'Work Sans', 'Roboto', 'Open Sans', 'Lato', 'Nunito', 'Oswald']
+const TEASER_FONTS_SERIF = ['Fraunces', 'Playfair Display', 'Cormorant Garamond', 'DM Serif Display', 'Lora', 'EB Garamond', 'Libre Baskerville', 'PT Serif', 'Source Serif 4', 'Bitter', 'Merriweather']
 // Languages offered by the in-editor Translate action.
 const TRANSLATE_LANGS = [['FR', 'French'], ['NL', 'Dutch'], ['EN', 'English']]
 
@@ -739,15 +740,26 @@ export default function TeaserEditor() {
             </div>
           </div>
         )}
-        {/* Font ("police") for all teaser text */}
+        {/* Fonts ("police") — separate for titles and body/description */}
+        <select
+          value={data.heading_font || data.font_family || 'Montserrat'}
+          onChange={e => setField('heading_font', e.target.value)}
+          disabled={saving || rendering || translating}
+          title="Font for titles / headings"
+          style={{ padding: '8px 10px', borderRadius: 6, border: `1px solid ${border}`, background: panel, color: text, fontSize: 12, cursor: 'pointer' }}
+        >
+          <optgroup label="Title — Sans-serif">{TEASER_FONTS_SANS.map(f => <option key={f} value={f}>{f}</option>)}</optgroup>
+          <optgroup label="Title — Serif">{TEASER_FONTS_SERIF.map(f => <option key={f} value={f}>{f}</option>)}</optgroup>
+        </select>
         <select
           value={data.font_family || 'Montserrat'}
           onChange={e => setField('font_family', e.target.value)}
           disabled={saving || rendering || translating}
-          title="Font for all text in this teaser"
+          title="Font for body / description text"
           style={{ padding: '8px 10px', borderRadius: 6, border: `1px solid ${border}`, background: panel, color: text, fontSize: 12, cursor: 'pointer' }}
         >
-          {TEASER_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
+          <optgroup label="Body — Sans-serif">{TEASER_FONTS_SANS.map(f => <option key={f} value={f}>{f}</option>)}</optgroup>
+          <optgroup label="Body — Serif">{TEASER_FONTS_SERIF.map(f => <option key={f} value={f}>{f}</option>)}</optgroup>
         </select>
         {/* Translate all text (keeps images & links) */}
         <select
