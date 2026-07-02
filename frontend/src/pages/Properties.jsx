@@ -898,16 +898,18 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
   const handleFolderPick = async (e) => {
     const files = Array.from(e.target.files || [])
     e.target.value = ''
-    if (!files.length) return
+    if (!files.length) { toast('No files were selected from the folder.', 'error'); return }
     setReading(true)
     try {
+      const imgs = files.filter(f => IMG_RE.test(f.name))
+      if (!imgs.length) { toast(`Folder has ${files.length} file(s) but no images (jpg/png/webp).`, 'error'); return }
       const groups = new Map()  // subfolder name → [File]
-      for (const f of files) {
-        if (!IMG_RE.test(f.name)) continue
+      for (const f of imgs) {
         const rel = f.webkitRelativePath || f.name
         const parts = rel.split('/').filter(Boolean)
         // parts[0] is the chosen folder; parts[1] is the per-asset subfolder.
-        const sub = parts.length >= 3 ? parts[1] : (parts.length === 2 ? parts[0] : '(root)')
+        // A flat folder (no subfolders) → a single building.
+        const sub = parts.length >= 3 ? parts[1] : (parts.length === 2 ? parts[0] : (parts[0] || 'Building 1'))
         if (!groups.has(sub)) groups.set(sub, [])
         groups.get(sub).push(f)
       }
@@ -922,8 +924,12 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
       }
       next.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
       setAssets(next)
-      if (skipped) toast(`${skipped} photo(s) couldn't be read (e.g. HEIC). Export them as JPEG/PNG and re-add.`, 'error')
-      if (!next.length) toast('No readable images found in that folder.', 'error')
+      const totalPh = next.reduce((s, a) => s + a.photos.length, 0)
+      if (next.length) toast(`Loaded ${next.length} building(s), ${totalPh} photo(s).`, 'success')
+      if (skipped && next.length) toast(`${skipped} image(s) couldn't be read (often HEIC) — export as JPEG/PNG.`, 'error')
+      if (!next.length) toast(`Found ${imgs.length} image(s) but none could be read — likely HEIC (iPhone). Export the folder as JPEG/PNG and retry.`, 'error')
+    } catch (err) {
+      toast(`Folder read failed: ${err?.message || err}`, 'error')
     } finally {
       setReading(false)
     }
