@@ -85,6 +85,8 @@ async function main() {
       }));
       await Promise.all([...imgPromises, ...bgPromises]);
     });
+    // Wait for any font injected by loadLongTeaser (selectable "police") to load.
+    await page.evaluate(() => document.fonts.ready).catch(() => {});
     // Rotate portrait plan images now that natural dimensions are known
     await page.evaluate(() => { if (typeof window.rotatePortraitPlans === 'function') window.rotatePortraitPlans(); });
     await new Promise(r => setTimeout(r, 600));

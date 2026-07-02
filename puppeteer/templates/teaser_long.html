@@ -498,6 +498,32 @@ function objPos(focusMap, key){
 
 window.loadLongTeaser = function(data, brandName){
   data = data || {};
+
+  // ── Selectable font ("police") — overrides the default Montserrat everywhere.
+  // Curated list with weights known to exist on Google Fonts (css2 400s if not).
+  const FONTS_MAP = {
+    'Montserrat':'300;400;500;600;700;800;900',
+    'Inter':'300;400;500;600;700;800;900',
+    'Poppins':'300;400;500;600;700;800;900',
+    'Raleway':'300;400;500;600;700;800;900',
+    'Work Sans':'300;400;500;600;700;800;900',
+    'Roboto':'300;400;500;700;900',
+    'Open Sans':'300;400;500;600;700;800',
+    'Lato':'300;400;700;900',
+    'Nunito':'300;400;500;600;700;800',
+    'Playfair Display':'400;500;600;700;800;900',
+    'Merriweather':'300;400;700',
+  };
+  const FONT = (data.font_family && FONTS_MAP[data.font_family]) ? data.font_family : 'Montserrat';
+  if (FONT !== 'Montserrat') {
+    const l = document.createElement('link'); l.rel = 'stylesheet';
+    l.href = `https://fonts.googleapis.com/css2?family=${FONT.replace(/ /g,'+')}:wght@${FONTS_MAP[FONT]}&display=swap`;
+    document.head.appendChild(l);
+  }
+  const fo = document.createElement('style');
+  fo.textContent = `#doc, #doc *{font-family:'${FONT}',sans-serif !important}`;
+  document.head.appendChild(fo);
+
   const T = {
     activa:  data.tab_activa   || 'Activa',
     loc:     data.tab_locatie  || 'Locatie',

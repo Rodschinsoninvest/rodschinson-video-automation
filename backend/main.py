@@ -7560,6 +7560,112 @@ async def long_teaser_put(job_id: str, body: LongTeaserPutRequest, request: Requ
     return {"ok": True, "short_id": paths["short_id"]}
 
 
+# ── Translate a teaser's text in place (keeps images, links, numbers) ──────────
+# Keys whose string values are URLs / images / codes / geometry / config and must
+# NOT be translated. Everything else that contains letters is sent to Claude.
+_TRANSLATE_SKIP_KEYS = {
+    "reference", "language", "cover_photo", "activa_photo", "aerial_view",
+    "sales_photo", "back_photo", "street_map", "map_url", "google_maps_url",
+    "sharepoint_url", "expertise_url", "maps", "url", "photos", "plans",
+    "boundary", "photo_focus", "plan_rotation", "section_visibility",
+    "photo_layout", "font_family",
+}
+_URLISH_RE = re.compile(r'^(https?://|file://|data:|/)|\.(png|jpe?g|webp|gif|svg|pdf|heic|heif|avif)$', re.I)
+
+def _collect_translatable(obj, path=None, out=None):
+    if out is None:
+        out, path = [], []
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k in _TRANSLATE_SKIP_KEYS:
+                continue
+            _collect_translatable(v, path + [k], out)
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            _collect_translatable(v, path + [i], out)
+    elif isinstance(obj, str):
+        s = obj.strip()
+        if s and re.search(r'[A-Za-zÀ-ÿ]', s) and not _URLISH_RE.search(s):
+            out.append((list(path), obj))
+    return out
+
+def _apply_translation(obj, path, value):
+    cur = obj
+    for p in path[:-1]:
+        cur = cur[p]
+    cur[path[-1]] = value
+
+
+class LongTeaserTranslateRequest(BaseModel):
+    data: dict
+    target_lang: str = "FR"
+
+
+@app.post("/api/long-teaser/{job_id}/translate")
+async def long_teaser_translate(job_id: str, body: LongTeaserTranslateRequest, request: Request):
+    """Translate every human-readable text field to target_lang, leaving images,
+    URLs, links, numbers, currencies and reference codes intact. Returns the
+    updated data (not saved — the editor saves + regenerates)."""
+    user = await _get_request_user(request)
+    if not isinstance(body.data, dict):
+        raise HTTPException(422, "data must be an object")
+    target = (body.target_lang or "FR").upper()
+    lang_name = {"FR": "French", "NL": "Dutch", "EN": "English"}.get(target, target)
+    data = json.loads(json.dumps(body.data))  # deep copy
+    items = _collect_translatable(data)
+    if not items:
+        data["language"] = target
+        return {"data": data}
+    strings = [s for _, s in items]
+
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not anthropic_key:
+        raise HTTPException(500, "ANTHROPIC_API_KEY not set")
+    prompt = (
+        f"Translate each string in this JSON array to {lang_name}. "
+        "Return ONLY a JSON array of strings, same length and same order, no commentary.\n"
+        "Rules:\n"
+        "- Keep numbers, currency symbols, units (m², %, €), measurements, dates, "
+        "email addresses, phone numbers, URLs and reference codes EXACTLY as-is.\n"
+        f"- Translate only the human-readable words into {lang_name}.\n"
+        f"- Localise Belgian street names and municipalities to their conventional {lang_name} form "
+        "(e.g. Dutch 'Waterloosesteenweg' -> French 'Chaussée de Waterloo'; 'Elsene' -> 'Ixelles').\n"
+        "- If a string has nothing translatable, return it unchanged.\n\n"
+        + json.dumps(strings, ensure_ascii=False)
+    )
+    _res = None
+    async with _claude_semaphore:
+        for _attempt in range(4):
+            async with httpx.AsyncClient(timeout=120) as _client:
+                _res = await _client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={"x-api-key": anthropic_key, "anthropic-version": "2023-06-01",
+                             "content-type": "application/json"},
+                    json={"model": "claude-sonnet-4-6", "max_tokens": 16000,
+                          "messages": [{"role": "user", "content": prompt}]},
+                )
+            if _res.status_code not in (429, 529):
+                break
+            await asyncio.sleep(2 ** (_attempt + 1))
+    if _res is None or _res.status_code != 200:
+        raise HTTPException(502, f"Translation API error {_res.status_code if _res else 'no response'}")
+    try:
+        translated = _parse_json(_res.json()["content"][0]["text"].strip())
+    except Exception as e:
+        raise HTTPException(502, f"Translation returned invalid JSON: {e}")
+    if not isinstance(translated, list) or len(translated) != len(items):
+        raise HTTPException(502, "Translation length mismatch — please retry")
+    for (path, _orig), val in zip(items, translated):
+        if isinstance(val, str) and val.strip():
+            _apply_translation(data, path, val)
+    data["language"] = target
+    try:
+        await _audit(user, "long_teaser_translate", f"{_teaser_short_id(job_id)} -> {target}")
+    except Exception:
+        pass
+    return {"data": data}
+
+
 @app.post("/api/long-teaser/{job_id}/regenerate", status_code=202)
 async def long_teaser_regenerate(job_id: str, request: Request, body: dict | None = Body(default=None)):
     """Re-run the Puppeteer renderer (and optionally the PPTX builder) against the

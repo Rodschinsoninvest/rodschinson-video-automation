@@ -176,6 +176,10 @@ const PORTFOLIO_ASSET_SUBSECTIONS = [
 // "Photos per page" choices — Auto keeps the adaptive grid; a fixed N renders a
 // clean uniform grid so wide photos aren't cropped by a denser auto layout.
 const PHOTO_LAYOUT_OPTIONS = [['', 'Auto'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4']]
+// Selectable teaser font ("police") — must match FONTS_MAP in teaser_long.html.
+const TEASER_FONTS = ['Montserrat', 'Inter', 'Poppins', 'Raleway', 'Work Sans', 'Roboto', 'Open Sans', 'Lato', 'Nunito', 'Playfair Display', 'Merriweather']
+// Languages offered by the in-editor Translate action.
+const TRANSLATE_LANGS = [['FR', 'French'], ['NL', 'Dutch'], ['EN', 'English']]
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function fileUrlToFilename(url) {
@@ -207,6 +211,7 @@ export default function TeaserEditor() {
   const [dirty, setDirty]       = useState(false)
   const [saving, setSaving]     = useState(false)
   const [rendering, setRendering] = useState(false)
+  const [translating, setTranslating] = useState(false)
   const [renderProgress, setRenderProgress] = useState(0)
   const [pdfBust, setPdfBust]   = useState(Date.now())
   const [error, setError]       = useState(null)
@@ -353,6 +358,32 @@ export default function TeaserEditor() {
   }
 
   // ── Regenerate ──────────────────────────────────────────────────────────
+  // Translate all text to another language in place (keeps images, links, numbers).
+  const handleTranslate = async (lang) => {
+    if (!data || translating) return
+    if (!confirm(`Translate all text of this teaser to ${lang}? Images, links and numbers are kept. Review before saving.`)) return
+    setTranslating(true)
+    try {
+      const res = await apiFetch(`/api/long-teaser/${jobId}/translate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data, target_lang: lang }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || `Translate failed (${res.status})`)
+      }
+      const { data: translated } = await res.json()
+      setData(translated)
+      setDirty(true)
+      toast(`Translated to ${lang}. Review, then Save & Regenerate.`, 'success')
+    } catch (e) {
+      toast(e.message, 'error')
+    } finally {
+      setTranslating(false)
+    }
+  }
+
   const handleRegenerate = async ({ regenerate_pptx = false } = {}) => {
     setRendering(true)
     setRenderProgress(20)
@@ -683,6 +714,27 @@ export default function TeaserEditor() {
             </div>
           </div>
         )}
+        {/* Font ("police") for all teaser text */}
+        <select
+          value={data.font_family || 'Montserrat'}
+          onChange={e => setField('font_family', e.target.value)}
+          disabled={saving || rendering || translating}
+          title="Font for all text in this teaser"
+          style={{ padding: '8px 10px', borderRadius: 6, border: `1px solid ${border}`, background: panel, color: text, fontSize: 12, cursor: 'pointer' }}
+        >
+          {TEASER_FONTS.map(f => <option key={f} value={f}>{f}</option>)}
+        </select>
+        {/* Translate all text (keeps images & links) */}
+        <select
+          value=""
+          onChange={e => { const v = e.target.value; e.target.value = ''; if (v) handleTranslate(v) }}
+          disabled={saving || rendering || translating}
+          title="Translate all text to another language — images, links and numbers are kept"
+          style={{ padding: '8px 10px', borderRadius: 6, border: `1px solid ${border}`, background: panel, color: muted, fontSize: 12, cursor: 'pointer' }}
+        >
+          <option value="">{translating ? 'Translating…' : '🌐 Translate…'}</option>
+          {TRANSLATE_LANGS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+        </select>
         <button onClick={() => handleSave({ thenRegenerate: false })} disabled={saving || rendering || !dirty} style={{ padding: '8px 14px', borderRadius: 6, border: `1px solid ${border}`, background: panel, color: muted, fontSize: 12, fontWeight: 600, cursor: saving || rendering || !dirty ? 'not-allowed' : 'pointer' }}>
           {saving ? 'Saving…' : 'Save'}
         </button>
