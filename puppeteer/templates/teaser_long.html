@@ -498,6 +498,31 @@ function objPos(focusMap, key){
   return ` style="object-position:${x}% ${y}%"`;
 }
 
+// Measure the REAL rendered height of each detail card off-screen, at its true
+// column width (wide = full body 1027px, half = 503px). Pagination uses these
+// instead of row-count estimates so a card is never cropped and pages aren't
+// left half-empty. Returns an array of pixel heights aligned to `items`.
+function measureCardHeights(items){
+  const host = document.createElement('div');
+  host.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none';
+  const details = document.createElement('div');
+  details.className = 'details';
+  host.appendChild(details);
+  document.body.appendChild(host);
+  const out = items.map(it => {
+    const wrap = document.createElement('div');
+    wrap.style.width = (it.wide ? 1027 : 503) + 'px';
+    wrap.innerHTML = it.html;
+    details.appendChild(wrap);
+    const el = wrap.firstElementChild;
+    const h = el ? el.offsetHeight : 0;
+    details.removeChild(wrap);
+    return h;
+  });
+  document.body.removeChild(host);
+  return out;
+}
+
 window.loadLongTeaser = function(data, brandName){
   data = data || {};
 
@@ -824,6 +849,9 @@ window.loadLongTeaser = function(data, brandName){
     function pushDetail(sectionKey, anchor, navKey, headerLabel, dTitle, metaText, cardSpecs, kpiHtml){
       const cards = makeCards(cardSpecs);
       if (!cards.length) return;
+      // Use REAL measured heights (fall back to the estimate) so nothing crops.
+      const _mh = measureCardHeights(cards.map(c => ({ html: cardHtmlP(c), wide: !!c.wide })));
+      cards.forEach((c, i) => { if (_mh[i]) c.h = _mh[i]; });
       const budget0 = kpiHtml ? 470 : 540;
       const pages = packByHeight(cards, budget0, 540);
       pages.forEach((blocks, idx)=>{
@@ -1426,7 +1454,22 @@ window.loadLongTeaser = function(data, brandName){
     if (p.kind === 'bullets')    return PC_BASE + (p.wide ? Math.ceil(p.rows.length/2) : p.rows.length) * PC_BULL;
     return PC_BASE + (p.rows ? p.rows.length : 0) * PC_ROW;
   }
-  pieces.forEach(p => { p._h = pieceHeight(p); });
+  function cardHtml(p){
+    const cls = ['d-card'];
+    if (p.wide) cls.push('wide');
+    if (p.kind === 'bullets' && !p.wide) cls.push('narrow');
+    if (p.kind === 'unit-table') cls.push('u-card');
+    const tag = p.tag ? `<span class="d-head-tag">${esc(p.tag)}</span>` : '';
+    let body;
+    if (p.kind === 'table')           body = rowTbl(p.rows);
+    else if (p.kind === 'bullets')    body = bulletList(p.rows);
+    else if (p.kind === 'unit-table') body = unitTableHtml(p.payload, '');
+    else                              body = '';
+    return `<div class="${cls.join(' ')}"><div class="d-head"><span>${esc(p.head)}</span>${tag}</div>${body}</div>`;
+  }
+  // Real measured heights (fall back to the estimate) → no cropped tables.
+  const _pmh = measureCardHeights(pieces.map(p => ({ html: cardHtml(p), wide: !!p.wide })));
+  pieces.forEach((p, i) => { p._h = _pmh[i] || pieceHeight(p); });
 
   const detailPages = [];
   let bucket = [], used = 0, budget = PG_FIRST;
@@ -1446,20 +1489,6 @@ window.loadLongTeaser = function(data, brandName){
     }
   }
   flushBucket();
-
-  function cardHtml(p){
-    const cls = ['d-card'];
-    if (p.wide) cls.push('wide');
-    if (p.kind === 'bullets' && !p.wide) cls.push('narrow');
-    if (p.kind === 'unit-table') cls.push('u-card');
-    const tag = p.tag ? `<span class="d-head-tag">${esc(p.tag)}</span>` : '';
-    let body;
-    if (p.kind === 'table')           body = rowTbl(p.rows);
-    else if (p.kind === 'bullets')    body = bulletList(p.rows);
-    else if (p.kind === 'unit-table') body = unitTableHtml(p.payload, '');
-    else                              body = '';
-    return `<div class="${cls.join(' ')}"><div class="d-head"><span>${esc(p.head)}</span>${tag}</div>${body}</div>`;
-  }
 
   // Optional KPI strip — shown ONCE on the first details page.
   // Pulls from data.key_metrics (list of {label, value, sub}) when provided.
