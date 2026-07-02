@@ -523,7 +523,8 @@ window.loadLongTeaser = function(data, brandName){
     document.head.appendChild(l);
   }
   const fo = document.createElement('style');
-  fo.textContent = `#doc, #doc *{font-family:'${FONT}',sans-serif !important}`;
+  // Keep 'Noto Color Emoji' in the stack so 📍/↗ icons still render under the override.
+  fo.textContent = `#doc, #doc *{font-family:'${FONT}','Noto Color Emoji',sans-serif !important}`;
   document.head.appendChild(fo);
 
   const T = {

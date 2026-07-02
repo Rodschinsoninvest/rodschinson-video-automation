@@ -24,10 +24,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Step 4: Chromium + minimal fonts (own layer)
+# Step 4: Chromium + fonts (own layer). Noto Color Emoji renders the 📍/↗ icons
+# used in the teaser (map/docs buttons); without it Chromium prints empty boxes.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         chromium \
         fonts-liberation \
+        fonts-noto-color-emoji \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Tell Puppeteer to use system Chromium
