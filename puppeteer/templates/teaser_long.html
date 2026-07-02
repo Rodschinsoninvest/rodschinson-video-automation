@@ -159,7 +159,7 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
 /* Content-sized card deck — cards take their natural height and are distributed
    top-to-bottom so a page is never clipped nor stranded half-empty in the middle. */
 .details .d-deck{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;justify-content:space-between}
-.details .d-deck.few{justify-content:flex-start}
+.details .d-deck.few{justify-content:center}
 .details .d-pair{display:flex;gap:20px;align-items:stretch;min-height:0}
 .details .d-pair > .d-card{flex:1;min-width:0}
 .details .d-card{
@@ -179,10 +179,12 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
 }
 .details .d-head .d-head-tag{font-family:'Montserrat';font-weight:500;font-size:9.5px;letter-spacing:0.06em;text-transform:none;color:var(--grey-text)}
 .details table{width:100%;border-collapse:collapse;font-size:11.5px;color:#111;table-layout:fixed}
-.details td{padding:5px 0;border-bottom:1px solid #f1f3f6;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere;line-height:1.35}
-.details td:first-child{color:var(--grey-text);width:60%;padding-right:10px;font-weight:500}
-.details td:last-child{text-align:right;font-weight:700;color:var(--navy)}
-.details tr:last-child td{border-bottom:none}
+.details td{padding:6.5px 10px;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere;line-height:1.35;border:none}
+.details td:first-child{color:var(--grey-text);width:58%;padding-left:10px;font-weight:500}
+.details td:last-child{text-align:right;font-weight:700;color:var(--navy);padding-right:10px}
+/* Zebra banding reads cleaner than hairline row borders */
+.details tbody tr:nth-child(odd){background:#f5f8fc}
+.details tbody tr{break-inside:avoid}
 .details .d-bullets{list-style:none;margin:0;padding-left:0;columns:2;column-gap:22px}
 .details .d-bullets li{font-size:11.5px;color:#111;line-height:1.45;margin-bottom:6px;break-inside:avoid}
 .details .d-card.narrow .d-bullets{columns:1}
@@ -249,7 +251,7 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
   font-size:11px;letter-spacing:0.16em;text-transform:uppercase;
 }
 .aerial .a-side{
-  width:280px;display:flex;flex-direction:column;gap:14px;padding:8px 0;
+  width:280px;display:flex;flex-direction:column;gap:14px;padding:8px 0;justify-content:center;
 }
 .aerial .a-side .a-eyebrow{font-family:'Montserrat';font-weight:700;font-size:10px;letter-spacing:0.32em;color:var(--cyan);text-transform:uppercase}
 .aerial .a-side .a-title{font-family:'Montserrat';font-weight:800;font-size:22px;color:var(--navy);line-height:1.2}
@@ -267,7 +269,7 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
   font-family:'Montserrat';font-weight:700;font-size:10px;color:#fff;background:rgba(8,31,68,0.86);
   padding:6px 10px;border-radius:5px;letter-spacing:0.03em;display:inline-flex;align-items:center;gap:5px;text-decoration:none}
 .aerial .a-frame .map-cta::before,.loc-over .lo-tile .map-cta::before{content:'📍'}
-.aerial .a-side .a-legend{margin-top:auto;font-size:10.5px;color:var(--grey-text);line-height:1.45;display:flex;align-items:flex-start;gap:8px}
+.aerial .a-side .a-legend{margin-top:10px;font-size:10.5px;color:var(--grey-text);line-height:1.45;display:flex;align-items:flex-start;gap:8px}
 .aerial .a-side .a-legend::before{content:'';width:14px;height:14px;border:1.5px dashed #E2231A;border-radius:3px;flex-shrink:0;margin-top:1px}
 
 /* ─────── PER-BUILDING SECTION DIVIDER ─────── */
@@ -330,7 +332,7 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
 .loc-over .lo-grid.g4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
 .loc-over .lo-tile{position:relative;background:#eef2f6;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,0.08);overflow:hidden}
 .loc-over .lo-tile .cap{position:absolute;left:0;right:0;bottom:0;padding:6px 10px;background:linear-gradient(180deg,transparent,rgba(8,31,68,0.82));color:#fff;font-family:'Montserrat';font-weight:600;font-size:10px;letter-spacing:0.06em}
-.loc-over .lo-side{width:270px;display:flex;flex-direction:column;gap:14px;padding:6px 0}
+.loc-over .lo-side{width:270px;display:flex;flex-direction:column;gap:14px;padding:6px 0;justify-content:center}
 .loc-over .lo-side .lo-eyebrow{font-family:'Montserrat';font-weight:700;font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--cyan)}
 .loc-over .lo-side .lo-title{font-family:'Montserrat';font-weight:800;font-size:20px;color:var(--navy);line-height:1.25}
 .loc-over .lo-side .lo-rule{width:36px;height:2px;background:var(--cyan)}
@@ -340,7 +342,7 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
   padding:11px 16px;border-radius:6px;text-decoration:none;line-height:1.2;letter-spacing:0.01em}
 .loc-over .lo-side .lo-link::before{content:'📍'}
 .loc-over .lo-tile a.lo-tile-link{position:absolute;inset:0;z-index:5;display:block}
-.loc-over .lo-side .lo-legend{margin-top:auto;font-size:10.5px;color:var(--grey-text);line-height:1.45;display:flex;align-items:flex-start;gap:8px}
+.loc-over .lo-side .lo-legend{margin-top:10px;font-size:10.5px;color:var(--grey-text);line-height:1.45;display:flex;align-items:flex-start;gap:8px}
 .loc-over .lo-side .lo-legend::before{content:'';width:14px;height:14px;border:1.5px dashed #E2231A;border-radius:3px;flex-shrink:0;margin-top:1px}
 
 /* small building eyebrow on Activa pages in portfolio mode */
