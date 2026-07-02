@@ -1213,7 +1213,7 @@ export default function TeaserEditor() {
         <div style={{ borderLeft: `1px solid ${border}`, background: panel, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <div style={{ padding: '10px 14px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>Preview</div>
-            <button onClick={() => downloadAsset(`/api/download/${jobId}`, `${shortId || 'teaser'}.pdf`).catch(e => toast(e.message, 'error'))} style={{ fontSize: 11, color: 'var(--cs-accent)', textDecoration: 'none', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Download size={12} /> Download PDF</button>
+            <button onClick={() => downloadAsset(`/api/download/${jobId}?t=${pdfBust}`, `${shortId || 'teaser'}.pdf`).catch(e => toast(e.message, 'error'))} style={{ fontSize: 11, color: 'var(--cs-accent)', textDecoration: 'none', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Download size={12} /> Download PDF</button>
           </div>
           <PdfPreview jobId={jobId} cacheBust={pdfBust} />
         </div>
@@ -1534,7 +1534,9 @@ function PdfPreview({ jobId, cacheBust }) {
   const [src, setSrc] = useState('')
   useEffect(() => {
     let revoked = ''
-    apiFetch(`/api/download/${jobId}`)
+    // Cache-bust so the regenerated PDF is fetched fresh (the download response
+    // has no Cache-Control, so the browser/edge would otherwise serve the old one).
+    apiFetch(`/api/download/${jobId}?t=${cacheBust}`, { cache: 'no-store' })
       .then(r => r.ok ? r.blob() : null)
       .then(b => { if (b) { const u = URL.createObjectURL(b); revoked = u; setSrc(u) } })
     return () => { if (revoked) URL.revokeObjectURL(revoked) }
