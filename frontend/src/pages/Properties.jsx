@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useBrands } from '../contexts/BrandContext'
 import { useGeneration } from '../contexts/GenerationContext'
@@ -846,6 +846,16 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
   const [documents, setDocuments] = useState([])
   const [reading, setReading] = useState(false)
   const [loading, setLoading] = useState(false)
+  // Folder pickers: trigger via ref (a display:none input isn't reliably opened by
+  // clicking its <label>), and set webkitdirectory on the DOM node directly since
+  // React can drop the JSX attribute → the folder dialog silently never opens.
+  const folderRefMulti = useRef(null)
+  const folderRefSingle = useRef(null)
+  useEffect(() => {
+    for (const r of [folderRefMulti, folderRefSingle]) {
+      if (r.current) { r.current.setAttribute('webkitdirectory', ''); r.current.setAttribute('directory', '') }
+    }
+  })
   // Shared deal details (same as the single-property form)
   const [odooId, setOdooId] = useState('')        // optional: seed company-wide data from an Odoo property
   const [sharepointUrl, setSharepointUrl] = useState('')
@@ -1032,10 +1042,10 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
             <p style={{ fontSize: 12, color: muted, margin: '0 0 12px', lineHeight: 1.5 }}>
               Pick one folder containing a <b>subfolder per building</b>. Each subfolder’s images become that building’s gallery; give each its address so it gets its own location + aerial view.
             </p>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: 'var(--cs-accent)', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+            <button type="button" onClick={() => folderRefMulti.current?.click()} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: 'var(--cs-accent)', fontSize: 13, fontWeight: 600, marginBottom: 6, background: 'transparent' }}>
               <FolderOpen size={15} /> {reading ? 'Reading folder…' : 'Choose folder…'}
-              <input type="file" webkitdirectory="" directory="" multiple style={{ display: 'none' }} onChange={handleFolderPick} />
-            </label>
+            </button>
+            <input ref={folderRefMulti} type="file" multiple style={{ display: 'none' }} onChange={handleFolderPick} />
             {assets.length > 0 && (
               <div style={{ fontSize: 11, color: muted, marginBottom: 10 }}>{assets.length} asset(s) · {totalPhotos} photo(s) detected</div>
             )}
@@ -1071,10 +1081,10 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
                 <Images size={15} /> Add images
                 <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handlePhotoPick} />
               </label>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: muted, fontSize: 13, fontWeight: 600 }}>
+              <button type="button" onClick={() => folderRefSingle.current?.click()} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 8, border: `1px dashed ${border}`, cursor: 'pointer', color: muted, fontSize: 13, fontWeight: 600, background: 'transparent' }}>
                 <FolderOpen size={15} /> From folder
-                <input type="file" webkitdirectory="" directory="" multiple style={{ display: 'none' }} onChange={handlePhotoPick} />
-              </label>
+              </button>
+              <input ref={folderRefSingle} type="file" multiple style={{ display: 'none' }} onChange={handlePhotoPick} />
             </div>
             {photos.length > 0 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, fontSize: 12, color: muted }}>
