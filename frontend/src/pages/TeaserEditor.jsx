@@ -72,9 +72,6 @@ const TEXT_FIELDS_BY_SECTION = {
 }
 
 const ROW_GROUPS_BY_SECTION = {
-  activa: [
-    { key: 'extra_bullets', label: 'Extra bullets (description page)', cols: [{ key: 'value', label: 'Bullet', span: 1 }], primitive: true },
-  ],
   details: [
     { key: 'key_metrics',           label: 'KPI strip (cover-of-details)', cols: [['label','Label'],['value','Value'],['sub','Sub']] },
     { key: 'valuation_rows',        label: 'Valuation rows',               cols: [['label','Label'],['value','Value']] },
@@ -83,6 +80,8 @@ const ROW_GROUPS_BY_SECTION = {
     { key: 'technical_specs_rows',  label: 'Technical specs',              cols: [['label','Label'],['value','Value']] },
     { key: 'lease_terms_rows',      label: 'Lease terms',                  cols: [['label','Label'],['value','Value']] },
     { key: 'surfaces',              label: 'Surfaces (floor / area)',      cols: [['floor','Floor'],['area','Area']] },
+    { key: 'amenities_bullets',     label: 'Amenities / Kenmerken',        cols: [{ key: 'value', label: 'Amenity', span: 1 }], primitive: true },
+    { key: 'extra_bullets',         label: 'Other bullets (Overige)',      cols: [{ key: 'value', label: 'Bullet', span: 1 }], primitive: true },
   ],
 }
 
@@ -1118,7 +1117,17 @@ export default function TeaserEditor() {
             <div style={{ marginBottom: 22 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>{galleryListKey === 'photos' ? 'Gallery photos' : 'Plans'}</div>
-                <button onClick={() => galleryUploadRef.current?.click()} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: 'var(--cs-accent)', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add images</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {galleryListKey === 'photos' && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: muted }} title="How many photos per page (Auto avoids cropping by adapting the grid)">
+                      Photos / page
+                      <select value={data.photo_layout || ''} onChange={e => setField('photo_layout', e.target.value)} style={{ ...inputStyle, width: 'auto', padding: '4px 8px' }}>
+                        {PHOTO_LAYOUT_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                      </select>
+                    </label>
+                  )}
+                  <button onClick={() => galleryUploadRef.current?.click()} style={{ padding: '6px 12px', borderRadius: 5, border: 'none', background: 'var(--cs-accent)', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add images</button>
+                </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
                 {(data[galleryListKey] || []).map((url, i) => {
@@ -1181,6 +1190,21 @@ export default function TeaserEditor() {
               theme={{ panel, border, text, muted, inputStyle }}
             />
           ))}
+
+          {/* Editable section-header labels (rename e.g. "Kenmerken") on the details slide */}
+          {activeId === 'details' && (
+            <div style={{ marginBottom: 20, border: `1px solid ${border}`, borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{ padding: '10px 12px', background: 'rgba(0,0,0,0.02)', borderBottom: `1px solid ${border}`, fontSize: 12, fontWeight: 700, color: text }}>Section labels (details slide)</div>
+              <div style={{ padding: 10, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+                {DETAILS_LABEL_FIELDS.map(([key, label]) => (
+                  <div key={key}>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: muted, marginBottom: 4 }}>{label}</label>
+                    <input value={data.details_labels?.[key] ?? ''} placeholder={label} onChange={e => setField('details_labels', { ...(data.details_labels || {}), [key]: e.target.value })} style={inputStyle} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         </>
         )}
