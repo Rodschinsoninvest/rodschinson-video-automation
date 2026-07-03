@@ -1536,6 +1536,33 @@ window.loadLongTeaser = function(data, brandName){
   }
   flushBucket();
 
+  // Measure the REAL rendered height of a whole detail page (grid of cards).
+  function measureGridHeight(cards){
+    const host = document.createElement('div');
+    host.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none';
+    const det = document.createElement('div'); det.className = 'details';
+    const grid = document.createElement('div');
+    grid.className = 'd-grid' + ((cards.length === 1 && cards[0].wide) ? ' one' : '');
+    grid.style.width = '1027px';
+    grid.innerHTML = cards.map(cardHtml).join('');
+    det.appendChild(grid); host.appendChild(det); document.body.appendChild(host);
+    const h = grid.offsetHeight;
+    document.body.removeChild(host);
+    return h;
+  }
+
+  // A trailing page with a single small card looks near-empty. Merge it back onto
+  // the previous page whenever the combined page still fits (measured), so a tiny
+  // category (e.g. Kenmerken) never gets a whole empty page to itself.
+  while (detailPages.length >= 2 && detailPages[detailPages.length - 1].length === 1) {
+    const prev = detailPages[detailPages.length - 2];
+    const last = detailPages[detailPages.length - 1];
+    if (measureGridHeight([...prev, ...last]) <= 548) {
+      detailPages[detailPages.length - 2] = [...prev, ...last];
+      detailPages.pop();
+    } else break;
+  }
+
   // Fill lone-card pages: a card alone on a page goes full-width, and a table
   // with enough rows stretches to fill the page height (rows spread out) instead
   // of leaving a big empty band. Short/bullet lone cards are centred (CSS).
@@ -1544,7 +1571,12 @@ window.loadLongTeaser = function(data, brandName){
       pg[0].wide = true;
       const rc = pg[0].rows ? pg[0].rows.length : 0;
       if (pg[0].kind === 'table' && rc >= 9) pg[0].fill = true;
+      return;
     }
+    // Multi-card page: if there's an odd number of half cards, the trailing one
+    // is alone in its grid row → make it full width so it fills the row.
+    const halves = pg.filter(c => !c.wide);
+    if (halves.length % 2 === 1) halves[halves.length - 1].wide = true;
   });
 
   // Optional KPI strip — shown ONCE on the first details page.
