@@ -188,19 +188,21 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
 .details .d-bullets{list-style:none;margin:0;padding-left:0;columns:2;column-gap:22px}
 .details .d-bullets li{font-size:11.5px;color:#111;line-height:1.45;margin-bottom:6px;break-inside:avoid}
 .details .d-card.narrow .d-bullets{columns:1}
-/* Wide label/value tables split into two side-by-side columns so each pair stays
-   compact instead of stretching the value to the far edge of the slide. */
-.details .d-2col{display:flex;gap:0 44px;align-items:flex-start}
-.details .d-2col > table{flex:1;min-width:0}
+/* Wide label/value tables render as ONE table with two pairs per row (4 columns),
+   so values align across both halves and the banding is continuous. */
+.details table.d-quad td.l{color:var(--grey-text);font-weight:500}
+.details table.d-quad td.v{text-align:right;font-weight:700;color:var(--navy)}
+.details table.d-quad td:nth-child(1){width:27%}
+.details table.d-quad td:nth-child(2){width:23%;padding-right:22px}
+.details table.d-quad td:nth-child(3){width:27%;padding-left:26px;border-left:1px solid #e7ecf2}
+.details table.d-quad td:nth-child(4){width:23%}
 /* Fill the page: detail rows stretch to the full body height (no bottom void). */
 .details .d-grid{align-content:stretch}
 .details .d-grid.one > .d-card{height:100%}
 /* A lone card without enough rows to fill → centre its content in the panel. */
 .details .d-grid.one > .d-card:not(.d-fill){justify-content:center}
 /* A lone table with enough rows → stretch the table so rows fill the page. */
-.details .d-card.d-fill > table,
-.details .d-card.d-fill .d-2col{height:100%}
-.details .d-card.d-fill .d-2col > table{height:100%}
+.details .d-card.d-fill > table{height:100%}
 
 /* Consolidated unit-level table — per-row: Unit / Surface / step rents */
 .details .u-card{padding:11px 14px 12px}
@@ -825,8 +827,15 @@ window.loadLongTeaser = function(data, brandName){
     // ── generic table/bullets pagination (1 wide OR 2 half cards per page) ──
     const chunkArr = (a,n)=>{const o=[];for(let i=0;i<a.length;i+=n)o.push(a.slice(i,i+n));return o;};
     const rowTblP = rows => `<table><tbody>${rows.map(r=>`<tr><td>${esc(r.label||'')}</td><td>${esc(r.value||'')}</td></tr>`).join('')}</tbody></table>`;
-    // Wide table → two side-by-side label/value tables (avoids stretched rows).
-    const rowTbl2colP = rows => { const m=Math.ceil(rows.length/2); return `<div class="d-2col">${rowTblP(rows.slice(0,m))}${rowTblP(rows.slice(m))}</div>`; };
+    // Wide table → ONE table, two label/value pairs per row (aligned 4 columns).
+    const rowTbl4colP = rows => {
+      const m=Math.ceil(rows.length/2), L=rows.slice(0,m), R=rows.slice(m);
+      const trs = L.map((r,i)=>{ const b=R[i];
+        return `<tr><td class="l">${esc(r.label||'')}</td><td class="v">${esc(r.value||'')}</td>`
+          + `<td class="l">${b?esc(b.label||''):''}</td><td class="v">${b?esc(b.value||''):''}</td></tr>`;
+      }).join('');
+      return `<table class="d-quad"><tbody>${trs}</tbody></table>`;
+    };
     const bulletListP = items => `<ul class="d-bullets">${items.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`;
     // multi-column table (e.g. Post | 2025 | 2024) — denser than two stacked
     // single-value tables and reads cleanly across the page.
@@ -886,7 +895,7 @@ window.loadLongTeaser = function(data, brandName){
     function cardHtmlP(c){
       const cls=['d-card']; if(c.wide)cls.push('wide'); if(c.kind==='bullets'&&!c.wide)cls.push('narrow'); if(c.kind==='coltable')cls.push('u-card');
       const tag=c.tag?`<span class="d-head-tag">${esc(c.tag)}</span>`:'';
-      const body=c.kind==='coltable'?colTblP(c.columns,c.rows):(c.kind==='table'?((c.wide&&c.rows.length>=6)?rowTbl2colP(c.rows):rowTblP(c.rows)):bulletListP(c.rows));
+      const body=c.kind==='coltable'?colTblP(c.columns,c.rows):(c.kind==='table'?((c.wide&&c.rows.length>=6)?rowTbl4colP(c.rows):rowTblP(c.rows)):bulletListP(c.rows));
       return `<div class="${cls.join(' ')}"><div class="d-head"><span>${esc(c.head)}</span>${tag}</div>${body}</div>`;
     }
     function pushDetail(sectionKey, anchor, navKey, headerLabel, dTitle, metaText, cardSpecs, kpiHtml){
@@ -1259,8 +1268,15 @@ window.loadLongTeaser = function(data, brandName){
   const contLabel = (DL.continued || data.details_continued || '(continued)');
 
   const rowTbl   = rows => `<table><tbody>${rows.map(r=>`<tr><td>${esc(r.label||'')}</td><td>${esc(r.value||'')}</td></tr>`).join('')}</tbody></table>`;
-  // Wide table → two side-by-side label/value tables (avoids stretched rows).
-  const rowTbl2col = rows => { const m=Math.ceil(rows.length/2); return `<div class="d-2col">${rowTbl(rows.slice(0,m))}${rowTbl(rows.slice(m))}</div>`; };
+  // Wide table → ONE table, two label/value pairs per row (aligned 4 columns).
+  const rowTbl4col = rows => {
+    const m = Math.ceil(rows.length/2), L = rows.slice(0,m), R = rows.slice(m);
+    const trs = L.map((r,i)=>{ const b = R[i];
+      return `<tr><td class="l">${esc(r.label||'')}</td><td class="v">${esc(r.value||'')}</td>`
+        + `<td class="l">${b?esc(b.label||''):''}</td><td class="v">${b?esc(b.value||''):''}</td></tr>`;
+    }).join('');
+    return `<table class="d-quad"><tbody>${trs}</tbody></table>`;
+  };
   const bulletList = items => `<ul class="d-bullets">${items.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`;
   const chunk = (arr, n) => { const o=[]; for (let i=0;i<arr.length;i+=n) o.push(arr.slice(i,i+n)); return o; };
 
@@ -1507,7 +1523,7 @@ window.loadLongTeaser = function(data, brandName){
     if (p.kind === 'unit-table') cls.push('u-card');
     const tag = p.tag ? `<span class="d-head-tag">${esc(p.tag)}</span>` : '';
     let body;
-    if (p.kind === 'table')           body = (p.wide && p.rows.length >= 6) ? rowTbl2col(p.rows) : rowTbl(p.rows);
+    if (p.kind === 'table')           body = (p.wide && p.rows.length >= 6) ? rowTbl4col(p.rows) : rowTbl(p.rows);
     else if (p.kind === 'bullets')    body = bulletList(p.rows);
     else if (p.kind === 'unit-table') body = unitTableHtml(p.payload, '');
     else                              body = '';
