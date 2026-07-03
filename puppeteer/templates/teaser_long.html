@@ -203,6 +203,10 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
 .details .d-grid.one > .d-card:not(.d-fill){justify-content:center}
 /* A lone table with enough rows → stretch the table so rows fill the page. */
 .details .d-card.d-fill > table{height:100%}
+/* A lone bullet card → spread the items evenly down the whole page (highlights). */
+.details .d-card.d-fillb .d-bullets{columns:1;flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:0;margin-top:6px}
+.details .d-card.d-fillb .d-bullets li{font-size:15px;line-height:1.45;margin:0;padding:16px 2px;border-bottom:1px solid #eef1f5;break-inside:avoid}
+.details .d-card.d-fillb .d-bullets li:last-child{border-bottom:none}
 
 /* Consolidated unit-level table — per-row: Unit / Surface / step rents */
 .details .u-card{padding:11px 14px 12px}
@@ -1519,6 +1523,7 @@ window.loadLongTeaser = function(data, brandName){
     const cls = ['d-card'];
     if (p.wide) cls.push('wide');
     if (p.fill) cls.push('d-fill');
+    if (p.fillb) cls.push('d-fillb');
     if (p.kind === 'bullets' && !p.wide) cls.push('narrow');
     if (p.kind === 'unit-table') cls.push('u-card');
     const tag = p.tag ? `<span class="d-head-tag">${esc(p.tag)}</span>` : '';
@@ -1587,6 +1592,7 @@ window.loadLongTeaser = function(data, brandName){
       pg[0].wide = true;
       const rc = pg[0].rows ? pg[0].rows.length : 0;
       if (pg[0].kind === 'table' && rc >= 9) pg[0].fill = true;
+      else if (pg[0].kind === 'bullets' && rc <= 10) pg[0].fillb = true;  // spread few bullets over the page
       return;
     }
     // Multi-card page: if there's an odd number of half cards, the trailing one
