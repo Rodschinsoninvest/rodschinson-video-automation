@@ -359,11 +359,22 @@ export default function TeaserEditor() {
 
   // ── Regenerate ──────────────────────────────────────────────────────────
   // Translate into a NEW copy (keeps the original in the Library), then open it.
+  // Built from the CURRENT edited version — unsaved edits are saved first.
   const handleTranslate = async (lang) => {
     if (!data || translating) return
-    if (!confirm(`Create a ${lang} copy of this teaser? The original stays in your Library. All text is translated (images, links and numbers are kept) and the copy is rendered — this can take ~30s.`)) return
+    if (!confirm(`Create a ${lang} copy from the current (edited) version? Your edits are saved to the original first, then a translated copy is made (images/links/numbers kept) and rendered — this can take ~30s.`)) return
     setTranslating(true)
     try {
+      // Persist current edits to the original so the copy is built from the exact
+      // edited version (and the original keeps your edits too).
+      if (dirty) {
+        const sres = await apiFetch(`/api/long-teaser/${jobId}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data }),
+        })
+        if (!sres.ok) { const e = await sres.json().catch(() => ({})); throw new Error(e.detail || 'Could not save edits before translating') }
+        setDirty(false)
+      }
       const res = await apiFetch(`/api/long-teaser/${jobId}/translate-copy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
