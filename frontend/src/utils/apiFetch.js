@@ -9,11 +9,15 @@ const BACKEND_DIRECT = 'https://content-studio-production-84de.up.railway.app'
 const _isLocal = typeof location !== 'undefined'
   && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
 
+// Requests that go straight to the backend in production: /api/generate (Netlify
+// body limit) and the long-running translate-copy render (Netlify proxy timeout).
+const _directRoute = (url) => url === '/api/generate' || url.includes('/translate-copy')
+
 export function apiFetch(url, opts = {}) {
   const token = localStorage.getItem('cs_auth_token')
-  // Send /api/generate direct to the backend in production (skip Netlify's body
-  // limit); in local dev keep it relative so the Vite proxy hits the local API.
-  const finalUrl = (!_isLocal && url === '/api/generate') ? BACKEND_DIRECT + url : url
+  // Send heavy/long requests direct to the backend in production; in local dev
+  // keep them relative so the Vite proxy hits the local API.
+  const finalUrl = (!_isLocal && _directRoute(url)) ? BACKEND_DIRECT + url : url
   return fetch(finalUrl, {
     ...opts,
     headers: {

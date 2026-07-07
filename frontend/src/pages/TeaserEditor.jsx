@@ -358,13 +358,13 @@ export default function TeaserEditor() {
   }
 
   // ── Regenerate ──────────────────────────────────────────────────────────
-  // Translate all text to another language in place (keeps images, links, numbers).
+  // Translate into a NEW copy (keeps the original in the Library), then open it.
   const handleTranslate = async (lang) => {
     if (!data || translating) return
-    if (!confirm(`Translate all text of this teaser to ${lang}? Images, links and numbers are kept. Review before saving.`)) return
+    if (!confirm(`Create a ${lang} copy of this teaser? The original stays in your Library. All text is translated (images, links and numbers are kept) and the copy is rendered — this can take ~30s.`)) return
     setTranslating(true)
     try {
-      const res = await apiFetch(`/api/long-teaser/${jobId}/translate`, {
+      const res = await apiFetch(`/api/long-teaser/${jobId}/translate-copy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data, target_lang: lang }),
@@ -373,14 +373,33 @@ export default function TeaserEditor() {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.detail || `Translate failed (${res.status})`)
       }
-      const { data: translated } = await res.json()
-      setData(translated)
-      setDirty(true)
-      toast(`Translated to ${lang}. Review, then Save & Regenerate.`, 'success')
+      const { job_id: newJob, title } = await res.json()
+      toast(`Created ${lang} copy: ${title}. Opening…`, 'success')
+      navigate(`/teaser-editor/${newJob}`)
     } catch (e) {
       toast(e.message, 'error')
     } finally {
       setTranslating(false)
+    }
+  }
+
+  // Rename this teaser (library title).
+  const [titleDraft, setTitleDraft] = useState(null)
+  const handleRename = async (next) => {
+    const t = (next || '').trim()
+    setTitleDraft(null)
+    if (!t || t === (library?.title || data?.title)) return
+    try {
+      const res = await apiFetch(`/api/library/${jobId}/rename`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: t }),
+      })
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Rename failed') }
+      setLibrary(prev => ({ ...(prev || {}), title: t }))
+      toast('Renamed', 'success')
+    } catch (e) {
+      toast(e.message, 'error')
     }
   }
 
@@ -729,7 +748,18 @@ export default function TeaserEditor() {
       <div style={{ padding: '10px 20px', borderBottom: `1px solid ${border}`, background: panel, display: 'flex', alignItems: 'center', gap: 12 }}>
         <button onClick={() => navigate('/library')} style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${border}`, background: 'transparent', color: muted, cursor: 'pointer', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}><ArrowLeft size={13} /> Library</button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{library?.title || data.title || 'Long Teaser'}</div>
+          {titleDraft !== null ? (
+            <input
+              autoFocus
+              value={titleDraft}
+              onChange={e => setTitleDraft(e.target.value)}
+              onBlur={() => handleRename(titleDraft)}
+              onKeyDown={e => { if (e.key === 'Enter') handleRename(titleDraft); if (e.key === 'Escape') setTitleDraft(null) }}
+              style={{ fontSize: 13, fontWeight: 700, width: '100%', padding: '2px 6px', borderRadius: 5, border: `1px solid var(--cs-accent)`, background: panel, color: text }}
+            />
+          ) : (
+            <div onClick={() => setTitleDraft(library?.title || data.title || 'Long Teaser')} title="Click to rename" style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text' }}>{library?.title || data.title || 'Long Teaser'} <span style={{ color: muted, fontWeight: 400 }}>✎</span></div>
+          )}
           <div style={{ fontSize: 10, color: muted, marginTop: 2 }}>ID {shortId} · {library?.language || data.language || ''} · {library?.brand || ''}{dirty ? ' · unsaved changes' : ''}</div>
         </div>
         {rendering && (

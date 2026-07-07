@@ -218,15 +218,23 @@ function StatusStepper({ status, onChangeStatus }) {
   )
 }
 
-function ModalHeader({ item, onClose }) {
+function ModalHeader({ item, onClose, onRename }) {
   const type = TYPE_META[item.content_type] || { ...FALLBACK_TYPE, label: item.content_type }
   const TypeIcon = type.icon
+  const [draft, setDraft] = useState(null)
+  const commit = () => { const t = (draft || '').trim(); setDraft(null); if (onRename && t && t !== item.title) onRename(item.job_id, t) }
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flex: 1 }}>
         <span style={{ display: 'inline-flex', color: 'var(--cs-accent)', lineHeight: 1.2 }}><TypeIcon size={22} /></span>
-        <div>
-          <h2 style={{ color: 'var(--cs-text)', fontSize: 15, fontWeight: 700, margin: '0 0 4px', lineHeight: 1.3 }}>{item.title}</h2>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {draft !== null ? (
+            <input autoFocus value={draft} onChange={e => setDraft(e.target.value)} onBlur={commit}
+              onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setDraft(null) }}
+              style={{ width: '100%', fontSize: 15, fontWeight: 700, color: 'var(--cs-text)', margin: '0 0 4px', padding: '2px 6px', borderRadius: 5, border: '1px solid var(--cs-accent)', background: 'var(--cs-input-bg)' }} />
+          ) : (
+            <h2 onClick={() => onRename && setDraft(item.title || '')} title={onRename ? 'Click to rename' : ''} style={{ color: 'var(--cs-text)', fontSize: 15, fontWeight: 700, margin: '0 0 4px', lineHeight: 1.3, cursor: onRename ? 'text' : 'default' }}>{item.title}{onRename && <span style={{ color: 'var(--cs-text-muted)', fontWeight: 400, fontSize: 12 }}> ✎</span>}</h2>
+          )}
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <TypeBadge type={item.content_type} />
             {item.language && <span style={{ padding: '2px 7px', borderRadius: 4, background: 'var(--cs-hover)', fontSize: 11, color: 'var(--cs-text-sub)' }}>{item.language}</span>}
@@ -1556,7 +1564,7 @@ function PlatformPreviewPane({ item, platform, slides }) {
 
 // ─── Preview modal ────────────────────────────────────────────────────────────
 
-function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete }) {
+function PreviewModal({ item, onClose, onStatusChange, onRename, onRegenerate, onDelete }) {
   const gradient = TEMPLATE_GRADIENTS[item.template] || 'linear-gradient(135deg,#08316F,#0d1a30)'
   const type     = TYPE_META[item.content_type] || { ...FALLBACK_TYPE, label: item.content_type }
   const TypeIcon = type.icon
@@ -1713,7 +1721,7 @@ function PreviewModal({ item, onClose, onStatusChange, onRegenerate, onDelete })
 
         {/* Body */}
         <div style={{ padding: 22, overflowY: 'auto', flex: 1 }}>
-          <ModalHeader item={item} onClose={onClose} />
+          <ModalHeader item={item} onClose={onClose} onRename={onRename} />
           <StatusStepper status={item.status} onChangeStatus={(s) => onStatusChange(item.job_id, s)} />
 
           {/* Text content body — for text_only show editable area */}
@@ -1782,7 +1790,7 @@ function CardThumbnail({ item, gradient, height = 130 }) {
   )
 }
 
-function ContentCard({ item, onStatusChange, onRegenerate, onDelete, selected, onSelect }) {
+function ContentCard({ item, onStatusChange, onRegenerate, onDelete, onRename, selected, onSelect }) {
   const [preview, setPreview] = useState(false)
   const gradient    = TEMPLATE_GRADIENTS[item.template] || 'linear-gradient(135deg,#08316F,#0d1a30)'
   const nextStatus  = STATUS_FLOW[STATUS_FLOW.indexOf(item.status) + 1]
@@ -1794,6 +1802,7 @@ function ContentCard({ item, onStatusChange, onRegenerate, onDelete, selected, o
           item={item}
           onClose={() => setPreview(false)}
           onStatusChange={onStatusChange}
+          onRename={onRename}
           onRegenerate={() => { setPreview(false); onRegenerate(item) }}
           onDelete={() => { setPreview(false); onDelete(item.job_id) }}
         />
@@ -2038,6 +2047,18 @@ export default function Library() {
     } catch { load() }
   }, [load, info])
 
+  const handleRename = useCallback(async (jobId, title) => {
+    const t = (title || '').trim()
+    if (!t) return
+    setItems(prev => prev.map(i => i.job_id === jobId ? { ...i, title: t } : i))
+    try {
+      await apiFetch(`/api/library/${jobId}/rename`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: t }),
+      })
+    } catch { load() }
+  }, [load])
+
   const handleDelete = useCallback(async (jobId) => {
     if (!window.confirm('Delete this content? This cannot be undone.')) return
     setItems(prev => prev.filter(i => i.job_id !== jobId))
@@ -2207,6 +2228,7 @@ export default function Library() {
               onStatusChange={handleStatusChange}
               onRegenerate={handleRegenerate}
               onDelete={handleDelete}
+              onRename={handleRename}
               selected={selected.has(item.job_id)}
               onSelect={toggleSelect}
             />

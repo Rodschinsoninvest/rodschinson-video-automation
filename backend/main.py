@@ -7601,23 +7601,17 @@ class LongTeaserTranslateRequest(BaseModel):
     target_lang: str = "FR"
 
 
-@app.post("/api/long-teaser/{job_id}/translate")
-async def long_teaser_translate(job_id: str, body: LongTeaserTranslateRequest, request: Request):
-    """Translate every human-readable text field to target_lang, leaving images,
-    URLs, links, numbers, currencies and reference codes intact. Returns the
-    updated data (not saved — the editor saves + regenerates)."""
-    user = await _get_request_user(request)
-    if not isinstance(body.data, dict):
-        raise HTTPException(422, "data must be an object")
-    target = (body.target_lang or "FR").upper()
+async def _translate_teaser_data(src_data: dict, target: str) -> dict:
+    """Translate every human-readable text field of a teaser to `target` language,
+    leaving images/URLs/numbers/reference codes intact. Returns a NEW dict."""
+    target = (target or "FR").upper()
     lang_name = {"FR": "French", "NL": "Dutch", "EN": "English"}.get(target, target)
-    data = json.loads(json.dumps(body.data))  # deep copy
+    data = json.loads(json.dumps(src_data))  # deep copy
     items = _collect_translatable(data)
     if not items:
         data["language"] = target
-        return {"data": data}
+        return data
     strings = [s for _, s in items]
-
     anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
     if not anthropic_key:
         raise HTTPException(500, "ANTHROPIC_API_KEY not set")
@@ -7659,11 +7653,103 @@ async def long_teaser_translate(job_id: str, body: LongTeaserTranslateRequest, r
         if isinstance(val, str) and val.strip():
             _apply_translation(data, path, val)
     data["language"] = target
+    return data
+
+
+@app.post("/api/long-teaser/{job_id}/translate")
+async def long_teaser_translate(job_id: str, body: LongTeaserTranslateRequest, request: Request):
+    """Translate text in place and return the updated data (not saved)."""
+    user = await _get_request_user(request)
+    if not isinstance(body.data, dict):
+        raise HTTPException(422, "data must be an object")
+    data = await _translate_teaser_data(body.data, body.target_lang)
     try:
-        await _audit(user, "long_teaser_translate", f"{_teaser_short_id(job_id)} -> {target}")
+        await _audit(user, "long_teaser_translate", f"{_teaser_short_id(job_id)} -> {data.get('language')}")
     except Exception:
         pass
     return {"data": data}
+
+
+@app.post("/api/long-teaser/{job_id}/translate-copy")
+async def long_teaser_translate_copy(job_id: str, body: LongTeaserTranslateRequest, request: Request):
+    """Translate into a NEW teaser (own library entry + PDF), keeping the original
+    intact. Copies the source assets, rewrites paths, renders, and returns the new
+    job_id so the editor can open the translated copy."""
+    user = await _get_request_user(request)
+    if not isinstance(body.data, dict):
+        raise HTTPException(422, "data must be an object")
+    import shutil
+    src_paths = _teaser_paths(job_id)
+    target = (body.target_lang or "FR").upper()
+    translated = await _translate_teaser_data(body.data, target)
+
+    new_job = str(uuid.uuid4())
+    new_paths = _teaser_paths(new_job)
+    old_sid, new_sid = _teaser_short_id(job_id), _teaser_short_id(new_job)
+    # Copy the source assets and repoint the data's file:// paths to the new dir.
+    if src_paths["assets_dir"].exists():
+        shutil.copytree(src_paths["assets_dir"], new_paths["assets_dir"], dirs_exist_ok=True)
+    translated = json.loads(json.dumps(translated).replace(f"{old_sid}_long_assets", f"{new_sid}_long_assets"))
+    await _write_json_atomic(new_paths["json"], translated)
+
+    # Render the copy (brand from the original library entry).
+    entries = await _library_load()
+    orig = next((e for e in entries if e.get("job_id") == job_id), None)
+    brand_arg = (orig or {}).get("brand") or "rodschinson"
+    brand_data = await _brand_lookup(brand_arg)
+    render_cmd = [
+        "node", str(PUPPET / "long_teaser_renderer.js"),
+        "--script", str(new_paths["json"]),
+        "--output-pdf", str(new_paths["pdf"]),
+        "--output-thumb", str(new_paths["thumb"]),
+    ]
+    if brand_data:
+        render_cmd += ["--brand-name", brand_data.get("name", "Rodschinson"),
+                       "--brand-primary", brand_data.get("primaryColor", "#08316F"),
+                       "--brand-accent", brand_data.get("accentColor", "#C8A96E")]
+    code, _o, err = await _run(render_cmd, cwd=PUPPET, timeout=150, job_id=new_job)
+    if code != 0:
+        raise HTTPException(502, f"Render of translated copy failed: {(err or '')[-300:]}")
+
+    new_entry = dict(orig or {"content_type": "property_long_teaser", "brand": brand_arg})
+    new_entry.update({
+        "job_id":     new_job,
+        "title":      (((orig or {}).get("title") or "Long Teaser") + f" ({target})")[:120],
+        "language":   target,
+        "output_file": str(new_paths["pdf"]),
+        "thumbnail":  str(new_paths["thumb"]),
+        "status":     "Draft",
+        "created_at": _now(),
+        "updated_at": _now(),
+    })
+    new_entry.pop("script_path", None)
+    await _library_append(new_entry)
+    try:
+        await _audit(user, "long_teaser_translate_copy", f"{old_sid} -> {new_sid} ({target})")
+    except Exception:
+        pass
+    return {"job_id": new_job, "title": new_entry["title"]}
+
+
+class LibraryRenameRequest(BaseModel):
+    title: str
+
+
+@app.patch("/api/library/{job_id}/rename")
+async def rename_library_entry(job_id: str, body: LibraryRenameRequest, request: Request):
+    """Rename a library item (its display title)."""
+    await _get_request_user(request)
+    title = (body.title or "").strip()
+    if not title:
+        raise HTTPException(422, "title is required")
+    entries = await _library_load()
+    for entry in entries:
+        if entry.get("job_id") == job_id:
+            entry["title"] = title[:120]
+            entry["updated_at"] = _now()
+            await _library_save(entries)
+            return entry
+    raise HTTPException(404, "Library entry not found")
 
 
 class LongTeaserCadastralRequest(BaseModel):
