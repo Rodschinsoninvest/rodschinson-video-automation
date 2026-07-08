@@ -1424,6 +1424,9 @@ export default function Properties() {
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [sectorFilter, setSectorFilter] = useState('all')
+  const [brandFilter, setBrandFilter] = useState('all')
   const [modalProp, setModalProp] = useState(null)
   const [selectedIds, setSelectedIds] = useState([])
   const [showPortfolio, setShowPortfolio] = useState(false)
@@ -1698,8 +1701,16 @@ export default function Properties() {
 
   // Filtered list
   const assetTypes = [...new Set(properties.map(p => p.asset_type).filter(Boolean))]
+  const statusOpts = [...new Set(properties.map(p => p.status).filter(Boolean))].sort()
+  // Sectors / brands come as comma-separated strings from Odoo → split into a set.
+  const splitList = (v) => String(v || '').split(/\s*[,;/]\s*/).map(s => s.trim()).filter(Boolean)
+  const sectorOpts = [...new Set(properties.flatMap(p => splitList(p.sectors)))].sort()
+  const brandOpts  = [...new Set(properties.flatMap(p => splitList(p.brands)))].sort()
   const filtered = properties.filter(p => {
     if (typeFilter !== 'all' && p.asset_type !== typeFilter) return false
+    if (statusFilter !== 'all' && p.status !== statusFilter) return false
+    if (sectorFilter !== 'all' && !splitList(p.sectors).includes(sectorFilter)) return false
+    if (brandFilter !== 'all' && !splitList(p.brands).includes(brandFilter)) return false
     if (search) {
       const q = search.toLowerCase()
       return (p.title || '').toLowerCase().includes(q) ||
@@ -1769,20 +1780,36 @@ export default function Properties() {
             color: text, fontSize: 13, width: 240, outline: 'none',
           }}
         />
-        <select
-          value={typeFilter}
-          onChange={e => setTypeFilter(e.target.value)}
-          style={{
-            padding: '8px 12px', borderRadius: 8, border: `1px solid ${border}`,
-            background: dark ? 'rgba(255,255,255,0.04)' : '#fff',
-            color: text, fontSize: 13,
-          }}
-        >
-          <option value="all">All Types</option>
-          {assetTypes.map(t => (
-            <option key={t} value={t}>{ASSET_LABELS[t] || t}</option>
-          ))}
-        </select>
+        {(() => {
+          const selStyle = { padding: '8px 12px', borderRadius: 8, border: `1px solid ${border}`, background: dark ? 'rgba(255,255,255,0.04)' : '#fff', color: text, fontSize: 13 }
+          return (
+            <>
+              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={selStyle} title="Filter by stage / status">
+                <option value="all">All stages</option>
+                {statusOpts.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={selStyle} title="Filter by asset type">
+                <option value="all">All types</option>
+                {assetTypes.map(t => <option key={t} value={t}>{ASSET_LABELS[t] || t}</option>)}
+              </select>
+              {sectorOpts.length > 0 && (
+                <select value={sectorFilter} onChange={e => setSectorFilter(e.target.value)} style={selStyle} title="Filter by sector">
+                  <option value="all">All sectors</option>
+                  {sectorOpts.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              )}
+              {brandOpts.length > 0 && (
+                <select value={brandFilter} onChange={e => setBrandFilter(e.target.value)} style={selStyle} title="Filter by brand">
+                  <option value="all">All brands</option>
+                  {brandOpts.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              )}
+              {(statusFilter !== 'all' || typeFilter !== 'all' || sectorFilter !== 'all' || brandFilter !== 'all' || search) && (
+                <button onClick={() => { setStatusFilter('all'); setTypeFilter('all'); setSectorFilter('all'); setBrandFilter('all'); setSearch('') }} style={{ ...selStyle, cursor: 'pointer', color: muted }}>Clear</button>
+              )}
+            </>
+          )
+        })()}
         {filtered.length > 0 && (
           <label style={{
             display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',

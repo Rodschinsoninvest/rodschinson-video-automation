@@ -7197,6 +7197,7 @@ def _map_odoo_property(raw: dict, type_names: dict[int, str] | None = None) -> d
         "property_type": raw.get("type") or "",
         "type_ids":    type_ids,
         "type_names":  type_name_list,
+        "stage":       stage_raw,
         "status":      status,
         "nda":         raw.get("regle_nda") or "",
         "image_ids":   raw.get("property_images_ids") or [],
@@ -7286,8 +7287,10 @@ async def _odoo_buyers_for_asset(uid, prop_id: int) -> list[dict]:
 
 
 @app.post("/api/odoo/sync-properties")
-async def sync_properties_from_odoo():
-    """Fetch properties from Odoo (stage = sale) and cache locally."""
+async def sync_properties_from_odoo(stage: str | None = None):
+    """Fetch ALL properties from Odoo (every stage) and cache locally so the tool
+    can filter by stage/status, type, sector, brand, agent, price. An optional
+    ?stage= narrows the server-side fetch to a single Odoo stage."""
     if not _ODOO_PASS:
         raise HTTPException(503, "Odoo credentials not configured (ODOO_API_KEY)")
 
@@ -7296,11 +7299,12 @@ async def sync_properties_from_odoo():
         raise HTTPException(502, "Failed to authenticate with Odoo — check ODOO_API_KEY")
 
     try:
-        # Fetch properties in "sale" stage
+        # Fetch every property (optionally narrowed to one stage).
+        domain = [["stage", "=", stage]] if stage else []
         records = await _odoo_search_read(
             uid, _ODOO_MODEL,
-            [["stage", "=", "sale"]],
-            _ODOO_FIELDS, limit=200,
+            domain,
+            _ODOO_FIELDS, limit=1000,
         )
 
         records = list(records)  # ensure list (XML-RPC returns _Marshallable)
