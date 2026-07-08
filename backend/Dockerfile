@@ -24,11 +24,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Step 4: Chromium + fonts (own layer). Noto Color Emoji renders the 📍/↗ icons
-# used in the teaser (map/docs buttons); without it Chromium prints empty boxes.
+# Step 4: Chromium + base fonts (own layer — KEEP this RUN identical across builds
+# so the Chromium version stays pinned to the cached layer; changing it re-pulls a
+# possibly-broken newer Chromium).
 RUN apt-get update && apt-get install -y --no-install-recommends \
         chromium \
         fonts-liberation \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Step 4b: Emoji font in its OWN layer so it never busts the Chromium layer cache.
+# Noto Color Emoji renders the 📍/↗ icons used in the teaser (map/docs buttons).
+RUN apt-get update && apt-get install -y --no-install-recommends \
         fonts-noto-color-emoji \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 

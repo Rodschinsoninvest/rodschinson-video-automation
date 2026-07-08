@@ -42,7 +42,11 @@ async function main() {
   const browser = await puppeteer.launch({
     headless: 'new',
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
-           '--font-render-hinting=none', '--allow-file-access-from-files'],
+           '--font-render-hinting=none', '--allow-file-access-from-files',
+           // Disable the crash reporter (crashpad) — its socket setup fails in the
+           // Railway container ("server address: Unknown address type") and can
+           // abort the launch.
+           '--disable-crash-reporter', '--disable-breakpad', '--disable-software-rasterizer'],
   });
 
   try {
