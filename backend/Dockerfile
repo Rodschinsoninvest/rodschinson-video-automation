@@ -38,9 +38,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         fonts-noto-color-emoji \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Tell Puppeteer to use system Chromium
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
+# Puppeteer downloads and uses its OWN version-matched Chrome (deterministic).
+# The Debian system chromium is kept only for its shared libraries + fonts — its
+# version updates unpredictably and a newer one crashed on launch.
+ENV PUPPETEER_CACHE_DIR=/root/.cache/puppeteer \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
@@ -56,7 +57,7 @@ COPY scripts/ ./scripts/
 
 # Install Node deps for Puppeteer renderer
 RUN if [ -f puppeteer/package.json ]; then \
-        cd puppeteer && npm ci --omit=dev; \
+        cd puppeteer && npm ci --omit=dev && npx puppeteer browsers install chrome; \
     fi
 
 # Output directories (persisted via Railway volume)
