@@ -1713,10 +1713,12 @@ export default function Properties() {
     if (brandFilter !== 'all' && !splitList(p.brands).includes(brandFilter)) return false
     if (search) {
       const q = search.toLowerCase()
-      return (p.title || '').toLowerCase().includes(q) ||
-             (p.reference || '').toLowerCase().includes(q) ||
-             (p.description || '').toLowerCase().includes(q) ||
-             (p.agent || '').toLowerCase().includes(q)
+      // Fields can be arrays (Odoo many2one like responsable = [id, name]) or
+      // non-strings — coerce everything to text before matching.
+      const asText = (x) => Array.isArray(x) ? x.join(' ') : String(x ?? '')
+      const hay = [p.title, p.reference, p.description, p.agent, p.asset_label, p.sectors, p.brands]
+        .map(asText).join(' ').toLowerCase()
+      return hay.includes(q)
     }
     return true
   })
