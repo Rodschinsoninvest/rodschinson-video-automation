@@ -915,18 +915,24 @@ function PortfolioTeaserModal({ brands, properties = [], onClose, onGenerate, da
       }
       const next = []
       let skipped = 0
+      const emptyBuildings = []  // subfolders whose images all failed to decode
       for (const [name, groupFiles] of groups) {
         groupFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
         const results = await Promise.all(groupFiles.map(f => downscaleToDataUrl(f)))
         const ph = results.filter(Boolean)
         skipped += results.length - ph.length
-        if (ph.length) next.push({ name, address: '', photos: ph })
+        // Keep the building even if none of its images could be decoded — the
+        // subfolder was detected, so it must show up (user can re-add photos in
+        // the editor). Silently dropping it here made "6 folders" read as "5".
+        if (!ph.length) emptyBuildings.push(name)
+        next.push({ name, address: '', photos: ph })
       }
       next.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
       setAssets(next)
       const totalPh = next.reduce((s, a) => s + a.photos.length, 0)
       if (next.length) toast(`Loaded ${next.length} building(s), ${totalPh} photo(s).`, 'success')
-      if (skipped && next.length) toast(`${skipped} image(s) couldn't be read (often HEIC) — export as JPEG/PNG.`, 'error')
+      if (emptyBuildings.length) toast(`No readable photo for: ${emptyBuildings.join(', ')} — likely HEIC (iPhone). Export as JPEG/PNG and re-add.`, 'error')
+      else if (skipped) toast(`${skipped} image(s) couldn't be read (often HEIC) — export as JPEG/PNG.`, 'error')
       if (!next.length) toast(`Found ${imgs.length} image(s) but none could be read — likely HEIC (iPhone). Export the folder as JPEG/PNG and retry.`, 'error')
     } catch (err) {
       toast(`Folder read failed: ${err?.message || err}`, 'error')
