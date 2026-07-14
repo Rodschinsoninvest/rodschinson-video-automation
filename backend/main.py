@@ -4955,8 +4955,8 @@ async def list_canva_templates(type: Optional[str] = None):
 
 @app.post("/api/canva-templates", status_code=201)
 async def add_canva_template(body: CanvaTemplateCreate):
-    if "canva.com" not in body.url:
-        raise HTTPException(422, "URL must be a Canva share link (canva.com)")
+    if not re.search(r"canva\.(com|site|link)", body.url, re.I):
+        raise HTTPException(422, "URL must be a Canva share link (canva.com / canva.site / canva.link)")
 
     # Extract design ID from URL for embed
     # e.g. https://www.canva.com/design/DAxxxxxx/view

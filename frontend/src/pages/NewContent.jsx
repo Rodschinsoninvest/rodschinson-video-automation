@@ -569,7 +569,7 @@ function AddCanvaTemplateModal({ contentType, onAdded, onClose }) {
 
   const save = async () => {
     if (!name.trim() || !url.trim()) { setErr('Name and Canva URL required.'); return }
-    if (!url.includes('canva.com')) { setErr('Must be a canva.com share link.'); return }
+    if (!/canva\.(com|site|link)/i.test(url.trim())) { setErr('Must be a Canva share link (canva.com / canva.site / canva.link).'); return }
     setSaving(true); setErr(null)
     try {
       const res = await apiFetch('/api/canva-templates', {

@@ -10,8 +10,12 @@ const _isLocal = typeof location !== 'undefined'
   && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
 
 // Requests that go straight to the backend in production: /api/generate (Netlify
-// body limit) and the long-running translate-copy render (Netlify proxy timeout).
-const _directRoute = (url) => url === '/api/generate' || url.includes('/translate-copy')
+// body limit), the long-running translate-copy render, and AI template generation
+// — all exceed Netlify's ~28s proxy timeout (Claude calls) or its body cap.
+const _directRoute = (url) =>
+  url === '/api/generate' ||
+  url === '/api/generate-template' ||
+  url.includes('/translate-copy')
 
 export function apiFetch(url, opts = {}) {
   const token = localStorage.getItem('cs_auth_token')
