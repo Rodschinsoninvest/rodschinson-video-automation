@@ -763,6 +763,108 @@ def _downscale_photo(raw: bytes, max_edge: int = 2000, quality: int = 85) -> byt
         return None
 
 
+# Chrome embeds every <img> in the teaser PDF at its full source resolution, so
+# role images and editor uploads (stored as-is, often 7000px / 5-30MB each)
+# produced 50-200MB PDFs that the editor preview could not load. A landscape A4
+# page at the renderer's 2x scale is ~2250px wide, so nothing needs more.
+_RENDER_MAX_EDGE  = 2400
+_RENDER_MAX_BYTES = 1_500_000
+_RENDER_IMG_EXT   = {".jpg", ".jpeg", ".png", ".webp"}
+
+
+def _render_copy(src: Path, cache_dir: Path) -> Path | None:
+    """Size-capped copy of ``src`` for PDF embedding, cached in ``cache_dir`` by
+    path + mtime + size. Returns None when the original is already small enough
+    (or can't be read), in which case the renderer keeps using the original."""
+    try:
+        st = src.stat()
+        key = hashlib.sha1(f"{src}|{st.st_mtime_ns}|{st.st_size}|{_RENDER_MAX_EDGE}".encode()).hexdigest()[:20]
+        for ext in (".jpg", ".png"):
+            hit = cache_dir / f"{key}{ext}"
+            if hit.exists():
+                return hit
+        from PIL import Image, ImageOps
+        with Image.open(src) as im:
+            if max(im.size) <= _RENDER_MAX_EDGE and st.st_size <= _RENDER_MAX_BYTES:
+                return None
+            im = ImageOps.exif_transpose(im)   # Chrome honours EXIF; bake it in
+            w, h = im.size
+            if max(w, h) > _RENDER_MAX_EDGE:
+                s = _RENDER_MAX_EDGE / max(w, h)
+                im = im.resize((round(w * s), round(h * s)), Image.LANCZOS)
+            has_alpha = im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info)
+            buf = io.BytesIO()
+            ext = ".jpg"
+            if has_alpha:
+                im.save(buf, format="PNG", optimize=True)
+                ext = ".png"
+            else:
+                rgb = im.convert("RGB")
+                if src.suffix.lower() == ".png":
+                    # Drawings/plans stay lossless (they compress well as PNG);
+                    # a PNG that stays heavy is a photo, which JPEG handles.
+                    rgb.save(buf, format="PNG", optimize=True)
+                    ext = ".png"
+                if not buf.tell() or buf.tell() > _RENDER_MAX_BYTES:
+                    buf = io.BytesIO()
+                    rgb.save(buf, format="JPEG", quality=85, optimize=True, progressive=True)
+                    ext = ".jpg"
+        if buf.tell() >= st.st_size:
+            return None
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        out = cache_dir / f"{key}{ext}"
+        tmp = out.with_suffix(out.suffix + ".tmp")
+        tmp.write_bytes(buf.getvalue())
+        tmp.replace(out)
+        return out
+    except Exception as e:
+        log.warning("render copy skipped for %s: %s", src, e)
+        return None
+
+
+def _render_ready_script(json_path: Path) -> Path:
+    """Write ``<name>.render.json`` next to the teaser JSON with every heavy
+    local image swapped for its size-capped copy, and return its path (the
+    saved JSON and the original assets are left untouched). Image URLs double
+    as keys in photo_focus / image_rotation / plan_rotation, so the swap is done
+    on the serialised JSON — keys and values change together. The copies live in
+    the teaser's own assets dir (``.render/``) so deleting the teaser removes
+    them; the editor's asset list only shows top-level files."""
+    cache_dir = json_path.with_name(json_path.name.replace("_long_teaser.json", "_long_assets")) / ".render"
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    refs: set[str] = set()
+
+    def walk(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                walk(k)
+                walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+        elif isinstance(o, str) and (o.startswith("file://") or o.startswith("/")):
+            refs.add(o)
+    walk(data)
+    # Plans keep full resolution: readers zoom into them in the PDF, and they are
+    # drawings that stay light as PNG — the weight comes from photos.
+    plan_lists = [data.get("plans")] + [a.get("plans") for a in (data.get("assets") or []) if isinstance(a, dict)]
+    plan_refs = {p for lst in plan_lists if isinstance(lst, list) for p in lst if isinstance(p, str)}
+
+    text = json.dumps(data, ensure_ascii=False)
+    for ref in refs - plan_refs:
+        src = Path(ref[len("file://"):] if ref.startswith("file://") else ref)
+        if src.suffix.lower() not in _RENDER_IMG_EXT or not src.is_file():
+            continue
+        small = _render_copy(src, cache_dir)
+        if small is not None:
+            new_ref = f"file://{small}" if ref.startswith("file://") else str(small)
+            text = text.replace(json.dumps(ref, ensure_ascii=False), json.dumps(new_ref, ensure_ascii=False))
+
+    out = json_path.with_name(json_path.stem + ".render.json")
+    out.write_text(text, encoding="utf-8")
+    return out
+
+
 async def _library_load() -> list[dict]:
     if not LIBRARY_FILE.exists(): return []
     try:
@@ -3627,9 +3729,10 @@ EXTRACTION RULES:
             pdf_path   = TEASER_DIR / f"{job_id[:8]}_long_teaser.pdf"
             thumb_path = TEASER_DIR / f"{job_id[:8]}_long_teaser_thumb.png"
 
+            render_script = await asyncio.to_thread(_render_ready_script, teaser_path)
             render_cmd = [
                 "node", str(PUPPET / "long_teaser_renderer.js"),
-                "--script", str(teaser_path),
+                "--script", str(render_script),
                 "--output-pdf", str(pdf_path),
                 "--output-thumb", str(thumb_path),
             ]
@@ -8035,7 +8138,7 @@ _TRANSLATE_SKIP_KEYS = {
     "sales_photo", "back_photo", "street_map", "map_url", "google_maps_url",
     "sharepoint_url", "expertise_url", "maps", "url", "photos", "plans",
     "boundary", "photo_focus", "plan_rotation", "section_visibility",
-    "photo_layout", "font_family", "heading_font",
+    "photo_layout", "font_family", "heading_font", "activa_photo_fit",
 }
 _URLISH_RE = re.compile(r'^(https?://|file://|data:|/)|\.(png|jpe?g|webp|gif|svg|pdf|heic|heif|avif)$', re.I)
 
@@ -8164,9 +8267,10 @@ async def long_teaser_translate_copy(job_id: str, body: LongTeaserTranslateReque
     orig = next((e for e in entries if e.get("job_id") == job_id), None)
     brand_arg = (orig or {}).get("brand") or "rodschinson"
     brand_data = await _brand_lookup(brand_arg)
+    render_script = await asyncio.to_thread(_render_ready_script, new_paths["json"])
     render_cmd = [
         "node", str(PUPPET / "long_teaser_renderer.js"),
-        "--script", str(new_paths["json"]),
+        "--script", str(render_script),
         "--output-pdf", str(new_paths["pdf"]),
         "--output-thumb", str(new_paths["thumb"]),
     ]
@@ -8284,9 +8388,10 @@ async def long_teaser_regenerate(job_id: str, request: Request, body: dict | Non
 
     async def _render_task():
         try:
+            render_script = await asyncio.to_thread(_render_ready_script, paths["json"])
             render_cmd = [
                 "node", str(PUPPET / "long_teaser_renderer.js"),
-                "--script", str(paths["json"]),
+                "--script", str(render_script),
                 "--output-pdf", str(paths["pdf"]),
                 "--output-thumb", str(paths["thumb"]),
             ]

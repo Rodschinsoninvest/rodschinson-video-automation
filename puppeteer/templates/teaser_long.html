@@ -138,6 +138,15 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
   position:absolute;inset:0;width:100%;height:100%;
   object-fit:cover;object-position:center;
 }
+/* "Whole image" (editor: activa_photo_fit = contain) — for drawings/plans that
+   must not be cropped. Letterboxed on white, and kept clear of the 30px the
+   left card overlaps so no edge hides under it. */
+.activa .right.fit-contain{background:#fff}
+.activa .right.fit-contain img.a-photo{
+  top:12px;right:12px;bottom:12px;left:42px;
+  width:calc(100% - 54px);height:calc(100% - 24px);
+  object-fit:contain;
+}
 
 /* ─────── DETAILS (asset data tables) ─────── */
 .details{height:100%;display:flex;flex-direction:column;gap:14px;overflow:hidden}
@@ -1283,7 +1292,7 @@ window.loadLongTeaser = function(data, brandName){
           </ul>
           <div class="a-price"><span>${esc(priceLbl)}</span><span class="val">${esc(price)}</span></div>
         </div>
-        <div class="right">${activaPhoto?`<img class="a-photo" src="${esc(fileUrl(activaPhoto))}" alt="">`:''}</div>
+        <div class="right${data.activa_photo_fit==='contain'?' fit-contain':''}">${activaPhoto?`<img class="a-photo" src="${esc(fileUrl(activaPhoto))}" alt="">`:''}</div>
       </div>
     </div>`);
 
@@ -1535,7 +1544,9 @@ window.loadLongTeaser = function(data, brandName){
     }
   } else {
     // Fallback to the legacy split tables when the unit pattern didn't match.
-    pushTableCategory(data.surfaces_label || DL.surfaces || 'Surfaces', surfaceRows);
+    // The editor's "Surfaces" label (details_labels.surfaces) wins; surfaces_label
+    // is the legacy default the backend always writes, so it must not mask an edit.
+    pushTableCategory((data.details_labels && data.details_labels.surfaces) || data.surfaces_label || DL.surfaces || 'Surfaces', surfaceRows);
     pushTableCategory(DL.income, income);
   }
   pushTableCategory(DL.leases, leases);

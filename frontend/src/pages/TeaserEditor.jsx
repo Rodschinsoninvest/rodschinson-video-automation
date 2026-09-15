@@ -1191,13 +1191,25 @@ export default function TeaserEditor() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
                 {imgFields.map(([key, label]) => {
                   const url = data[key] || ''
+                  // The description-page photo can be shown whole (drawings) instead of cropped to fill.
+                  const fitKey = key === 'activa_photo' ? 'activa_photo_fit' : null
+                  const contain = fitKey && data[fitKey] === 'contain'
                   return (
                     <div key={key} style={{ border: `1px solid ${border}`, borderRadius: 8, padding: 10, background: panel }}>
                       <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 6, color: text }}>{label}</div>
-                      <div style={{ width: '100%', height: 120, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.05)', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {url ? <AuthImg url={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 11, color: muted }}>No image</span>}
+                      <div style={{ width: '100%', height: 120, borderRadius: 6, overflow: 'hidden', background: contain ? '#fff' : 'rgba(0,0,0,0.05)', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {url ? <AuthImg url={url} style={{ width: '100%', height: '100%', objectFit: contain ? 'contain' : 'cover' }} /> : <span style={{ fontSize: 11, color: muted }}>No image</span>}
                       </div>
                       <div style={{ fontSize: 10, color: muted, marginBottom: 6, wordBreak: 'break-all' }}>{fileUrlToFilename(url) || '—'}</div>
+                      {fitKey && (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: muted, marginBottom: 8 }} title="Fill crops the image to the frame; Whole image shows all of it (best for drawings and plans)">
+                          Fit
+                          <select value={data[fitKey] || ''} onChange={e => setField(fitKey, e.target.value)} style={{ ...inputStyle, width: 'auto', flex: 1, padding: '4px 8px' }}>
+                            <option value="">Fill frame (crops edges)</option>
+                            <option value="contain">Whole image (no crop)</option>
+                          </select>
+                        </label>
+                      )}
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button onClick={() => triggerUpload({ key })} style={{ flex: 1, padding: '6px 8px', borderRadius: 5, border: `1px solid ${border}`, background: 'transparent', color: 'var(--cs-accent)', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}><ArrowUp size={12} /> Replace</button>
                         {url && <button onClick={() => setField(key, '')} style={{ padding: '6px 10px', borderRadius: 5, border: `1px solid rgba(220,38,38,0.3)`, background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>Clear</button>}
@@ -1655,17 +1667,85 @@ function UnitTableEditor({ value, onChange, theme }) {
 }
 
 // ── PDF preview ────────────────────────────────────────────────────────────
+// Streams the PDF so progress is visible, and surfaces failures: before, any
+// failed, aborted or stalled download left "Loading PDF…" on screen forever.
+const PREVIEW_STALL_MS = 30_000
 function PdfPreview({ jobId, cacheBust }) {
   const [src, setSrc] = useState('')
+  const [status, setStatus] = useState({ loading: true, error: '', loaded: 0, total: 0 })
+  const [attempt, setAttempt] = useState(0)
   useEffect(() => {
-    let revoked = ''
-    // Cache-bust so the regenerated PDF is fetched fresh (the download response
-    // has no Cache-Control, so the browser/edge would otherwise serve the old one).
-    apiFetch(`/api/download/${jobId}?t=${cacheBust}`, { cache: 'no-store' })
-      .then(r => r.ok ? r.blob() : null)
-      .then(b => { if (b) { const u = URL.createObjectURL(b); revoked = u; setSrc(u) } })
-    return () => { if (revoked) URL.revokeObjectURL(revoked) }
-  }, [jobId, cacheBust])
-  if (!src) return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(0,0,0,0.4)' }}>Loading PDF…</div>
-  return <iframe src={src} title="teaser-preview" style={{ flex: 1, border: 'none', width: '100%', minHeight: 0 }} />
+    let alive = true
+    let url = ''
+    // A proxy that drops the upstream mid-transfer can leave the browser waiting
+    // forever with no error, so give up when no bytes arrive for PREVIEW_STALL_MS.
+    const ctrl = new AbortController()
+    let stalled = false
+    let watchdog
+    const kick = () => {
+      clearTimeout(watchdog)
+      watchdog = setTimeout(() => { stalled = true; ctrl.abort() }, PREVIEW_STALL_MS)
+    }
+    setStatus({ loading: true, error: '', loaded: 0, total: 0 })
+    ;(async () => {
+      try {
+        kick()
+        // Cache-bust so the regenerated PDF is fetched fresh (the download response
+        // has no Cache-Control, so the browser/edge would otherwise serve the old one).
+        const r = await apiFetch(`/api/download/${jobId}?t=${cacheBust}`, { cache: 'no-store', signal: ctrl.signal })
+        if (!r.ok) {
+          let detail = `Preview failed (${r.status})`
+          try { detail = (await r.json()).detail || detail } catch { /* not json */ }
+          throw new Error(detail)
+        }
+        const total = Number(r.headers.get('content-length')) || 0
+        let blob
+        const reader = r.body && r.body.getReader ? r.body.getReader() : null
+        if (reader) {
+          const chunks = []
+          let loaded = 0, shown = 0
+          for (;;) {
+            const { done, value } = await reader.read()
+            if (!alive) return
+            if (done) break
+            kick()
+            chunks.push(value)
+            loaded += value.length
+            if (loaded - shown > 512 * 1024) { shown = loaded; setStatus(s => ({ ...s, loaded, total })) }
+          }
+          blob = new Blob(chunks, { type: 'application/pdf' })
+        } else {
+          blob = await r.blob()
+        }
+        if (!alive) return
+        url = URL.createObjectURL(blob)
+        setSrc(url)
+        setStatus({ loading: false, error: '', loaded: 0, total: 0 })
+      } catch (e) {
+        const msg = stalled ? 'the download stalled (no data for 30s)' : (e.message || 'network error')
+        if (alive) setStatus({ loading: false, error: msg, loaded: 0, total: 0 })
+      } finally {
+        clearTimeout(watchdog)
+      }
+    })()
+    return () => { alive = false; clearTimeout(watchdog); ctrl.abort(); if (url) URL.revokeObjectURL(url) }
+  }, [jobId, cacheBust, attempt])
+
+  const mb = n => (n / 1048576).toFixed(1)
+  const progress = status.loaded ? ` ${mb(status.loaded)}${status.total ? ` / ${mb(status.total)}` : ''} MB` : ''
+  const note = status.error
+    ? (
+      <div style={{ padding: 16, textAlign: 'center', color: '#dc2626', fontSize: 12 }}>
+        <div style={{ marginBottom: 8 }}>Preview could not load: {status.error}</div>
+        <button onClick={() => setAttempt(a => a + 1)} style={{ padding: '6px 12px', borderRadius: 5, border: '1px solid rgba(220,38,38,0.3)', background: 'transparent', color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>Retry</button>
+      </div>
+    )
+    : status.loading ? <div style={{ padding: 8, textAlign: 'center', color: 'rgba(0,0,0,0.5)', fontSize: 12 }}>{src ? 'Updating preview…' : 'Loading PDF…'}{progress}</div> : null
+  if (!src) return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{note}</div>
+  return (
+    <>
+      {note}
+      <iframe src={src} title="teaser-preview" style={{ flex: 1, border: 'none', width: '100%', minHeight: 0 }} />
+    </>
+  )
 }
