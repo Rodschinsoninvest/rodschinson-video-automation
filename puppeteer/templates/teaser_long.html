@@ -547,6 +547,41 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
 
 <script>
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Word's non-breaking space, applied for the writer: a figure must never be left
+// stranded at the end of a line, away from what it counts ("3 appartementen",
+// "1.200 m²", "€ 4.950.000"). Titles wrap on every page, so that is where it
+// shows. Only the space inside such a pair is replaced, and only while the pair
+// stays short enough to still fit a line — a very long word keeps its normal
+// break rather than overflowing the column.
+const NBSP_MAX_PAIR = 20;
+function glueFigures(text){
+  return String(text)
+    .replace(/(\d+(?:[.,]\d+)*) +(\S+)/g,
+             (m, num, word) => (num.length + 1 + word.length <= NBSP_MAX_PAIR) ? num + '\u00A0' + word : m)
+    .replace(/([€$£±≈]) +(?=\d)/g, '$1\u00A0');
+}
+// Titles carry the title font; those same elements, plus the bullet lists, are
+// the free-flowing text where a stranded figure shows. Table cells stay out of
+// it: their columns are narrow and already tuned.
+const HEAD_PARTS = ['.c-title','.c-loc','.wm-main','.wm-sub','.badge','.ref-tag','.price-val','.price-label',
+  '.pg-header .sec','.d-title','.d-head','.kpi-value','.kpi-label','.a-title','.a-eyebrow','.a-asset-eyebrow',
+  '.pf-head','.pf-item .t','.ad-title','.ad-eyebrow','.ad-index','.lo-title','.lo-eyebrow','.l-title',
+  '.s-name','.s-role','.divider .wm','.u-sum-v','.logo .l1','.logo .l2'];
+const NBSP_SEL = HEAD_PARTS.join(',') + ',.a-bullets li,.d-bullets li';
+// Rewrites the rendered text nodes only: the saved teaser JSON keeps the plain
+// spaces the editor shows. Runs on the hidden measuring host too, so a card is
+// paginated at the height it will really have.
+function applyNonBreakingSpaces(root){
+  (root || document).querySelectorAll(NBSP_SEL).forEach(el => {
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let n;
+    while ((n = walk.nextNode())){
+      const glued = glueFigures(n.nodeValue);
+      if (glued !== n.nodeValue) n.nodeValue = glued;
+    }
+  });
+}
 function fileUrl(p){
   if(!p) return '';
   const s = String(p);
@@ -600,6 +635,7 @@ function measureCardHeights(items){
     wrap.style.width = (it.wide ? 1027 : 503) + 'px';
     wrap.innerHTML = it.html;
     details.appendChild(wrap);
+    applyNonBreakingSpaces(wrap);
     const el = wrap.firstElementChild;
     const h = el ? el.offsetHeight : 0;
     details.removeChild(wrap);
@@ -706,11 +742,7 @@ window.loadLongTeaser = function(data, brandName){
     }
   });
   // Title elements (headings) get HEAD_FONT; everything else gets BODY_FONT.
-  const HEAD_SEL = ['.c-title','.c-loc','.wm-main','.wm-sub','.badge','.ref-tag','.price-val','.price-label',
-    '.pg-header .sec','.d-title','.d-head','.kpi-value','.kpi-label','.a-title','.a-eyebrow','.a-asset-eyebrow',
-    '.pf-head','.pf-item .t','.ad-title','.ad-eyebrow','.ad-index','.lo-title','.lo-eyebrow','.l-title',
-    '.s-name','.s-role','.divider .wm','.u-sum-v','.logo .l1','.logo .l2']
-    .map(s => `#doc ${s}`).join(',');
+  const HEAD_SEL = HEAD_PARTS.map(s => `#doc ${s}`).join(',');
   const fo = document.createElement('style');
   // Keep 'Noto Color Emoji' in the stack so 📍/↗ icons still render under the override.
   fo.textContent = `#doc, #doc *{font-family:'${BODY_FONT}','Noto Color Emoji',sans-serif !important}`
@@ -1346,6 +1378,7 @@ window.loadLongTeaser = function(data, brandName){
       </div></div>`);
 
     document.getElementById('doc').innerHTML = pages.join('');
+    applyNonBreakingSpaces(document.getElementById('doc'));   // before the fit: it changes how titles wrap
     fitPortfolioOverview(DL.continued);
     window.rotatePortraitPlans = function(){
       document.querySelectorAll('.plan-img').forEach(img=>{
@@ -1712,6 +1745,7 @@ window.loadLongTeaser = function(data, brandName){
     grid.style.width = '1027px';
     grid.innerHTML = cards.map(cardHtml).join('');
     det.appendChild(grid); host.appendChild(det); document.body.appendChild(host);
+    applyNonBreakingSpaces(grid);
     const h = grid.offsetHeight;
     document.body.removeChild(host);
     return h;
@@ -1915,6 +1949,7 @@ window.loadLongTeaser = function(data, brandName){
     </div>`);
 
   document.getElementById('doc').innerHTML = pages.join('');
+  applyNonBreakingSpaces(document.getElementById('doc'));
 
   // Auto-rotate portrait plan images (called again after images finish loading by the renderer)
   window.rotatePortraitPlans = function(){
