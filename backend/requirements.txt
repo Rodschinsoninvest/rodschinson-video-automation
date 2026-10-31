@@ -16,5 +16,5 @@ bcrypt==5.0.0          # password hashing
 # Document + image processing (lazy-imported in main.py — must be installed)
 pillow==12.1.1          # PIL — photo downscaling / de-dupe
 pymupdf==1.27.2.2       # fitz — render PDF plans to images
-pypdf==6.10.0           # extract text from PDF documents
+pypdf==6.21.4           # extract text from PDF documents
 python-docx==1.2.0      # extract text from Word documents
