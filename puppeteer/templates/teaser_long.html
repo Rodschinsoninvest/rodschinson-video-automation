@@ -884,6 +884,47 @@ function fitLoneDetailCards(scale){
   });
 }
 
+// Same void, other page builder: in portfolio mode a details page is a deck
+// (.d-deck) rather than a grid, and a deck holding one short table centres it,
+// which is how a nine-row table ends up as a band in the middle of a sheet with
+// white above and below. Give the card the page and spread its rows over it.
+function fitLoneDeckCards(scale){
+  const S = Math.max(0.8, Math.min(1.3, Number(scale) || 1));
+  document.querySelectorAll('.details .d-deck').forEach(deck => {
+    if (deck.children.length !== 1) return;
+    const card = deck.children[0];
+    if (!card.classList || !card.classList.contains('d-card')) return;
+    const tbl = card.querySelector('table');
+
+    // Undo a previous pass — this runs again once the font has loaded.
+    card.classList.remove('d-spread');
+    card.style.removeProperty('flex');
+    if (tbl) tbl.style.removeProperty('flex');
+    deck.style.removeProperty('justify-content');
+    if (deck.dataset.wasFew === '1') deck.classList.add('few');
+
+    const full = deck.clientHeight;
+    if (!full || card.offsetHeight > full * 0.8) return;   // fills it well enough
+
+    // Only a label/value table can carry a whole page by spreading. A bullet
+    // list or a unit table keeps its own layout, centred as before.
+    const trs = (tbl && !tbl.classList.contains('u-table'))
+      ? Array.from(tbl.querySelectorAll('tbody tr')) : [];
+    if (!trs.length) return;
+
+    if (deck.classList.contains('few')){ deck.dataset.wasFew = '1'; deck.classList.remove('few'); }
+    deck.style.justifyContent = 'stretch';
+    card.style.flex = '1 1 auto';
+    if (!growLoneDetailTable(card, tbl, trs, card.offsetHeight, S)){
+      card.style.removeProperty('flex');            // nothing to gain — put it back
+      deck.style.removeProperty('justify-content');
+      if (deck.dataset.wasFew === '1') deck.classList.add('few');
+      return;
+    }
+    tbl.style.flex = '1 1 auto';
+  });
+}
+
 // Plans are usually pages lifted out of a PDF, so the drawing sits in the
 // middle of a sheet of white. Crop that blank border away before the plan is
 // placed — otherwise the teaser page is mostly margin.
@@ -1677,12 +1718,14 @@ window.loadLongTeaser = function(data, brandName){
     fitPortfolioOverview(DL.continued);
     fitActivaBullets(FONT_SCALE);
     fitLoneDetailCards(FONT_SCALE);
+    fitLoneDeckCards(FONT_SCALE);
     // The passes above measure text, and at build time the page is still on
     // fallback metrics — the renderer calls this again once the real font has
     // loaded, otherwise a line sized to Helvetica gets clipped in Montserrat.
     window.refitLongTeaser = function(){
       fitActivaBullets(FONT_SCALE);
       fitLoneDetailCards(FONT_SCALE);
+      fitLoneDeckCards(FONT_SCALE);
     };
     window.rotatePortraitPlans = function(){
       return trimPlanMargins().then(() => {
@@ -2270,6 +2313,7 @@ window.loadLongTeaser = function(data, brandName){
   window.refitLongTeaser = function(){
     fitActivaBullets(FONT_SCALE);
     fitLoneDetailCards(FONT_SCALE);
+    fitLoneDeckCards(FONT_SCALE);
   };
 
   // Auto-rotate portrait plan images (called again after images finish loading by the renderer)
