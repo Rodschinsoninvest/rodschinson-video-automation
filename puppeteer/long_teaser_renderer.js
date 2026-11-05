@@ -91,6 +91,11 @@ async function main() {
     });
     // Wait for any font injected by loadLongTeaser (selectable "police") to load.
     await page.evaluate(() => document.fonts.ready).catch(() => {});
+    // The text-fitting passes ran while the page was still on fallback metrics.
+    // Run them again now the real font is in, or a line measured in Helvetica
+    // comes out clipped in Montserrat.
+    await page.evaluate(() => (typeof window.refitLongTeaser === 'function')
+      ? window.refitLongTeaser() : null).catch(() => {});
     // Trim blank plan margins + rotate portrait plans now that the natural
     // dimensions are known. The pass is async (it re-encodes cropped images),
     // so return its promise and let evaluate() await it.

@@ -730,24 +730,30 @@ function fitActivaBullets(scale){
   /*
    * QUAND, ET DE COMBIEN.
    *
-   * Only a real void is worth touching. Under a quarter of the card empty
-   * reads as margin, so the page is left exactly as designed — resizing it
-   * would make two teasers of the same shape set their description at two
-   * different sizes for no visible reason.
+   * The card is sized for the page, so whatever the description does not use
+   * is dead white inside it: fill it. The type carries that space, not the
+   * line spacing — leading only absorbs the remainder, once the type has hit
+   * its ceiling.
    *
-   * And the whole description block moves TOGETHER, by one factor: growing
-   * the bullets alone left them larger than the address printed just above,
-   * which is the one thing that looks wrong on an otherwise quiet page. The
-   * title keeps its size — it anchors the hierarchy.
+   * The WHOLE card moves together, by one factor — title, labels, address and
+   * bullets alike. Growing the description alone set the address larger than
+   * the title above it, which is the one thing that looks wrong on an
+   * otherwise quiet page; scaled as a block, the hierarchy is untouched and
+   * only the card reads bigger.
    */
-  const VIDE_MIN    = 0.75;  // act only when the list fills less than this
-  const FACTEUR_MAX = 1.2;   // a fifth bigger at most — past that it shows
-  const ABSOLU_MAX  = 17 * (scale || 1);   // and no line of it beyond this
+  const VIDE_MIN    = 0.97;  // act whenever there is real room left over
+  const FACTEUR_MAX = 1.5;   // half again as big at most
+  const ABSOLU_MAX  = 26 * (scale || 1);   // and no line of it beyond this
 
   document.querySelectorAll('.activa .left').forEach(card => {
     const ul = card.querySelector('.a-bullets');
     if (!ul || !ul.children.length) return;
     const lis = Array.from(ul.children);
+    // Start from the designed sizes every time: the pass runs once on build
+    // and again once the real font has loaded, and must not compound.
+    card.querySelectorAll('.a-title, .a-label, .a-val, .a-bullets li')
+        .forEach(el => { el.style.removeProperty('font-size');
+                         el.style.removeProperty('margin-bottom'); });
     const prevFlex = ul.style.flex;
     // The list is a flex:1 item, so its own height is the stretched one.
     // Release the stretch to read what the text really needs.
@@ -757,11 +763,11 @@ function fitActivaBullets(scale){
     ul.style.flex = prevFlex;
     if (!avail || !natural || natural / avail > VIDE_MIN) return;   // no void
 
-    const parts = [...card.querySelectorAll('.a-label, .a-val'), ...lis];
+    const parts = [...card.querySelectorAll('.a-title, .a-label, .a-val'), ...lis];
     const base  = parts.map(el => parseFloat(getComputedStyle(el).fontSize) || 12.5);
     const baseGap = parseFloat(getComputedStyle(lis[0]).marginBottom) || 6;
-    // The ceiling is read off the BIGGEST line of the block (the address, not
-    // a bullet): capping the smallest one lets the largest run past it.
+    // The ceiling is read off the BIGGEST line of the block (the title, not a
+    // bullet): capping the smallest one lets the largest run past it.
     const plafond = Math.min(FACTEUR_MAX, ABSOLU_MAX / Math.max.apply(null, base));
     if (plafond <= 1.02) return;
 
@@ -789,7 +795,7 @@ function fitActivaBullets(scale){
       ul.style.flex = prevFlex;
       return v;
     };
-    const tient = (f) => { put(f); return creux() >= 6; };
+    const tient = (f) => { put(f); return creux() >= 10; };
 
     let facteur = 1;
     for (let f = plafond; f > 1.02; f = +(f - 0.05).toFixed(3)){
@@ -837,6 +843,12 @@ function growLoneDetailTable(card, tbl, trs, full, S){
 function fitLoneDetailCards(scale){
   const S = Math.max(0.8, Math.min(1.3, Number(scale) || 1));
   document.querySelectorAll('.details .d-grid.one > .d-card').forEach(card => {
+    // Undo a previous pass: this runs again once the font has loaded.
+    card.classList.remove('d-spread');
+    card.style.removeProperty('align-self');
+    card.style.removeProperty('height');
+    const tbl0 = card.querySelector('table');
+    if (tbl0) tbl0.style.removeProperty('height');
     const full = card.offsetHeight;
     if (!full) return;
     // d-fill / d-fillb already hold enough rows to fill the page and are laid
@@ -1665,6 +1677,13 @@ window.loadLongTeaser = function(data, brandName){
     fitPortfolioOverview(DL.continued);
     fitActivaBullets(FONT_SCALE);
     fitLoneDetailCards(FONT_SCALE);
+    // The passes above measure text, and at build time the page is still on
+    // fallback metrics — the renderer calls this again once the real font has
+    // loaded, otherwise a line sized to Helvetica gets clipped in Montserrat.
+    window.refitLongTeaser = function(){
+      fitActivaBullets(FONT_SCALE);
+      fitLoneDetailCards(FONT_SCALE);
+    };
     window.rotatePortraitPlans = function(){
       return trimPlanMargins().then(() => {
         if (PLAN_UPRIGHT === false){
@@ -2245,6 +2264,13 @@ window.loadLongTeaser = function(data, brandName){
   applyNonBreakingSpaces(document.getElementById('doc'));
   fitActivaBullets(FONT_SCALE);
   fitLoneDetailCards(FONT_SCALE);
+  // Measured on fallback metrics at build time — the renderer runs it again
+  // once the real font is in, otherwise a line that fitted in Helvetica is
+  // clipped in Montserrat.
+  window.refitLongTeaser = function(){
+    fitActivaBullets(FONT_SCALE);
+    fitLoneDetailCards(FONT_SCALE);
+  };
 
   // Auto-rotate portrait plan images (called again after images finish loading by the renderer)
   window.rotatePortraitPlans = function(){
