@@ -213,11 +213,20 @@ html,body{width:1123px;background:#fff;color:#111;font-family:'Montserrat',sans-
 .details .d-grid.one > .d-card:not(.d-fill){justify-content:center}
 /* A lone table with enough rows → stretch the table so rows fill the page. */
 .details .d-card.d-fill > table{height:100%}
+/* Stretched rows are tall bands — centre the text in its band instead of
+   letting it hug the top edge. */
+.details .d-card.d-fill td{vertical-align:middle}
 /* A lone bullet card → spread the items evenly down the whole page (highlights). */
 .details .d-card.d-fillb .d-bullets{columns:1;flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:0;margin-top:6px}
 .details .d-card.d-fillb .d-bullets li{font-size:15px;line-height:1.45;margin:0;padding:16px 2px;border-bottom:1px solid #eef1f5;break-inside:avoid}
 .details .d-card.d-fillb .d-bullets li:last-child{border-bottom:none}
-
+/* A lone table with room to spare: the rows spread over the whole page and the
+   figures grow with the room each one gets, so the panel is filled by its
+   content instead of framing a void. Sizes are set in fitLoneDetailCards(). */
+.details .d-card.d-spread > table{height:100%}
+.details .d-card.d-spread td{padding-top:9px;padding-bottom:9px;vertical-align:middle;line-height:1.3}
+.details .d-card.d-spread tbody tr{background:none;border-bottom:1px solid #eef1f5}
+.details .d-card.d-spread tbody tr:last-child{border-bottom:none}
 /* Consolidated unit-level table — per-row: Unit / Surface / step rents */
 .details .u-card{padding:11px 14px 12px}
 .details .u-summary{
@@ -805,13 +814,34 @@ function fitActivaBullets(scale){
   });
 }
 
+// Spread a lone table over the page it has to itself: the rows share the whole
+// height, each line centred in the band it owns, so the table is as big as the
+// sheet instead of a hairline box adrift in white. Type size is left alone —
+// it follows the teaser's own font setting. Returns false when the rows
+// already sit close enough together that spreading them would gain nothing.
+function growLoneDetailTable(card, tbl, trs, full, S){
+  const cs   = getComputedStyle(card);
+  const head = card.querySelector('.d-head');
+  const hs   = head ? getComputedStyle(head) : null;
+  const headH = head ? head.offsetHeight + (parseFloat(hs.marginBottom) || 0) : 0;
+  const room  = full - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0) - headH;
+  if (room / trs.length < 34 * S) return false;    // the rows already sit close enough
+  card.classList.add('d-spread');
+  return true;
+}
+
 // A details page holding one short table used to stretch that card over the
 // whole sheet, so a single row sat alone inside a page-sized empty frame.
-// Let a card that cannot fill the page keep its natural height instead.
-function fitLoneDetailCards(){
+// Grow the table into that room where it can carry it; where it cannot (a
+// bullet list, a unit table), let the card keep its natural height instead.
+function fitLoneDetailCards(scale){
+  const S = Math.max(0.8, Math.min(1.3, Number(scale) || 1));
   document.querySelectorAll('.details .d-grid.one > .d-card').forEach(card => {
     const full = card.offsetHeight;
     if (!full) return;
+    // d-fill / d-fillb already hold enough rows to fill the page and are laid
+    // out for it in CSS — leave them be.
+    if (card.classList.contains('d-fill') || card.classList.contains('d-fillb')) return;
     // Release every stretch that makes a lone card page-tall, then see how much
     // the content really needs.
     const tbl = card.querySelector('table');
@@ -821,12 +851,23 @@ function fitLoneDetailCards(){
     // full page — align-self:start is what lets it shrink to its content.
     card.style.setProperty('align-self', 'start', 'important');
     card.style.setProperty('height', 'auto', 'important');
-    if (card.offsetHeight > full * 0.5){        // it fills the page well enough
+    const natural = card.offsetHeight;
+    const restore = () => {
       card.style.removeProperty('height');
       card.style.removeProperty('align-self');
       if (tbl){ if (prevTbl === null) tbl.removeAttribute('style'); else tbl.setAttribute('style', prevTbl); }
-      return;
-    }
+    };
+    if (natural > full * 0.62){ restore(); return; }   // it fills the page well enough
+    restore();
+
+    const trs = tbl && !tbl.classList.contains('u-table')
+      ? Array.from(tbl.querySelectorAll('tbody tr')) : [];
+    if (trs.length && growLoneDetailTable(card, tbl, trs, full, S)) return;
+
+    // Nothing to grow — keep the content-sized card at the top of the page.
+    card.style.setProperty('align-self', 'start', 'important');
+    card.style.setProperty('height', 'auto', 'important');
+    if (tbl) tbl.style.setProperty('height', 'auto', 'important');
     if (card.parentNode) card.parentNode.style.alignContent = 'start';
   });
 }
@@ -1623,7 +1664,7 @@ window.loadLongTeaser = function(data, brandName){
     applyNonBreakingSpaces(document.getElementById('doc'));   // before the fit: it changes how titles wrap
     fitPortfolioOverview(DL.continued);
     fitActivaBullets(FONT_SCALE);
-    fitLoneDetailCards();
+    fitLoneDetailCards(FONT_SCALE);
     window.rotatePortraitPlans = function(){
       return trimPlanMargins().then(() => {
         if (PLAN_UPRIGHT === false){
@@ -2203,7 +2244,7 @@ window.loadLongTeaser = function(data, brandName){
   document.getElementById('doc').innerHTML = pages.join('');
   applyNonBreakingSpaces(document.getElementById('doc'));
   fitActivaBullets(FONT_SCALE);
-  fitLoneDetailCards();
+  fitLoneDetailCards(FONT_SCALE);
 
   // Auto-rotate portrait plan images (called again after images finish loading by the renderer)
   window.rotatePortraitPlans = function(){
