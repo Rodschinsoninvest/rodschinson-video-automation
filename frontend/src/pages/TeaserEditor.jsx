@@ -178,6 +178,10 @@ const PORTFOLIO_ASSET_SUBSECTIONS = [
 // clean uniform grid so wide photos aren't cropped by a denser auto layout.
 const PHOTO_LAYOUT_OPTIONS = [['', 'Auto'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4']]
 // Selectable teaser fonts ("police") — must match FONTS_MAP in teaser_long.html.
+// Text size ("police size") — multiplies every font size in the teaser.
+const TEASER_FONT_SCALES = [[0.85, 'XS'], [0.92, 'S'], [1, 'M'], [1.08, 'L'], [1.15, 'XL'], [1.25, 'XXL']]
+// How a portrait plan is placed on the landscape page.
+const PLAN_ORIENTATIONS = [['upright', 'Upright (2 / page)'], ['rotate', 'Rotate to fill']]
 const TEASER_FONTS_SANS = ['Montserrat', 'Inter', 'Poppins', 'Raleway', 'Work Sans', 'Roboto', 'Open Sans', 'Lato', 'Nunito', 'Oswald']
 const TEASER_FONTS_SERIF = ['Fraunces', 'Playfair Display', 'Cormorant Garamond', 'DM Serif Display', 'Lora', 'EB Garamond', 'Libre Baskerville', 'PT Serif', 'Source Serif 4', 'Bitter', 'Merriweather']
 // Languages offered by the in-editor Translate action.
@@ -812,6 +816,16 @@ export default function TeaserEditor() {
           <optgroup label="Body — Sans-serif">{TEASER_FONTS_SANS.map(f => <option key={f} value={f}>{f}</option>)}</optgroup>
           <optgroup label="Body — Serif">{TEASER_FONTS_SERIF.map(f => <option key={f} value={f}>{f}</option>)}</optgroup>
         </select>
+        {/* Text size ("police size") — scales the whole document, not one block */}
+        <select
+          value={String(Number(data.font_scale) || 1)}
+          onChange={e => setField('font_scale', Number(e.target.value))}
+          disabled={saving || rendering || translating}
+          title="Text size for the whole teaser"
+          style={{ padding: '8px 10px', borderRadius: 6, border: `1px solid ${border}`, background: panel, color: text, fontSize: 12, cursor: 'pointer' }}
+        >
+          {TEASER_FONT_SCALES.map(([v, l]) => <option key={v} value={String(v)}>{`Aa ${l}`}</option>)}
+        </select>
         {/* Translate all text (keeps images & links) */}
         <select
           value=""
@@ -1252,6 +1266,14 @@ export default function TeaserEditor() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: muted }}>{galleryListKey === 'photos' ? 'Gallery photos' : 'Plans'}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {galleryListKey === 'plans' && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: muted }} title="Upright keeps portrait pages readable and puts two on a page; Rotate turns a portrait plan sideways so one fills the page">
+                      Portrait plans
+                      <select value={data.plan_orientation || 'upright'} onChange={e => setField('plan_orientation', e.target.value)} style={{ ...inputStyle, width: 'auto', padding: '4px 8px' }}>
+                        {PLAN_ORIENTATIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                      </select>
+                    </label>
+                  )}
                   {galleryListKey === 'photos' && (
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: muted }} title="How many photos per page (Auto avoids cropping by adapting the grid)">
                       Photos / page

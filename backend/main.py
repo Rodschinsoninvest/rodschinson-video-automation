@@ -2918,9 +2918,12 @@ RULES:
                         pdf_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
                         for page_idx in range(len(pdf_doc)):
                             page = pdf_doc[page_idx]
-                            # Render at 2x for crisp PDF -> 144 DPI. Flip 180° — scanned
-                            # plan PDFs consistently come in upside down.
-                            pix = page.get_pixmap(matrix=fitz.Matrix(2.0, 2.0).prerotate(180))
+                            # Render at 2x for crisp PDF -> 144 DPI. PyMuPDF already
+                            # honours the page's own /Rotate, so no extra flip: the
+                            # blanket 180° we used to apply turned every correctly
+                            # oriented PDF upside down. A genuinely upside-down scan
+                            # is fixed per plan in the editor (plan_rotation).
+                            pix = page.get_pixmap(matrix=fitz.Matrix(2.0, 2.0))
                             fpath = upload_dir / f"plan_{i:02d}_p{page_idx:02d}.png"
                             pix.save(str(fpath))
                             plan_paths.append(f"file://{fpath}")
@@ -2960,7 +2963,7 @@ RULES:
                         pdf_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
                         for page_idx in range(len(pdf_doc)):
                             pg = pdf_doc[page_idx]
-                            pix = pg.get_pixmap(matrix=fitz.Matrix(2.0, 2.0).prerotate(180))
+                            pix = pg.get_pixmap(matrix=fitz.Matrix(2.0, 2.0))
                             fpath = upload_dir / f"plan_from_doc_{i:02d}_p{page_idx:02d}.png"
                             pix.save(str(fpath))
                             plan_paths.append(f"file://{fpath}")
@@ -8139,6 +8142,7 @@ _TRANSLATE_SKIP_KEYS = {
     "sharepoint_url", "expertise_url", "maps", "url", "photos", "plans",
     "boundary", "photo_focus", "plan_rotation", "section_visibility",
     "photo_layout", "font_family", "heading_font", "activa_photo_fit",
+    "font_scale", "plan_orientation", "image_rotation",
 }
 _URLISH_RE = re.compile(r'^(https?://|file://|data:|/)|\.(png|jpe?g|webp|gif|svg|pdf|heic|heif|avif)$', re.I)
 

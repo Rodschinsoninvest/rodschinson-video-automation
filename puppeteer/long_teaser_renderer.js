@@ -91,8 +91,11 @@ async function main() {
     });
     // Wait for any font injected by loadLongTeaser (selectable "police") to load.
     await page.evaluate(() => document.fonts.ready).catch(() => {});
-    // Rotate portrait plan images now that natural dimensions are known
-    await page.evaluate(() => { if (typeof window.rotatePortraitPlans === 'function') window.rotatePortraitPlans(); });
+    // Trim blank plan margins + rotate portrait plans now that the natural
+    // dimensions are known. The pass is async (it re-encodes cropped images),
+    // so return its promise and let evaluate() await it.
+    await page.evaluate(() => (typeof window.rotatePortraitPlans === 'function')
+      ? window.rotatePortraitPlans() : null);
     await new Promise(r => setTimeout(r, 600));
 
     const pdfPath = opts.outputPdf || opts.script.replace(/\.json$/, '.pdf');
